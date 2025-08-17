@@ -88,11 +88,12 @@ export function IntegrationsPage() {
   const totalCustomers = platforms.reduce((sum, platform) => sum + platform.customers, 0);
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6">
+      {/* Responsive Header */}
+      <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Platform Integrations</h1>
-          <p className="text-muted-foreground">Connect your revenue sources</p>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">Platform Integrations</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">Connect your revenue sources</p>
         </div>
         <Button className="w-full sm:w-auto">
           <RefreshCw className="mr-2 h-4 w-4" />
@@ -100,63 +101,63 @@ export function IntegrationsPage() {
         </Button>
       </div>
 
-      {/* Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Overview - Responsive grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Link2 className="h-4 w-4 text-blue-600 flex-shrink-0" />
-              <div className="min-w-0">
-                <p className="text-sm text-muted-foreground">Connected Platforms</p>
-                <p className="text-xl md:text-2xl font-bold">3/3</p>
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center space-x-3">
+              <Link2 className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 flex-shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm text-muted-foreground">Connected Platforms</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold">3/3</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Users className="h-4 w-4 text-green-600 flex-shrink-0" />
-              <div className="min-w-0">
-                <p className="text-sm text-muted-foreground">Total Customers</p>
-                <p className="text-xl md:text-2xl font-bold">{totalCustomers}</p>
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center space-x-3">
+              <Users className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 flex-shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm text-muted-foreground">Total Customers</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold">{totalCustomers}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <DollarSign className="h-4 w-4 text-blue-600 flex-shrink-0" />
-              <div className="min-w-0">
-                <p className="text-sm text-muted-foreground">Total MRR</p>
-                <p className="text-lg md:text-2xl font-bold">{formatCurrency(totalRevenue, 'DKK')}</p>
+        <Card className="sm:col-span-2 lg:col-span-1">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center space-x-3">
+              <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 flex-shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm text-muted-foreground">Total MRR</p>
+                <p className="text-base sm:text-lg lg:text-2xl font-bold">{formatCurrency(totalRevenue, 'DKK')}</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Platform Cards */}
+      {/* Platform Cards - Fully responsive */}
       <div className="space-y-4">
         {platforms.map((platform) => {
           const StatusIcon = statusConfig[platform.status].icon;
           
           return (
             <Card key={platform.name}>
-              <CardHeader>
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <CardHeader className="pb-4">
+                <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 gap-4">
                   <CardTitle className="flex items-center space-x-3">
-                    <span className="text-2xl">{platform.icon}</span>
+                    <span className="text-xl sm:text-2xl">{platform.icon}</span>
                     <div>
-                      <div className="flex items-center space-x-2">
-                        <span>{platform.name}</span>
+                      <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
+                        <span className="text-lg sm:text-xl">{platform.name}</span>
                         <Badge className={statusConfig[platform.status].badge}>
                           <StatusIcon className="mr-1 h-3 w-3" />
                           {statusConfig[platform.status].label}
                         </Badge>
                       </div>
-                      <p className="text-sm text-muted-foreground font-normal">
+                      <p className="text-xs sm:text-sm text-muted-foreground font-normal mt-1">
                         {platform.description}
                       </p>
                     </div>
@@ -164,7 +165,7 @@ export function IntegrationsPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                   {/* Connection Info */}
                   <div className="space-y-3">
                     <div className="flex items-center space-x-2">
@@ -181,26 +182,26 @@ export function IntegrationsPage() {
                   <div className="space-y-3">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <span className="text-sm text-muted-foreground">Customers:</span>
-                        <div className="font-medium">{platform.customers}</div>
+                        <span className="text-xs sm:text-sm text-muted-foreground">Customers:</span>
+                        <div className="font-medium text-sm sm:text-base">{platform.customers}</div>
                       </div>
                       <div>
-                        <span className="text-sm text-muted-foreground">MRR:</span>
-                        <div className="font-medium">
+                        <span className="text-xs sm:text-sm text-muted-foreground">MRR:</span>
+                        <div className="font-medium text-sm sm:text-base">
                           {formatCurrency(platform.revenue, 'DKK')}/mo
                         </div>
                       </div>
                     </div>
                     <div>
-                      <span className="text-sm text-muted-foreground">Avg per customer:</span>
-                      <div className="font-medium">
+                      <span className="text-xs sm:text-sm text-muted-foreground">Avg per customer:</span>
+                      <div className="font-medium text-sm sm:text-base">
                         {formatCurrency(platform.revenue / platform.customers, 'DKK')}
                       </div>
                     </div>
                   </div>
 
                   {/* Actions */}
-                  <div className="space-y-2">
+                  <div className="space-y-2 sm:col-span-2 lg:col-span-1">
                     <Button 
                       size="sm" 
                       className="w-full"
@@ -226,31 +227,32 @@ export function IntegrationsPage() {
         })}
       </div>
 
-      {/* Sync Settings */}
+      {/* Sync Settings - Mobile responsive */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Settings className="h-5 w-5" />
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center space-x-2 text-lg sm:text-xl">
+            <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
             <span>Sync Settings</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 gap-4">
             <div className="space-y-0.5 flex-1">
-              <Label>Automatic sync</Label>
-              <p className="text-sm text-muted-foreground">
+              <Label className="text-sm font-medium">Automatic sync</Label>
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Keep your data updated automatically
               </p>
             </div>
             <Switch 
               checked={autoSync} 
               onCheckedChange={setAutoSync}
+              className="shrink-0"
             />
           </div>
           
           {autoSync && (
             <div className="space-y-2">
-              <Label htmlFor="sync-frequency">Sync frequency (minutes)</Label>
+              <Label htmlFor="sync-frequency" className="text-sm font-medium">Sync frequency (minutes)</Label>
               <Input 
                 id="sync-frequency"
                 type="number"
@@ -258,14 +260,14 @@ export function IntegrationsPage() {
                 onChange={(e) => setSyncFrequency(e.target.value)}
                 className="w-full sm:w-32"
               />
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 How often to sync data from all platforms
               </p>
             </div>
           )}
 
-          <div className="flex justify-end">
-            <Button>Save Settings</Button>
+          <div className="flex flex-col sm:flex-row justify-stretch sm:justify-end">
+            <Button className="w-full sm:w-auto">Save Settings</Button>
           </div>
         </CardContent>
       </Card>

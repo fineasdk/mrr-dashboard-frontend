@@ -91,15 +91,13 @@ export default function LoginPage() {
         <div className="hidden lg:flex lg:flex-1 flex-col justify-center px-12 xl:px-24">
           <div className="max-w-md">
             {/* Logo */}
-            <div className="flex items-center space-x-3 mb-8">
-              <div className="w-12 h-12 bg-gradient-to-br from-violet-600 to-purple-700 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/25">
-                <BarChart3 className="w-6 h-6 text-white" />
-              </div>
+            {/* <div className="flex items-center space-x-3 mb-8">
+             
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">MRR Dashboard</h1>
                 <p className="text-sm text-gray-500">Revenue Analytics Platform</p>
               </div>
-            </div>
+            </div> */}
 
             {/* Features */}
             <div className="space-y-6">
@@ -278,16 +276,16 @@ export default function LoginPage() {
             </Card>
 
             {/* Demo Credentials */}
-            <div className="mt-6 p-4 bg-violet-50/50 backdrop-blur-sm border border-violet-200 rounded-lg">
+            {/* <div className="mt-6 p-4 bg-violet-50/50 backdrop-blur-sm border border-violet-200 rounded-lg">
               <h4 className="text-sm font-medium text-violet-800 mb-2">Demo Credentials</h4>
               <div className="text-xs space-y-1 text-violet-700">
                 <div><strong>Email:</strong> magnus@billerstroem.com</div>
                 <div><strong>Password:</strong> password</div>
               </div>
-            </div>
+            </div> */}
 
             {/* Trust Indicators */}
-            <div className="mt-8 text-center space-y-2">
+            {/* <div className="mt-8 text-center space-y-2">
               <p className="text-xs text-gray-500">
                 Protected by enterprise-grade security
               </p>
@@ -296,7 +294,7 @@ export default function LoginPage() {
                 <span>• SOC 2 Compliant</span>
                 <span>• GDPR Ready</span>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>

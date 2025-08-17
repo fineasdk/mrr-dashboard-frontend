@@ -29,23 +29,23 @@ function SettingsPage() {
   const [normalizeAnnualSubscriptions, setNormalizeAnnualSubscriptions] = useState(true);
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-foreground">Settings</h1>
-        <p className="text-muted-foreground">Configure your MRR dashboard preferences</p>
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">Settings</h1>
+        <p className="text-muted-foreground text-sm sm:text-base">Configure your MRR dashboard preferences</p>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-4 sm:gap-6">
         {/* Currency Settings */}
         <Card>
-          <CardHeader>
-            <CardTitle>Currency Settings</CardTitle>
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg sm:text-xl">Currency Settings</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>Primary Currency</Label>
+              <Label className="text-sm font-medium">Primary Currency</Label>
               <Select value={primaryCurrency} onValueChange={setPrimaryCurrency}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-white">
@@ -63,12 +63,12 @@ function SettingsPage() {
 
         {/* MRR Calculation Settings */}
         <Card>
-          <CardHeader>
-            <CardTitle>MRR Calculation</CardTitle>
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg sm:text-xl">MRR Calculation</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 space-y-0.5">
                 <Label className="text-sm font-medium">Auto-exclude setup fees</Label>
                 <p className="text-xs text-muted-foreground">
                   Automatically exclude one-time setup fees from MRR calculations
@@ -77,13 +77,12 @@ function SettingsPage() {
               <Switch 
                 checked={autoExcludeSetupFees} 
                 onCheckedChange={setAutoExcludeSetupFees}
+                className="shrink-0"
+              />
+            </div>
 
-                
-        />
-      </div>
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 space-y-0.5">
                 <Label className="text-sm font-medium">Normalize annual subscriptions</Label>
                 <p className="text-xs text-muted-foreground">
                   Convert yearly subscriptions to monthly equivalents (÷12)
@@ -92,6 +91,7 @@ function SettingsPage() {
               <Switch 
                 checked={normalizeAnnualSubscriptions} 
                 onCheckedChange={setNormalizeAnnualSubscriptions}
+                className="shrink-0"
               />
             </div>
           </CardContent>
@@ -126,10 +126,10 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-violet-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading your dashboard...</p>
+          <div className="animate-spin rounded-full h-16 w-16 sm:h-32 sm:w-32 border-b-2 border-violet-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 text-sm sm:text-base">Loading your dashboard...</p>
         </div>
       </div>
     );
@@ -160,16 +160,17 @@ export default function App() {
 
   return (
     <div className="h-screen flex flex-col bg-background">
-      {/* Mobile Header */}
-      <div className="md:hidden flex items-center justify-between p-4 border-b bg-white">
+      {/* Mobile Header - Improved responsive design */}
+      <div className="md:hidden flex items-center justify-between p-3 sm:p-4 border-b bg-white sticky top-0 z-50">
         <Button 
           variant="ghost" 
           size="sm" 
           onClick={() => setSidebarOpen(true)}
+          className="p-2"
         >
           <Menu className="h-5 w-5" />
         </Button>
-        <h1 className="font-bold">MRR Dashboard</h1>
+        <h1 className="font-bold text-sm sm:text-base">MRR Dashboard</h1>
         <div className="w-8"></div> {/* Spacer for center alignment */}
       </div>
 
@@ -179,17 +180,24 @@ export default function App() {
       </div>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* Mobile Sidebar Overlay */}
+        {/* Mobile Sidebar Overlay - Improved */}
         {sidebarOpen && (
-          <div className="md:hidden fixed inset-0 z-50 bg-black bg-opacity-50" onClick={() => setSidebarOpen(false)}>
-            <div className="w-64 h-full bg-sidebar" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-center justify-between p-4 border-b">
-                <h1 className="font-bold text-sidebar-foreground">MRR Dashboard</h1>
+          <div 
+            className="md:hidden fixed inset-0 z-50 bg-black bg-opacity-50" 
+            onClick={() => setSidebarOpen(false)}
+          >
+            <div 
+              className="w-64 sm:w-72 h-full bg-sidebar shadow-xl" 
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between p-4 border-b bg-white">
+                <h1 className="font-bold text-sidebar-foreground text-sm sm:text-base">MRR Dashboard</h1>
                 <Button 
                   variant="ghost" 
                   size="sm" 
                   onClick={() => setSidebarOpen(false)}
-        >
+                  className="p-2"
+                >
                   <X className="h-5 w-5" />
                 </Button>
               </div>
@@ -209,7 +217,7 @@ export default function App() {
           <Sidebar currentPage={currentPage} onPageChange={setCurrentPage} />
         </div>
 
-        {/* Main Content */}
+        {/* Main Content - Improved responsive padding */}
         <main className="flex-1 overflow-auto bg-gray-50">
           {renderPage()}
         </main>

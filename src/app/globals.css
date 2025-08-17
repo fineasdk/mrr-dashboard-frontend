@@ -132,14 +132,14 @@
 }
 
 @layer components {
-  /* Modern Layout Container */
+  /* Modern Layout Container - Mobile First */
   .layout-container {
-    @apply  px-4 sm:px-6 lg:px-8;
+    @apply px-3 sm:px-4 md:px-6 lg:px-8;
   }
 
-  /* Perfect Cards */
+  /* Perfect Cards - Responsive */
   .card {
-    @apply bg-white rounded-xl border border-slate-200 shadow-sm;
+    @apply bg-white rounded-lg sm:rounded-xl border border-slate-200 shadow-sm;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
@@ -148,10 +148,10 @@
   }
 
   .card-content {
-    @apply p-6;
+    @apply p-4 sm:p-6;
   }
 
-  /* Modern Buttons */
+  /* Modern Buttons - Responsive */
   .btn {
     @apply inline-flex items-center justify-center rounded-lg font-medium transition-all duration-200;
     @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
@@ -159,29 +159,29 @@
 
   .btn-primary {
     @apply bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500;
-    @apply px-4 py-2 text-sm shadow-sm;
+    @apply px-3 py-2 sm:px-4 sm:py-2 text-sm shadow-sm;
   }
 
   .btn-secondary {
     @apply bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 focus:ring-indigo-500;
-    @apply px-4 py-2 text-sm shadow-sm;
+    @apply px-3 py-2 sm:px-4 sm:py-2 text-sm shadow-sm;
   }
 
   .btn-ghost {
     @apply text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus:ring-indigo-500;
-    @apply px-3 py-2 text-sm;
+    @apply px-2 py-1 sm:px-3 sm:py-2 text-sm;
   }
 
-  /* Perfect Inputs */
+  /* Perfect Inputs - Responsive */
   .input {
     @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm;
     @apply placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500;
     @apply transition-colors duration-200;
   }
 
-  /* Modern Navigation */
+  /* Modern Navigation - Responsive */
   .nav-item {
-    @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200;
+    @apply flex items-center gap-2 sm:gap-3 rounded-lg px-2 py-2 sm:px-3 sm:py-2 text-sm font-medium transition-all duration-200;
     @apply text-slate-700 hover:bg-slate-100 hover:text-slate-900;
   }
 
@@ -194,20 +194,20 @@
   }
 
   .nav-icon {
-    @apply h-5 w-5 text-slate-500;
+    @apply h-4 w-4 sm:h-5 sm:w-5 text-slate-500;
   }
 
-  /* Perfect Header */
+  /* Perfect Header - Mobile First */
   .header {
     @apply sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-slate-200;
   }
 
-  /* Perfect Sidebar */
+  /* Perfect Sidebar - Responsive */
   .sidebar {
     @apply bg-white border-r border-slate-200;
   }
 
-  /* Status Indicators */
+  /* Status Indicators - Responsive */
   .status-dot {
     @apply h-2 w-2 rounded-full;
   }
@@ -224,21 +224,29 @@
     @apply bg-red-500;
   }
 
-  /* Modern Metrics */
+  .status-paused {
+    @apply bg-gray-400;
+  }
+
+  .status-inactive {
+    @apply bg-gray-300;
+  }
+
+  /* Modern Metrics - Responsive */
   .metric-card {
     @apply card;
   }
 
   .metric-value {
-    @apply text-2xl font-semibold text-slate-900;
+    @apply text-lg sm:text-xl lg:text-2xl font-semibold text-slate-900;
   }
 
   .metric-label {
-    @apply text-sm text-slate-600;
+    @apply text-xs sm:text-sm text-slate-600;
   }
 
   .metric-change {
-    @apply text-xs font-medium;
+    @apply text-xs sm:text-sm font-medium;
   }
 
   .metric-change.positive {
@@ -249,9 +257,9 @@
     @apply text-red-600;
   }
 
-  /* Modern Tables */
+  /* Modern Tables - Responsive */
   .table-container {
-    @apply overflow-hidden rounded-xl border border-slate-200 bg-white;
+    @apply overflow-hidden rounded-lg sm:rounded-xl border border-slate-200 bg-white;
   }
 
   .table {
@@ -263,7 +271,7 @@
   }
 
   .table-header th {
-    @apply px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500;
+    @apply px-4 py-3 sm:px-6 sm:py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500;
   }
 
   .table-body {
@@ -271,16 +279,16 @@
   }
 
   .table-body td {
-    @apply px-6 py-4 text-sm text-slate-900;
+    @apply px-4 py-3 sm:px-6 sm:py-4 text-sm text-slate-900;
   }
 
   .table-row:hover {
     @apply bg-slate-50;
   }
 
-  /* Modern Badges */
+  /* Modern Badges - Responsive */
   .badge {
-    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+    @apply inline-flex items-center rounded-full px-2 py-0.5 sm:px-2.5 sm:py-0.5 text-xs font-medium;
   }
 
   .badge-success {
@@ -299,7 +307,7 @@
     @apply bg-blue-100 text-blue-800;
   }
 
-  /* Modern Form Groups */
+  /* Modern Form Groups - Responsive */
   .form-group {
     @apply space-y-2;
   }
@@ -313,31 +321,31 @@
   }
 
   .form-help {
-    @apply text-sm text-slate-500;
+    @apply text-xs sm:text-sm text-slate-500;
   }
 
-  /* Perfect Modals */
+  /* Perfect Modals - Responsive */
   .modal-overlay {
     @apply fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm;
   }
 
   .modal-content {
-    @apply fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2;
-    @apply rounded-xl bg-white p-6 shadow-lg;
+    @apply fixed left-1/2 top-1/2 z-50 w-full max-w-sm sm:max-w-lg -translate-x-1/2 -translate-y-1/2;
+    @apply rounded-lg sm:rounded-xl bg-white p-4 sm:p-6 shadow-lg mx-4 sm:mx-0;
   }
 
-  /* Perfect Dropdowns */
+  /* Perfect Dropdowns - Responsive */
   .dropdown-content {
     @apply z-50 min-w-[8rem] overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg;
   }
 
   .dropdown-item {
-    @apply block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100;
+    @apply block px-3 py-2 sm:px-4 sm:py-2 text-sm text-slate-700 hover:bg-slate-100;
   }
 
-  /* Layout Utilities */
+  /* Layout Utilities - Mobile First */
   .section-padding {
-    @apply px-4 py-6 sm:px-6 lg:px-8;
+    @apply px-3 py-4 sm:px-4 sm:py-6 lg:px-8;
   }
 
   .page-container {
@@ -345,24 +353,40 @@
   }
 
   .page-header {
-    @apply mb-8;
+    @apply mb-6 sm:mb-8;
   }
 
   .page-title {
-    @apply text-2xl font-semibold text-slate-900;
+    @apply text-xl sm:text-2xl font-semibold text-slate-900;
   }
 
   .page-description {
-    @apply mt-1 text-sm text-slate-600;
+    @apply mt-1 text-sm sm:text-base text-slate-600;
   }
 
-  /* Grid Systems */
+  /* Grid Systems - Responsive */
+  .grid-auto-fit-sm {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+
   .grid-auto-fit {
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   }
 
+  .grid-auto-fit-lg {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  }
+
+  .grid-auto-fill-sm {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+
   .grid-auto-fill {
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  }
+
+  .grid-auto-fill-lg {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   }
 
   /* Animation Utilities */
@@ -374,34 +398,137 @@
     animation: slideUp 0.4s ease-out;
   }
 
+  .slide-up {
+    animation: slideUp 0.6s ease-out;
+  }
+
+  .delay-100 {
+    animation-delay: 100ms;
+  }
+
+  .delay-200 {
+    animation-delay: 200ms;
+  }
+
+  .delay-300 {
+    animation-delay: 300ms;
+  }
+
   /* Loading States */
   .skeleton {
     @apply animate-pulse bg-slate-200 rounded;
   }
 
-  /* Perfect Spacing */
-  .space-y-1 > * + * {
-    margin-top: 0.25rem;
+  /* Responsive Text Utilities */
+  .text-responsive-xs {
+    @apply text-xs sm:text-sm;
   }
 
-  .space-y-2 > * + * {
+  .text-responsive-sm {
+    @apply text-sm sm:text-base;
+  }
+
+  .text-responsive-base {
+    @apply text-base sm:text-lg;
+  }
+
+  .text-responsive-lg {
+    @apply text-lg sm:text-xl;
+  }
+
+  .text-responsive-xl {
+    @apply text-xl sm:text-2xl;
+  }
+
+  .text-responsive-2xl {
+    @apply text-2xl sm:text-3xl;
+  }
+
+  /* Mobile Utilities */
+  .mobile-full {
+    @apply w-full sm:w-auto;
+  }
+
+  .mobile-hidden {
+    @apply hidden sm:block;
+  }
+
+  .mobile-only {
+    @apply block sm:hidden;
+  }
+
+  .mobile-stack {
+    @apply flex-col sm:flex-row;
+  }
+
+  .mobile-center {
+    @apply text-center sm:text-left;
+  }
+
+  /* Container Queries for Better Responsive Design */
+  .container-xs {
+    @apply max-w-xs mx-auto;
+  }
+
+  .container-sm {
+    @apply max-w-sm mx-auto;
+  }
+
+  .container-responsive {
+    @apply max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl 2xl:max-w-4xl mx-auto;
+  }
+
+  /* Perfect Spacing - Mobile First */
+  .space-mobile-y-2 > * + * {
     margin-top: 0.5rem;
   }
 
-  .space-y-3 > * + * {
-    margin-top: 0.75rem;
-  }
-
-  .space-y-4 > * + * {
+  .space-mobile-y-4 > * + * {
     margin-top: 1rem;
   }
 
-  .space-y-6 > * + * {
-    margin-top: 1.5rem;
+  @screen sm {
+    .space-mobile-y-2 > * + * {
+      margin-top: 0.75rem;
+    }
+
+    .space-mobile-y-4 > * + * {
+      margin-top: 1.5rem;
+    }
   }
 
-  .space-y-8 > * + * {
-    margin-top: 2rem;
+  /* Button Variants - Responsive */
+  .button-primary {
+    @apply bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white;
+    @apply px-3 py-2 sm:px-4 sm:py-2 rounded-lg font-medium shadow-sm transition-all duration-200;
+  }
+
+  .button-secondary {
+    @apply bg-white text-slate-700 border border-slate-300 hover:bg-slate-50;
+    @apply px-3 py-2 sm:px-4 sm:py-2 rounded-lg font-medium shadow-sm transition-all duration-200;
+  }
+
+  .button-outline {
+    @apply border border-slate-300 text-slate-700 hover:bg-slate-50;
+    @apply px-3 py-2 sm:px-4 sm:py-2 rounded-lg font-medium transition-all duration-200;
+  }
+
+  /* Data Table Responsive */
+  .data-table {
+    @apply min-w-full divide-y divide-gray-200;
+  }
+
+  .data-table th {
+    @apply px-4 py-3 sm:px-6 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider;
+  }
+
+  .data-table td {
+    @apply px-4 py-3 sm:px-6 sm:py-4 whitespace-nowrap text-sm text-gray-900;
+  }
+
+  /* Popover Content */
+  .popover-content {
+    @apply z-50 min-w-[8rem] overflow-hidden rounded-md border bg-white p-1 text-slate-950 shadow-md;
   }
 }
 
@@ -416,13 +543,13 @@
 }
 
 @keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
+  from { 
+    opacity: 0; 
+    transform: translateY(20px); 
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
   }
 }
 

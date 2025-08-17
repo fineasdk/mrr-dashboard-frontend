@@ -127,7 +127,7 @@ export default function RegisterPage() {
         <div className="hidden lg:flex lg:flex-1 flex-col justify-center px-12 xl:px-24">
           <div className="max-w-md">
             {/* Logo */}
-            <div className="flex items-center space-x-3 mb-8">
+            {/* <div className="flex items-center space-x-3 mb-8">
               <div className="w-12 h-12 bg-gradient-to-br from-violet-600 to-purple-700 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/25">
                 <BarChart3 className="w-6 h-6 text-white" />
               </div>
@@ -135,7 +135,7 @@ export default function RegisterPage() {
                 <h1 className="text-2xl font-bold text-gray-900">MRR Dashboard</h1>
                 <p className="text-sm text-gray-500">Revenue Analytics Platform</p>
               </div>
-            </div>
+            </div> */}
 
             {/* Features */}
             <div className="space-y-6">
@@ -147,10 +147,10 @@ export default function RegisterPage() {
               </p>
               
               <div className="space-y-4">
-                <div className="flex items-center space-x-3">
+                {/* <div className="flex items-center space-x-3">
                   <CheckCircle className="w-5 h-5 text-violet-600" />
                   <span className="text-gray-700">Free 14-day trial</span>
-                </div>
+                </div> */}
                 <div className="flex items-center space-x-3">
                   <CheckCircle className="w-5 h-5 text-violet-600" />
                   <span className="text-gray-700">No credit card required</span>
@@ -408,7 +408,7 @@ export default function RegisterPage() {
             </Card>
 
             {/* Trust Indicators */}
-            <div className="mt-8 text-center space-y-2">
+            {/* <div className="mt-8 text-center space-y-2">
               <p className="text-xs text-gray-500">
                 Your data is protected with enterprise-grade security
               </p>
@@ -417,7 +417,7 @@ export default function RegisterPage() {
                 <span>• SOC 2 Type II</span>
                 <span>• GDPR Compliant</span>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>
