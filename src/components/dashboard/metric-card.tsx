@@ -9,13 +9,14 @@ interface MetricCardProps {
   trend: 'up' | 'down';
   description?: string;
   icon?: LucideIcon;
+  className?: string;
 }
 
-export function MetricCard({ title, value, change, trend, description, icon: Icon }: MetricCardProps) {
+export function MetricCard({ title, value, change, trend, description, icon: Icon, className }: MetricCardProps) {
   const TrendIcon = trend === 'up' ? TrendingUp : TrendingDown;
   
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className={cn("card hover:shadow-lg transition-all duration-300", className)}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
           {title}

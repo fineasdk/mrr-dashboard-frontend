@@ -34,7 +34,7 @@ export function CurrencySelector({ currentCurrency, onCurrencyChange }: Currency
           <ChevronDown className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
+      <DropdownMenuContent align="end" className="w-56 bg-white">
         {Object.entries(currencyConfig).map(([code, config]) => {
           const Icon = config.icon;
           return (

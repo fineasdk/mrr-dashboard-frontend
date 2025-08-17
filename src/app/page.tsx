@@ -34,7 +34,7 @@ function SettingsPage() {
         <h1 className="text-2xl md:text-3xl font-bold text-foreground">Settings</h1>
         <p className="text-muted-foreground">Configure your MRR dashboard preferences</p>
       </div>
-      
+
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* Currency Settings */}
         <Card>
@@ -48,13 +48,10 @@ function SettingsPage() {
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white">
                   <SelectItem value="DKK">🇩🇰 Danish Krone (DKK)</SelectItem>
                   <SelectItem value="EUR">🇪🇺 Euro (EUR)</SelectItem>
                   <SelectItem value="USD">🇺🇸 US Dollar (USD)</SelectItem>
-                  <SelectItem value="GBP">🇬🇧 British Pound (GBP)</SelectItem>
-                  <SelectItem value="SEK">🇸🇪 Swedish Krona (SEK)</SelectItem>
-                  <SelectItem value="NOK">🇳🇴 Norwegian Krone (NOK)</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
@@ -80,9 +77,11 @@ function SettingsPage() {
               <Switch 
                 checked={autoExcludeSetupFees} 
                 onCheckedChange={setAutoExcludeSetupFees}
-              />
-            </div>
-            
+
+                
+        />
+      </div>
+
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label className="text-sm font-medium">Normalize annual subscriptions</Label>
@@ -119,6 +118,11 @@ export default function App() {
     setIsAuthenticated(true);
     setLoading(false);
   }, [router]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('auth_token');
+    router.push('/login');
+  };
 
   if (loading) {
     return (
@@ -171,7 +175,7 @@ export default function App() {
 
       {/* Desktop Header */}
       <div className="hidden md:block">
-        <Header />
+        <Header onLogout={handleLogout} />
       </div>
 
       <div className="flex-1 flex overflow-hidden">
@@ -185,7 +189,7 @@ export default function App() {
                   variant="ghost" 
                   size="sm" 
                   onClick={() => setSidebarOpen(false)}
-                >
+        >
                   <X className="h-5 w-5" />
                 </Button>
               </div>

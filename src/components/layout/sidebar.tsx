@@ -20,54 +20,52 @@ const navigation = [
   { name: 'Analytics', id: 'analytics', icon: TrendingUp },
   { name: 'Integrations', id: 'integrations', icon: Link2 },
   { name: 'Profile', id: 'profile', icon: User },
-  { name: 'Settings', id: 'settings', icon: Settings },
+  // { name: 'Settings', id: 'settings', icon: Settings },
 ];
 
 export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
   return (
-    <aside className="sidebar w-64 bg-white border-r border-gray-200 flex flex-col h-full shadow-sm">
-      {/* Desktop Header */}
-      <div className="hidden md:block p-6">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-gradient-to-br from-violet-600 to-purple-700 rounded-lg flex items-center justify-center shadow-lg">
-            <BarChart3 className="w-4 h-4 text-white" />
-          </div>
-          <div>
-            <h1 className="font-bold text-gray-900">MRR Dashboard</h1>
-            <p className="text-xs text-gray-500">Revenue Management</p>
-          </div>
-        </div>
-      </div>
-      
-      {/* Navigation */}
-      <nav className="flex-1 px-4 pb-6 space-y-2 mt-4 md:mt-0">
+    <aside className="sidebar w-64 flex flex-col h-full">
+      {/* Perfect Navigation */}
+      <nav className="flex-1 p-4 space-y-2">
         {navigation.map((item) => {
           const Icon = item.icon;
           const isActive = currentPage === item.id;
           
           return (
-            <Button
+            <button
               key={item.id}
-              variant={isActive ? "secondary" : "ghost"}
-              className={`w-full justify-start h-12 font-medium transition-all duration-200 ${
-                isActive 
-                  ? 'bg-violet-50 text-violet-700 border-r-3 border-violet-600 shadow-sm' 
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              className={`nav-item w-full text-left ${
+                isActive ? 'active' : ''
               }`}
               onClick={() => onPageChange(item.id)}
             >
-              <Icon className="mr-3 h-5 w-5" />
-              <span className="text-base">{item.name}</span>
-            </Button>
+              <Icon className="nav-icon" />
+              <span>{item.name}</span>
+            </button>
           );
         })}
       </nav>
-
-      {/* Help Section */}
-      <div className="px-4 py-4 border-t border-gray-200 bg-gray-50">
-        <div className="text-xs text-gray-500 space-y-1">
-          <p>💡 Need help?</p>
-          <p>Contact support@mrrdashboard.com</p>
+      
+      {/* Modern Help Section */}
+      <div className="p-4">
+        <div className="bg-slate-50 rounded-lg p-4">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 bg-indigo-100 rounded-lg">
+              <span className="text-indigo-600 text-sm">💡</span>
+            </div>
+            <div>
+              <p className="font-medium text-slate-900 text-sm">Need Help?</p>
+              <p className="text-xs text-slate-600">Documentation & Support</p>
+            </div>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="btn-secondary w-full"
+          >
+            View Docs
+          </Button>
         </div>
       </div>
     </aside>

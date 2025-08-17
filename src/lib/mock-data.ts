@@ -133,7 +133,7 @@ export const mockMRRData: MRRData[] = [
 
 export const mockMetrics: MetricData[] = [
   {
-    title: 'Monthly Recurring Revenue',
+    title: 'Monthly Revenue',
     value: '858.000 kr',
     change: '+81.000 kr (+10.4%)',
     trend: 'up',

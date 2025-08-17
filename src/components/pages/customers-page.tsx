@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Filter, Download, MoreHorizontal, Eye, Edit, Trash2, AlertTriangle } from 'lucide-react';
+import { Search, Filter, Download, MoreHorizontal, Eye, Edit, Trash2, AlertTriangle, Plus, Users2, SlidersHorizontal } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -19,7 +19,7 @@ import {
 } from '../ui/dropdown-menu';
 import { Badge } from '../ui/badge';
 import { Checkbox } from '../ui/checkbox';
-import { CustomerDetailModal } from '../dashboard/customer-detail-modal';
+// import { CustomerDetailModal } from '../dashboard/customer-detail-modal';
 import { CurrencySelector } from '../dashboard/currency-selector';
 import { mockCustomers, formatCurrency, convertCurrency } from '../../lib/mock-data';
 import { Customer, Currency } from '../../lib/types';
@@ -31,9 +31,9 @@ const platformIcons = {
 };
 
 const statusColors = {
-  active: 'bg-green-100 text-green-800',
-  paused: 'bg-yellow-100 text-yellow-800',
-  inactive: 'bg-red-100 text-red-800',
+  active: 'status-active',
+  paused: 'status-paused',
+  inactive: 'status-inactive',
 };
 
 const riskColors = {
@@ -45,29 +45,43 @@ const riskColors = {
 export function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>(mockCustomers);
   const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCurrency, setSelectedCurrency] = useState<Currency>('DKK');
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [platformFilter, setPlatformFilter] = useState<string>('all');
+  const [selectedCurrency, setSelectedCurrency] = useState<Currency>('DKK');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
-  const filteredCustomers = customers.filter((customer) =>
-    customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Enhanced filtering
+  const filteredCustomers = customers.filter(customer => {
+    const matchesSearch = customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         customer.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || customer.status === statusFilter;
+    const matchesPlatform = platformFilter === 'all' || customer.platform === platformFilter;
+    
+    return matchesSearch && matchesStatus && matchesPlatform;
+  });
 
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedCustomers(filteredCustomers.map(c => c.id));
-    } else {
-      setSelectedCustomers([]);
-    }
+  // Pagination
+  const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedCustomers = filteredCustomers.slice(startIndex, startIndex + itemsPerPage);
+
+  const handleSelectCustomer = (customerId: string) => {
+    setSelectedCustomers(prev => 
+      prev.includes(customerId) 
+        ? prev.filter(id => id !== customerId)
+        : [...prev, customerId]
+    );
   };
 
-  const handleSelectCustomer = (customerId: string, checked: boolean) => {
-    if (checked) {
-      setSelectedCustomers([...selectedCustomers, customerId]);
+  const handleSelectAll = () => {
+    if (selectedCustomers.length === paginatedCustomers.length) {
+      setSelectedCustomers([]);
     } else {
-      setSelectedCustomers(selectedCustomers.filter(id => id !== customerId));
+      setSelectedCustomers(paginatedCustomers.map(c => c.id));
     }
   };
 
@@ -76,209 +90,144 @@ export function CustomersPage() {
     setIsModalOpen(true);
   };
 
-  const handleSaveCustomer = (updatedCustomer: Customer) => {
-    setCustomers(customers.map(c => c.id === updatedCustomer.id ? updatedCustomer : c));
+  const handleBulkAction = (action: string) => {
+    console.log(`Bulk action: ${action} for customers:`, selectedCustomers);
+    // Implement bulk actions here
   };
 
-  const activeCustomers = filteredCustomers.filter(c => !c.isExcluded).length;
-  const excludedCustomers = filteredCustomers.filter(c => c.isExcluded).length;
-  const totalMrr = filteredCustomers.reduce((sum, c) => sum + c.mrr, 0);
-  const atRiskCustomers = filteredCustomers.filter(c => c.churnRisk === 'high').length;
-
-  // Mobile Card Component
-  const CustomerCard = ({ customer }: { customer: Customer }) => (
-    <Card className="mb-4">
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              checked={selectedCustomers.includes(customer.id)}
-              onCheckedChange={(checked) => handleSelectCustomer(customer.id, checked as boolean)}
-            />
-            <div>
-              <div className="flex items-center space-x-2">
-                <h3 className="font-medium">{customer.name}</h3>
-                {customer.isExcluded && (
-                  <Badge variant="outline" className="text-xs">
-                    <AlertTriangle className="mr-1 h-3 w-3" />
-                    Excluded
-                  </Badge>
-                )}
-              </div>
-              <p className="text-sm text-muted-foreground">{customer.email}</p>
-            </div>
-          </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleViewCustomer(customer)}>
-                <Eye className="mr-2 h-4 w-4" />
-                View Details
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Edit className="mr-2 h-4 w-4" />
-                Edit Customer
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                className={customer.isExcluded ? "text-green-600" : "text-red-600"}
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                {customer.isExcluded ? 'Include' : 'Exclude'} Customer
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-        
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <span className="text-muted-foreground">Platform:</span>
-            <div className="flex items-center space-x-1 mt-1">
-              <span>{platformIcons[customer.platform]}</span>
-              <span className="capitalize">{customer.platform}</span>
-            </div>
-          </div>
-          <div>
-            <span className="text-muted-foreground">MRR:</span>
-            <div className="font-medium mt-1">
-              {formatCurrency(convertCurrency(customer.mrr, customer.currency, selectedCurrency), selectedCurrency)}
-            </div>
-          </div>
-          <div>
-            <span className="text-muted-foreground">Status:</span>
-            <Badge 
-              variant="secondary" 
-              className={`${statusColors[customer.status]} mt-1`}
-            >
-              {customer.status === 'active' && '✅'} 
-              {customer.status === 'paused' && '⚠️'} 
-              {customer.status === 'inactive' && '❌'} 
-              {customer.status}
-            </Badge>
-          </div>
-          <div>
-            <span className="text-muted-foreground">Risk:</span>
-            <Badge 
-              variant="outline" 
-              className={`${riskColors[customer.churnRisk]} mt-1`}
-            >
-              {customer.churnRisk}
-            </Badge>
-          </div>
-        </div>
-        
-        <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
-          📄 {customer.invoiceCount} invoices · Since {new Date(customer.joinDate).toLocaleDateString()}
-        </div>
-      </CardContent>
-    </Card>
-  );
-
   return (
-    <div className="p-6 space-y-8 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Customers</h1>
-          <p className="text-gray-600 text-lg">Manage your customer base and revenue streams</p>
+    <div className="section-padding space-y-6 bg-gray-50 min-h-screen">
+      {/* Clean Header */}
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+            <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Customers</h1>
+          <p className="text-gray-600 mt-1">Manage your customer base and revenue streams</p>
+          <div className="flex items-center space-x-4 mt-2">
+            <div className="flex items-center space-x-2 text-sm text-gray-600">
+              <Users2 className="w-4 h-4" />
+              <span>{filteredCustomers.length} customers</span>
+            </div>
+            {selectedCustomers.length > 0 && (
+              <>
+                <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
+                <div className="text-sm text-gray-600">
+                  {selectedCustomers.length} selected
+          </div>
+              </>
+            )}
+          </div>
         </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
+        
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
           <CurrencySelector 
             currentCurrency={selectedCurrency} 
             onCurrencyChange={setSelectedCurrency} 
           />
-          <Button variant="outline" size="sm" className="w-full sm:w-auto bg-white/80 backdrop-blur-sm border-gray-200 hover:bg-violet-50 hover:border-violet-200 text-gray-700 font-medium transition-all duration-200">
-            <Download className="mr-2 h-4 w-4" />
-            Export
-          </Button>
-          <Button variant="outline" size="sm" className="w-full sm:w-auto bg-white/80 backdrop-blur-sm border-gray-200 hover:bg-violet-50 hover:border-violet-200 text-gray-700 font-medium transition-all duration-200">
-            <Filter className="mr-2 h-4 w-4" />
-            Filter
-          </Button>
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex flex-col">
-              <p className="text-sm text-muted-foreground">Total Customers</p>
-              <p className="text-xl md:text-2xl font-bold">{filteredCustomers.length}</p>
-              <Badge variant="secondary" className="w-fit mt-1 text-xs">{activeCustomers} active</Badge>
+      {/* Enhanced Filters & Search */}
+      <div className="slide-up delay-100">
+        <Card className="card p-6">
+          <div className="flex flex-col lg:flex-row gap-4">
+            {/* Search */}
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Input
+                  type="text"
+                  placeholder="Search by name, email, or company..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-11 bg-white/70 border-gray-200/60 focus:bg-white"
+                />
+              </div>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex flex-col">
-              <p className="text-sm text-muted-foreground">Total MRR</p>
-              <p className="text-lg md:text-2xl font-bold">
-                {formatCurrency(convertCurrency(totalMrr, 'DKK', selectedCurrency), selectedCurrency)}
-              </p>
-              <Badge variant="outline" className="w-fit mt-1 text-xs">{excludedCustomers} excluded</Badge>
+
+            {/* Filters */}
+            <div className="flex flex-wrap gap-3">
+              <select 
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="px-4 py-2 border border-gray-200/60 rounded-lg bg-white/70 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20"
+              >
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="paused">Paused</option>
+                <option value="inactive">Inactive</option>
+              </select>
+
+              <select 
+                value={platformFilter}
+                onChange={(e) => setPlatformFilter(e.target.value)}
+                className="px-4 py-2 border border-gray-200/60 rounded-lg bg-white/70 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20"
+              >
+                <option value="all">All Platforms</option>
+                <option value="stripe">Stripe</option>
+                <option value="shopify">Shopify</option>
+                <option value="e-conomic">E-conomic</option>
+              </select>
+
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex flex-col">
-              <p className="text-sm text-muted-foreground">Avg Revenue</p>
-              <p className="text-lg md:text-2xl font-bold">
-                {formatCurrency(
-                  convertCurrency(activeCustomers > 0 ? totalMrr / activeCustomers : 0, 'DKK', selectedCurrency), 
-                  selectedCurrency
-                )}
-              </p>
-              <Badge variant="secondary" className="w-fit mt-1 text-xs">ARPC</Badge>
+          </div>
+
+          {/* Bulk Actions */}
+          {selectedCustomers.length > 0 && (
+            <div className="mt-4 p-4 bg-violet-50 border border-violet-200 rounded-lg">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-violet-700">
+                  {selectedCustomers.length} customer{selectedCustomers.length > 1 ? 's' : ''} selected
+                </span>
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleBulkAction('exclude')}
+                    className="text-orange-600 border-orange-200 hover:bg-orange-50"
+                  >
+                    Exclude from MRR
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleBulkAction('export')}
+                    className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                  >
+                    Export Selected
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setSelectedCustomers([])}
+                  >
+                    Clear Selection
+                  </Button>
+                </div>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex flex-col">
-              <p className="text-sm text-muted-foreground">At Risk</p>
-              <p className="text-lg md:text-2xl font-bold text-red-600">{atRiskCustomers}</p>
-              <Badge variant="destructive" className="w-fit mt-1 text-xs">{((atRiskCustomers / activeCustomers) * 100).toFixed(1)}%</Badge>
             </div>
-          </CardContent>
+          )}
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <CardTitle>Customer List ({filteredCustomers.length})</CardTitle>
-            <div className="relative w-full sm:w-auto">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search customers..."
-                className="pl-10 w-full sm:w-80"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+      {/* Enhanced Table */}
+      <div className="slide-up delay-200">
+        <Card className="table-container">
+          <CardHeader className="table-header px-6 py-4">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg font-semibold text-gray-900">Customer List</CardTitle>
+              <div className="text-sm text-gray-500">
+                Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredCustomers.length)} of {filteredCustomers.length} customers
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          {/* Mobile View */}
-          <div className="md:hidden">
-            {filteredCustomers.map((customer) => (
-              <CustomerCard key={customer.id} customer={customer} />
-            ))}
-          </div>
-
-          {/* Desktop View */}
-          <div className="hidden md:block overflow-x-auto">
-            <Table>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table className="data-table">
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-12">
                     <Checkbox
-                      checked={selectedCustomers.length === filteredCustomers.length}
+                        checked={selectedCustomers.length === paginatedCustomers.length && paginatedCustomers.length > 0}
                       onCheckedChange={handleSelectAll}
                     />
                   </TableHead>
@@ -286,88 +235,65 @@ export function CustomersPage() {
                   <TableHead>Platform</TableHead>
                   <TableHead>MRR</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="hidden lg:table-cell">Risk</TableHead>
-                  <TableHead className="hidden xl:table-cell">CLV</TableHead>
-                  <TableHead className="w-12">Actions</TableHead>
+                    <TableHead>Risk</TableHead>
+                    <TableHead>Last Active</TableHead>
+                    <TableHead className="w-12"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredCustomers.map((customer) => (
-                  <TableRow 
-                    key={customer.id}
-                    className={customer.isExcluded ? 'opacity-60 bg-muted/50' : ''}
-                  >
+                  {paginatedCustomers.map((customer) => (
+                    <TableRow key={customer.id} className="group">
                     <TableCell>
                       <Checkbox
                         checked={selectedCustomers.includes(customer.id)}
-                        onCheckedChange={(checked) => handleSelectCustomer(customer.id, checked as boolean)}
+                          onCheckedChange={() => handleSelectCustomer(customer.id)}
                       />
                     </TableCell>
                     <TableCell>
-                      <div className="space-y-1">
-                        <div className="flex items-center space-x-2">
-                          <div className="font-medium">{customer.name}</div>
-                          {customer.isExcluded && (
-                            <Badge variant="outline" className="text-xs">
-                              <AlertTriangle className="mr-1 h-3 w-3" />
-                              Excluded
-                            </Badge>
-                          )}
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-violet-100 to-purple-100 rounded-full flex items-center justify-center">
+                            <span className="text-violet-700 font-semibold text-sm">
+                              {customer.name.charAt(0).toUpperCase()}
+                            </span>
                         </div>
-                        <div className="text-sm text-muted-foreground">{customer.email}</div>
-                        <div className="text-xs text-muted-foreground">
-                          📄 {customer.invoiceCount} invoices · Since {new Date(customer.joinDate).toLocaleDateString()}
+                          <div>
+                            <p className="font-medium text-gray-900">{customer.name}</p>
+                            <p className="text-sm text-gray-500">{customer.email}</p>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
-                        <span className="text-lg">{platformIcons[customer.platform]}</span>
-                        <span className="capitalize">{customer.platform}</span>
+                          <span className="text-lg">{platformIcons[customer.platform as keyof typeof platformIcons]}</span>
+                          <span className="text-sm font-medium capitalize">{customer.platform}</span>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="space-y-1">
-                        <div className="font-medium">
-                          {formatCurrency(convertCurrency(customer.mrr, customer.currency, selectedCurrency), selectedCurrency)}
-                        </div>
-                        {customer.isExcluded && customer.originalMrr > 0 && (
-                          <div className="text-xs text-muted-foreground line-through">
-                            {formatCurrency(convertCurrency(customer.originalMrr, customer.currency, selectedCurrency), selectedCurrency)}
-                          </div>
-                        )}
+                        <div className="font-medium text-gray-900">
+                          {convertCurrency(customer.mrr, 'DKK', selectedCurrency).toLocaleString('da-DK')} {selectedCurrency}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge 
-                        variant="secondary" 
-                        className={statusColors[customer.status]}
-                      >
-                        {customer.status === 'active' && '✅'} 
-                        {customer.status === 'paused' && '⚠️'} 
-                        {customer.status === 'inactive' && '❌'} 
+                        <Badge className={`badge ${statusColors[customer.status as keyof typeof statusColors]}`}>
                         {customer.status}
                       </Badge>
                     </TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      <Badge 
-                        variant="outline" 
-                        className={riskColors[customer.churnRisk]}
-                      >
+                                             <TableCell>
+                         <span className={`text-sm font-medium ${riskColors[customer.churnRisk as keyof typeof riskColors]}`}>
                         {customer.churnRisk}
-                      </Badge>
+                         </span>
                     </TableCell>
-                    <TableCell className="hidden xl:table-cell font-medium">
-                      {formatCurrency(convertCurrency(customer.clv, customer.currency, selectedCurrency), selectedCurrency)}
+                       <TableCell>
+                         <span className="text-sm text-gray-500">{new Date(customer.joinDate).toLocaleDateString()}</span>
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
+                            <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                          <DropdownMenuContent className="popover-content" align="end">
                           <DropdownMenuItem onClick={() => handleViewCustomer(customer)}>
                             <Eye className="mr-2 h-4 w-4" />
                             View Details
@@ -376,11 +302,13 @@ export function CustomersPage() {
                             <Edit className="mr-2 h-4 w-4" />
                             Edit Customer
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            className={customer.isExcluded ? "text-green-600" : "text-red-600"}
-                          >
+                            <DropdownMenuItem>
+                              <AlertTriangle className="mr-2 h-4 w-4" />
+                              Exclude from MRR
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-red-600">
                             <Trash2 className="mr-2 h-4 w-4" />
-                            {customer.isExcluded ? 'Include' : 'Exclude'} Customer
+                              Delete Customer
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -390,18 +318,64 @@ export function CustomersPage() {
               </TableBody>
             </Table>
           </div>
+
+            {/* Enhanced Pagination */}
+            <div className="px-6 py-4 border-t border-gray-100/60 bg-gray-50/30">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-600">
+                  Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredCustomers.length)} of {filteredCustomers.length} results
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="button-outline"
+                  >
+                    Previous
+                  </Button>
+                  <div className="flex items-center space-x-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      const page = i + 1;
+                      return (
+                        <Button
+                          key={page}
+                          variant={currentPage === page ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setCurrentPage(page)}
+                          className={currentPage === page ? "button-primary" : "button-outline"}
+                        >
+                          {page}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages}
+                    className="button-outline"
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            </div>
         </CardContent>
       </Card>
+      </div>
 
-      <CustomerDetailModal
+                   {/* Customer Detail Modal - Coming Soon */}
+      {/* <CustomerDetailModal
         customer={selectedCustomer}
         open={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setSelectedCustomer(null);
+        onClose={() => setIsModalOpen(false)}
+        onSave={(updatedCustomer) => {
+          setCustomers(customers.map(c => c.id === updatedCustomer.id ? updatedCustomer : c));
         }}
-        onSave={handleSaveCustomer}
-      />
+      /> */}
     </div>
   );
 }
