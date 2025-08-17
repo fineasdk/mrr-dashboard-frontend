@@ -1,113 +1,215 @@
-import Image from 'next/image'
+'use client';
 
-export default function Home() {
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Menu, X } from 'lucide-react';
+import { Header } from '@/components/layout/header';
+import { Sidebar } from '@/components/layout/sidebar';
+import { DashboardPage } from '@/components/pages/dashboard-page';
+import { CustomersPage } from '@/components/pages/customers-page';
+import { AnalyticsPage } from '@/components/pages/analytics-page';
+import { IntegrationsPage } from '@/components/pages/integrations-page';
+import ProfilePageComponent from '@/app/profile/page';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue 
+} from '@/components/ui/select';
+
+// Simplified settings page focused on core functionality
+function SettingsPage() {
+  const [primaryCurrency, setPrimaryCurrency] = useState('DKK');
+  const [autoExcludeSetupFees, setAutoExcludeSetupFees] = useState(true);
+  const [normalizeAnnualSubscriptions, setNormalizeAnnualSubscriptions] = useState(true);
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+    <div className="p-4 md:p-6 space-y-6">
+      <div>
+        <h1 className="text-2xl md:text-3xl font-bold text-foreground">Settings</h1>
+        <p className="text-muted-foreground">Configure your MRR dashboard preferences</p>
+      </div>
+      
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {/* Currency Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Currency Settings</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Primary Currency</Label>
+              <Select value={primaryCurrency} onValueChange={setPrimaryCurrency}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="DKK">🇩🇰 Danish Krone (DKK)</SelectItem>
+                  <SelectItem value="EUR">🇪🇺 Euro (EUR)</SelectItem>
+                  <SelectItem value="USD">🇺🇸 US Dollar (USD)</SelectItem>
+                  <SelectItem value="GBP">🇬🇧 British Pound (GBP)</SelectItem>
+                  <SelectItem value="SEK">🇸🇪 Swedish Krona (SEK)</SelectItem>
+                  <SelectItem value="NOK">🇳🇴 Norwegian Krone (NOK)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                All revenue will be converted to this currency for reporting
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* MRR Calculation Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle>MRR Calculation</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="text-sm font-medium">Auto-exclude setup fees</Label>
+                <p className="text-xs text-muted-foreground">
+                  Automatically exclude one-time setup fees from MRR calculations
+                </p>
+              </div>
+              <Switch 
+                checked={autoExcludeSetupFees} 
+                onCheckedChange={setAutoExcludeSetupFees}
+              />
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="text-sm font-medium">Normalize annual subscriptions</Label>
+                <p className="text-xs text-muted-foreground">
+                  Convert yearly subscriptions to monthly equivalents (÷12)
+                </p>
+              </div>
+              <Switch 
+                checked={normalizeAnnualSubscriptions} 
+                onCheckedChange={setNormalizeAnnualSubscriptions}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+export default function App() {
+  const [currentPage, setCurrentPage] = useState('dashboard');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    // Check if user is authenticated
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+    setIsAuthenticated(true);
+    setLoading(false);
+  }, [router]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-violet-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading your dashboard...</p>
         </div>
       </div>
+    );
+  }
 
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px] z-[-1]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'dashboard':
+        return <DashboardPage />;
+      case 'customers':
+        return <CustomersPage />;
+      case 'analytics':
+        return <AnalyticsPage />;
+      case 'integrations':
+        return <IntegrationsPage />;
+      case 'profile':
+        return <ProfilePageComponent />;
+      case 'settings':
+        return <SettingsPage />;
+      default:
+        return <DashboardPage />;
+    }
+  };
+
+  return (
+    <div className="h-screen flex flex-col bg-background">
+      {/* Mobile Header */}
+      <div className="md:hidden flex items-center justify-between p-4 border-b bg-white">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => setSidebarOpen(true)}
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+        <h1 className="font-bold">MRR Dashboard</h1>
+        <div className="w-8"></div> {/* Spacer for center alignment */}
       </div>
 
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
+      {/* Desktop Header */}
+      <div className="hidden md:block">
+        <Header />
       </div>
-    </main>
-  )
+
+      <div className="flex-1 flex overflow-hidden">
+        {/* Mobile Sidebar Overlay */}
+        {sidebarOpen && (
+          <div className="md:hidden fixed inset-0 z-50 bg-black bg-opacity-50" onClick={() => setSidebarOpen(false)}>
+            <div className="w-64 h-full bg-sidebar" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between p-4 border-b">
+                <h1 className="font-bold text-sidebar-foreground">MRR Dashboard</h1>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setSidebarOpen(false)}
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+              <Sidebar 
+                currentPage={currentPage} 
+                onPageChange={(page) => {
+                  setCurrentPage(page);
+                  setSidebarOpen(false);
+                }} 
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Desktop Sidebar */}
+        <div className="hidden md:block">
+          <Sidebar currentPage={currentPage} onPageChange={setCurrentPage} />
+        </div>
+
+        {/* Main Content */}
+        <main className="flex-1 overflow-auto bg-gray-50">
+          {renderPage()}
+        </main>
+      </div>
+    </div>
+  );
 }
