@@ -1,8 +1,9 @@
-import { useState } from 'react';
-import { Search, Filter, Download, MoreHorizontal, Eye, Edit, Trash2, AlertTriangle, Plus, Users2, SlidersHorizontal } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, Filter, Download, MoreHorizontal, Eye, Edit, Trash2, AlertTriangle, Plus, Users2, SlidersHorizontal, Loader2, Link2, RefreshCw } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Alert, AlertDescription } from '../ui/alert';
 import {
   Table,
   TableBody,
@@ -19,15 +20,31 @@ import {
 } from '../ui/dropdown-menu';
 import { Badge } from '../ui/badge';
 import { Checkbox } from '../ui/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../ui/select';
 // import { CustomerDetailModal } from '../dashboard/customer-detail-modal';
 import { CurrencySelector } from '../dashboard/currency-selector';
 import { mockCustomers, formatCurrency, convertCurrency } from '../../lib/mock-data';
 import { Customer, Currency } from '../../lib/types';
+import { customersApi, integrationsApi } from '../../lib/api';
 
 const platformIcons = {
   'e-conomic': '🔗',
+  'economic': '🔗',
   'shopify': '🛒',
   'stripe': '💳',
+};
+
+const platformColors = {
+  'e-conomic': 'bg-blue-100 text-blue-800',
+  'economic': 'bg-blue-100 text-blue-800',
+  'shopify': 'bg-green-100 text-green-800',
+  'stripe': 'bg-purple-100 text-purple-800',
 };
 
 const statusColors = {
@@ -42,8 +59,20 @@ const riskColors = {
   high: 'text-red-600',
 };
 
+interface Integration {
+  id: number;
+  platform: string;
+  platform_name: string;
+  status: 'pending' | 'active' | 'error' | 'syncing';
+  customer_count: number;
+  revenue: number;
+}
+
 export function CustomersPage() {
-  const [customers, setCustomers] = useState<Customer[]>(mockCustomers);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [integrations, setIntegrations] = useState<Integration[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -54,9 +83,90 @@ export function CustomersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
 
+  useEffect(() => {
+    Promise.all([loadCustomers(), loadIntegrations()]);
+  }, []);
+
+  // Reload customers when filters change
+  useEffect(() => {
+    loadCustomers();
+  }, [searchTerm, statusFilter, platformFilter]);
+
+  const loadCustomers = async () => {
+    setLoading(true);
+    setError('');
+    
+    try {
+      const response = await customersApi.getAll({
+        search: searchTerm || undefined,
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+        platform: platformFilter !== 'all' ? platformFilter : undefined,
+        per_page: 50
+      });
+
+      if (response.data.success) {
+        // Normalize the API data to match frontend expectations
+        const normalizedCustomers = response.data.data.data?.map((customer: any) => ({
+          id: String(customer.id),
+          name: customer.name || 'Unknown Customer',
+          email: customer.email || '',
+          platform: customer.platform || 'unknown',
+          mrr: typeof customer.mrr === 'number' ? customer.mrr : (typeof customer.total_mrr === 'number' ? customer.total_mrr : 0),
+          originalMrr: typeof customer.originalMrr === 'number' ? customer.originalMrr : (typeof customer.mrr === 'number' ? customer.mrr : 0),
+          currency: customer.currency || 'DKK',
+          status: customer.status || 'active',
+          billingFrequency: customer.billingFrequency || 'monthly',
+          joinDate: customer.joinDate || customer.platform_created_at || customer.created_at || new Date().toISOString(),
+          invoiceCount: customer.invoiceCount || customer.invoice_count || 0,
+          isExcluded: customer.isExcluded ?? customer.excluded_from_mrr ?? false,
+          exclusionReason: customer.exclusionReason || customer.exclusion_reason,
+          excludedDate: customer.excludedDate || customer.excluded_at,
+          excludedBy: customer.excludedBy,
+          isTemporaryExclusion: customer.isTemporaryExclusion ?? false,
+          exclusionExpiry: customer.exclusionExpiry,
+          clv: typeof customer.clv === 'number' ? customer.clv : 0,
+          churnRisk: customer.churnRisk || 'low',
+        })) || [];
+        
+        setCustomers(normalizedCustomers);
+      } else {
+        setCustomers([]);
+        setError('No customers found. Connect your integrations to start seeing customer data.');
+      }
+    } catch (err: any) {
+      console.error('Failed to load customers:', err);
+      setCustomers([]);
+      setError('Failed to load customers. Please check your API connection and integrations.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadIntegrations = async () => {
+    try {
+      const response = await integrationsApi.getAll();
+      if (response.data.success) {
+        setIntegrations(response.data.data);
+      }
+    } catch (err: any) {
+      console.error('Failed to load integrations:', err);
+    }
+  };
+
+  const handleSyncIntegration = async (integrationId: number) => {
+    try {
+      await integrationsApi.sync(integrationId.toString());
+      await Promise.all([loadCustomers(), loadIntegrations()]);
+    } catch (err: any) {
+      console.error('Sync failed:', err);
+      setError('Sync failed. Please try again.');
+    }
+  };
+
   // Enhanced filtering
   const filteredCustomers = customers.filter(customer => {
-    const matchesSearch = customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = !searchTerm || 
+      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          customer.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || customer.status === statusFilter;
     const matchesPlatform = platformFilter === 'all' || customer.platform === platformFilter;
@@ -68,6 +178,10 @@ export function CustomersPage() {
   const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedCustomers = filteredCustomers.slice(startIndex, startIndex + itemsPerPage);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
   const handleSelectCustomer = (customerId: string) => {
     setSelectedCustomers(prev => 
@@ -81,228 +195,249 @@ export function CustomersPage() {
     if (selectedCustomers.length === paginatedCustomers.length) {
       setSelectedCustomers([]);
     } else {
-      setSelectedCustomers(paginatedCustomers.map(c => c.id));
+      setSelectedCustomers(paginatedCustomers.map(customer => customer.id));
     }
   };
 
-  const handleViewCustomer = (customer: Customer) => {
-    setSelectedCustomer(customer);
-    setIsModalOpen(true);
+  const handleExportCustomers = () => {
+    // Implementation for exporting customers
+    console.log('Exporting customers...');
   };
 
-  const handleBulkAction = (action: string) => {
-    console.log(`Bulk action: ${action} for customers:`, selectedCustomers);
-    // Implement bulk actions here
-  };
+  const connectedPlatforms = integrations.filter(i => i.status === 'active');
+  const availablePlatforms = ['e-conomic', 'shopify', 'stripe'];
 
   return (
-    <div className="section-padding space-y-4 sm:space-y-6 bg-gray-50 min-h-screen">
-      {/* Responsive Header */}
-      <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0 gap-4">
+    <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6">
+      {/* Header */}
+      <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">Customers</h1>
-          <p className="text-gray-600 mt-1 text-sm sm:text-base">Manage your customer base and revenue streams</p>
-          <div className="flex flex-wrap items-center gap-4 mt-2">
-            <div className="flex items-center space-x-2 text-sm text-gray-600">
-              <Users2 className="w-4 h-4" />
-              <span>{filteredCustomers.length} customers</span>
-            </div>
-            {selectedCustomers.length > 0 && (
-              <>
-                <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
-                <div className="text-sm text-gray-600">
-                  {selectedCustomers.length} selected
-                </div>
-              </>
-            )}
-          </div>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">Customers</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">
+            Manage your customer base across all platforms
+          </p>
         </div>
-        
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           <CurrencySelector 
             currentCurrency={selectedCurrency} 
             onCurrencyChange={setSelectedCurrency} 
           />
+          <Button variant="outline" size="sm" onClick={handleExportCustomers}>
+            <Download className="mr-2 h-4 w-4" />
+            Export
+          </Button>
+          <Button size="sm" onClick={loadCustomers}>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Refresh
+          </Button>
         </div>
       </div>
 
-      {/* Enhanced Filters & Search - Responsive */}
-      <Card className="card p-4 sm:p-6">
-        <div className="flex flex-col space-y-4 lg:flex-row lg:space-y-0 lg:gap-4">
-          {/* Search */}
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <Input
-                type="text"
-                placeholder="Search by name, email, or company..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-11 bg-white/70 border-gray-200/60 focus:bg-white"
-              />
-            </div>
-          </div>
+      {/* Error Alert */}
+      {error && (
+        <Alert className="border-orange-200 bg-orange-50">
+          <AlertTriangle className="h-4 w-4 text-orange-600" />
+          <AlertDescription className="text-orange-700">{error}</AlertDescription>
+        </Alert>
+      )}
 
-          {/* Filters - Mobile responsive */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <select 
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-200/60 rounded-lg bg-white/70 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20 w-full sm:w-auto"
-            >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="paused">Paused</option>
-              <option value="inactive">Inactive</option>
-            </select>
-
-            <select 
-              value={platformFilter}
-              onChange={(e) => setPlatformFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-200/60 rounded-lg bg-white/70 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20 w-full sm:w-auto"
-            >
-              <option value="all">All Platforms</option>
-              <option value="stripe">Stripe</option>
-              <option value="shopify">Shopify</option>
-              <option value="e-conomic">E-conomic</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Bulk Actions - Mobile responsive */}
-        {selectedCustomers.length > 0 && (
-          <div className="mt-4 p-4 bg-violet-50 border border-violet-200 rounded-lg">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <span className="text-sm font-medium text-violet-700">
-                {selectedCustomers.length} customer{selectedCustomers.length > 1 ? 's' : ''} selected
-              </span>
-              <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => handleBulkAction('exclude')}
-                  className="text-orange-600 border-orange-200 hover:bg-orange-50 w-full sm:w-auto"
-                >
-                  Exclude from MRR
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => handleBulkAction('export')}
-                  className="text-blue-600 border-blue-200 hover:bg-blue-50 w-full sm:w-auto"
-                >
-                  Export Selected
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setSelectedCustomers([])}
-                  className="w-full sm:w-auto"
-                >
-                  Clear Selection
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-      </Card>
-
-      {/* Responsive Table/Cards */}
-      <Card className="table-container">
-        <CardHeader className="table-header px-4 sm:px-6 py-4">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg font-semibold text-gray-900">Customer List</CardTitle>
-            <div className="text-sm text-gray-500 hidden sm:block">
-              Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredCustomers.length)} of {filteredCustomers.length} customers
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          {/* Mobile Card View */}
-          <div className="md:hidden">
-            <div className="divide-y divide-gray-200">
-              {paginatedCustomers.map((customer) => (
-                <div key={customer.id} className="p-4 space-y-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center space-x-3 flex-1">
-                      <Checkbox
-                        checked={selectedCustomers.includes(customer.id)}
-                        onCheckedChange={() => handleSelectCustomer(customer.id)}
-                      />
-                      <div className="w-10 h-10 bg-gradient-to-br from-violet-100 to-purple-100 rounded-full flex items-center justify-center">
-                        <span className="text-violet-700 font-semibold text-sm">
-                          {customer.name.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-900 truncate">{customer.name}</p>
-                        <p className="text-sm text-gray-500 truncate">{customer.email}</p>
-                      </div>
+      {/* Integration Status */}
+      {integrations.length > 0 && (
+        <Card>
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center space-x-2">
+              <Link2 className="h-5 w-5" />
+              <span>Connected Data Sources</span>
+              <Badge variant="secondary">{connectedPlatforms.length} Active</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {integrations.map((integration) => (
+                <div key={integration.id} className="flex items-center justify-between p-3 rounded-lg border">
+                  <div className="flex items-center space-x-3">
+                    <span className="text-lg">
+                      {platformIcons[integration.platform as keyof typeof platformIcons] || '🔗'}
+                    </span>
+                    <div>
+                      <p className="font-medium text-sm">{integration.platform_name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {integration.customer_count} customers
+                      </p>
                     </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="p-1">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="popover-content" align="end">
-                        <DropdownMenuItem onClick={() => handleViewCustomer(customer)}>
-                          <Eye className="mr-2 h-4 w-4" />
-                          View Details
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Edit Customer
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <AlertTriangle className="mr-2 h-4 w-4" />
-                          Exclude from MRR
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600">
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete Customer
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
                   </div>
-                  
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-gray-500">Platform:</span>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <span className="text-lg">{platformIcons[customer.platform as keyof typeof platformIcons]}</span>
-                        <span className="font-medium capitalize">{customer.platform}</span>
-                      </div>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">MRR:</span>
-                      <div className="font-medium text-gray-900 mt-1">
-                        {convertCurrency(customer.mrr, 'DKK', selectedCurrency).toLocaleString('da-DK')} {selectedCurrency}
-                      </div>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Status:</span>
-                      <div className="mt-1">
-                        <Badge className={`badge ${statusColors[customer.status as keyof typeof statusColors]}`}>
-                          {customer.status}
-                        </Badge>
-                      </div>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Risk:</span>
-                      <div className={`font-medium mt-1 ${riskColors[customer.churnRisk as keyof typeof riskColors]}`}>
-                        {customer.churnRisk}
-                      </div>
-                    </div>
+                  <div className="flex items-center space-x-2">
+                    <Badge 
+                      variant={integration.status === 'active' ? 'default' : 'secondary'}
+                      className={`text-xs ${
+                        integration.status === 'active' ? 'bg-green-100 text-green-800' :
+                        integration.status === 'error' ? 'bg-red-100 text-red-800' :
+                        integration.status === 'syncing' ? 'bg-blue-100 text-blue-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}
+                    >
+                      {integration.status === 'active' ? 'Connected' : integration.status}
+                    </Badge>
+                    {integration.status === 'active' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleSyncIntegration(integration.id)}
+                        className="h-6 px-2"
+                      >
+                        <RefreshCw className="h-3 w-3" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}
+              {integrations.length === 0 && (
+                <div className="col-span-full text-center py-8">
+                  <Plus className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">No integrations connected</p>
+                  <Button variant="outline" size="sm" className="mt-2">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Connect Platform
+                  </Button>
+                </div>
+              )}
             </div>
-          </div>
+          </CardContent>
+        </Card>
+      )}
 
-          {/* Desktop Table View */}
-          <div className="hidden md:block overflow-x-auto">
-            <Table className="data-table">
+      {/* Filters and Search */}
+      <Card>
+        <CardContent className="p-4 sm:p-6">
+          <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 transform -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search customers by name or email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full sm:w-32">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent className="bg-white">
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="paused">Paused</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={platformFilter} onValueChange={setPlatformFilter}>
+                <SelectTrigger className="w-full sm:w-40">
+                  <SelectValue placeholder="Platform" />
+                </SelectTrigger>
+                <SelectContent className="bg-white">
+                  <SelectItem value="all">All Platforms</SelectItem>
+                  {availablePlatforms.map(platform => (
+                    <SelectItem key={platform} value={platform}>
+                      <div className="flex items-center space-x-2">
+                        <span>{platformIcons[platform as keyof typeof platformIcons]}</span>
+                        <span className="capitalize">{platform.replace('-', ' ')}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+                      </div>
+                    </div>
+        </CardContent>
+      </Card>
+
+      {/* Customer Statistics */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center space-x-3">
+              <Users2 className="h-5 w-5 text-blue-600" />
+                    <div>
+                <p className="text-sm text-muted-foreground">Total Customers</p>
+                <p className="text-xl font-bold">{filteredCustomers.length}</p>
+                      </div>
+                    </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center space-x-3">
+              <div className="h-3 w-3 bg-green-500 rounded-full"></div>
+                    <div>
+                <p className="text-sm text-muted-foreground">Active</p>
+                <p className="text-xl font-bold">
+                  {filteredCustomers.filter(c => c.status === 'active').length}
+                </p>
+                      </div>
+                    </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center space-x-3">
+              <div className="h-3 w-3 bg-red-500 rounded-full"></div>
+                    <div>
+                <p className="text-sm text-muted-foreground">High Risk</p>
+                <p className="text-xl font-bold">
+                  {filteredCustomers.filter(c => c.churnRisk === 'high').length}
+                </p>
+                      </div>
+                    </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center space-x-3">
+              <div className="h-3 w-3 bg-gray-400 rounded-full"></div>
+                    <div>
+                <p className="text-sm text-muted-foreground">Excluded</p>
+                <p className="text-xl font-bold">
+                  {filteredCustomers.filter(c => c.isExcluded).length}
+                </p>
+                      </div>
+                    </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Loading State */}
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin mr-2" />
+          <span>Loading customers...</span>
+                  </div>
+      )}
+
+      {/* Customer Table */}
+      {!loading && (
+        <Card>
+          <CardHeader className="pb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <CardTitle>Customer List</CardTitle>
+              {selectedCustomers.length > 0 && (
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-muted-foreground">
+                    {selectedCustomers.length} selected
+                  </span>
+                  <Button variant="outline" size="sm">
+                    <Edit className="mr-2 h-4 w-4" />
+                    Bulk Edit
+                  </Button>
+                </div>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-12">
@@ -313,16 +448,16 @@ export function CustomersPage() {
                   </TableHead>
                   <TableHead>Customer</TableHead>
                   <TableHead>Platform</TableHead>
+                    <TableHead>Status</TableHead>
                   <TableHead>MRR</TableHead>
-                  <TableHead>Status</TableHead>
                   <TableHead>Risk</TableHead>
-                  <TableHead>Last Active</TableHead>
+                    <TableHead>Join Date</TableHead>
                   <TableHead className="w-12"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedCustomers.map((customer) => (
-                  <TableRow key={customer.id} className="group">
+                    <TableRow key={customer.id}>
                     <TableCell>
                       <Checkbox
                         checked={selectedCustomers.includes(customer.id)}
@@ -330,51 +465,75 @@ export function CustomersPage() {
                       />
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-violet-100 to-purple-100 rounded-full flex items-center justify-center">
-                          <span className="text-violet-700 font-semibold text-sm">
-                            {customer.name.charAt(0).toUpperCase()}
+                        <div className="flex flex-col">
+                          <span className="font-medium">{customer.name}</span>
+                          <span className="text-sm text-muted-foreground">{customer.email}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant="secondary"
+                          className={platformColors[customer.platform as keyof typeof platformColors] || 'bg-gray-100 text-gray-800'}
+                        >
+                          <span className="mr-1">
+                            {platformIcons[customer.platform as keyof typeof platformIcons] || '🔗'}
                           </span>
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900">{customer.name}</p>
-                          <p className="text-sm text-gray-500">{customer.email}</p>
-                        </div>
+                          {customer.platform.replace('-', ' ')}
+                        </Badge>
+                    </TableCell>
+                    <TableCell>
+                        <Badge 
+                          variant={customer.status === 'active' ? 'default' : 'secondary'}
+                          className={
+                            customer.status === 'active' ? 'bg-green-100 text-green-800' :
+                            customer.status === 'paused' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-gray-100 text-gray-800'
+                          }
+                        >
+                          {customer.status}
+                        </Badge>
+                    </TableCell>
+                    <TableCell>
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {formatCurrency(convertCurrency(customer.mrr, customer.currency, selectedCurrency), selectedCurrency)}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {customer.billingFrequency}
+                          </span>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-lg">{platformIcons[customer.platform as keyof typeof platformIcons]}</span>
-                        <span className="text-sm font-medium capitalize">{customer.platform}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-medium text-gray-900">
-                        {convertCurrency(customer.mrr, 'DKK', selectedCurrency).toLocaleString('da-DK')} {selectedCurrency}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={`badge ${statusColors[customer.status as keyof typeof statusColors]}`}>
-                        {customer.status}
+                        <Badge 
+                          variant="secondary"
+                          className={
+                            customer.churnRisk === 'low' ? 'bg-green-100 text-green-800' :
+                            customer.churnRisk === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800'
+                          }
+                        >
+                          {customer.churnRisk}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <span className={`text-sm font-medium ${riskColors[customer.churnRisk as keyof typeof riskColors]}`}>
-                        {customer.churnRisk}
+                        <span className="text-sm">
+                          {customer.joinDate ? new Date(customer.joinDate).toLocaleDateString() : 'N/A'}
                       </span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-gray-500">{new Date(customer.joinDate).toLocaleDateString()}</span>
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button variant="ghost" size="sm">
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent className="popover-content" align="end">
-                          <DropdownMenuItem onClick={() => handleViewCustomer(customer)}>
+                          <DropdownMenuContent align="end" className="bg-white">
+                            <DropdownMenuItem 
+                              onClick={() => {
+                                setSelectedCustomer(customer);
+                                setIsModalOpen(true);
+                              }}
+                            >
                             <Eye className="mr-2 h-4 w-4" />
                             View Details
                           </DropdownMenuItem>
@@ -382,14 +541,17 @@ export function CustomersPage() {
                             <Edit className="mr-2 h-4 w-4" />
                             Edit Customer
                           </DropdownMenuItem>
+                            {customer.isExcluded ? (
+                              <DropdownMenuItem>
+                                <Plus className="mr-2 h-4 w-4" />
+                                Include in MRR
+                              </DropdownMenuItem>
+                            ) : (
                           <DropdownMenuItem>
-                            <AlertTriangle className="mr-2 h-4 w-4" />
+                                <Trash2 className="mr-2 h-4 w-4" />
                             Exclude from MRR
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-600">
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete Customer
-                          </DropdownMenuItem>
+                            )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -399,65 +561,47 @@ export function CustomersPage() {
             </Table>
           </div>
 
-          {/* Enhanced Pagination - Mobile responsive */}
-          <div className="px-4 sm:px-6 py-4 border-t border-gray-100/60 bg-gray-50/30">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="text-sm text-gray-600 order-2 sm:order-1">
-                Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredCustomers.length)} of {filteredCustomers.length} results
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between pt-4">
+                <div className="text-sm text-muted-foreground">
+                  Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredCustomers.length)} of {filteredCustomers.length} customers
               </div>
-              <div className="flex items-center space-x-2 order-1 sm:order-2">
+                <div className="flex items-center space-x-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
-                  className="button-outline"
                 >
                   Previous
                 </Button>
-                <div className="hidden sm:flex items-center space-x-1">
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    const page = i + 1;
-                    return (
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter(page => Math.abs(page - currentPage) <= 2)
+                    .map(page => (
                       <Button
                         key={page}
-                        variant={currentPage === page ? "default" : "outline"}
+                        variant={currentPage === page ? 'default' : 'outline'}
                         size="sm"
-                        onClick={() => setCurrentPage(page)}
-                        className={currentPage === page ? "button-primary" : "button-outline"}
+                        onClick={() => handlePageChange(page)}
                       >
                         {page}
                       </Button>
-                    );
-                  })}
-                </div>
-                <div className="sm:hidden text-sm text-gray-600">
-                  {currentPage} / {totalPages}
-                </div>
+                    ))}
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages}
-                  className="button-outline"
                 >
                   Next
                 </Button>
               </div>
             </div>
-          </div>
+            )}
         </CardContent>
       </Card>
-
-      {/* Customer Detail Modal - Coming Soon */}
-      {/* <CustomerDetailModal
-        customer={selectedCustomer}
-        open={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSave={(updatedCustomer) => {
-          setCustomers(customers.map(c => c.id === updatedCustomer.id ? updatedCustomer : c));
-        }}
-      /> */}
+      )}
     </div>
   );
 }

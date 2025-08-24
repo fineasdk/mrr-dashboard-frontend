@@ -134,4 +134,7 @@ export const integrationsApi = {
   
   testConnection: (id: string) =>
     api.post(`/integrations/${id}/test`),
+
+  disconnect: (id: string) =>
+    api.post(`/integrations/${id}/disconnect`),
 }; 

@@ -1,6 +1,9 @@
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
-import { Calendar, Download, TrendingUp } from 'lucide-react';
+import { Badge } from '../ui/badge';
+import { Alert, AlertDescription } from '../ui/alert';
+import { Calendar, Download, TrendingUp, RefreshCw, BarChart3, Users, DollarSign, Loader2, AlertCircle, Plus, Link2 } from 'lucide-react';
 import {
   BarChart,
   Bar,
@@ -13,31 +16,204 @@ import {
   Area,
   LineChart,
   Line,
+  PieChart,
+  Pie,
+  Cell,
 } from 'recharts';
-import { mockMRRData, formatCurrency } from '../../lib/mock-data';
+import { formatCurrency } from '../../lib/mock-data';
+import { dashboardApi, integrationsApi } from '../../lib/api';
+import { CurrencySelector } from '../dashboard/currency-selector';
+import { Currency } from '../../lib/types';
 
-const monthlyGrowthData = [
-  { month: 'Sep', growth: 5.2 },
-  { month: 'Oct', growth: 9.4 },
-  { month: 'Nov', growth: 5.5 },
-  { month: 'Dec', growth: 5.3 },
-  { month: 'Jan', growth: 5.0 },
-  { month: 'Feb', growth: 10.4 },
-];
+// Platform configuration
+const platformConfig = {
+  'e-conomic': { name: 'E-conomic', icon: '🔗', color: '#3B82F6' },
+  'economic': { name: 'E-conomic', icon: '🔗', color: '#3B82F6' },
+  'shopify': { name: 'Shopify', icon: '🛒', color: '#10B981' },
+  'stripe': { name: 'Stripe', icon: '💳', color: '#8B5CF6' }
+};
 
-const customerGrowthData = [
-  { month: 'Sep', customers: 198 },
-  { month: 'Oct', customers: 212 },
-  { month: 'Nov', customers: 225 },
-  { month: 'Dec', customers: 241 },
-  { month: 'Jan', customers: 253 },
-  { month: 'Feb', customers: 284 },
-];
+interface Integration {
+  id: number;
+  platform: string;
+  platform_name: string;
+  status: 'pending' | 'active' | 'error' | 'syncing';
+  customer_count: number;
+  revenue: number;
+  last_sync_at: string | null;
+}
+
+interface AnalyticsData {
+  total_mrr: number;
+  mrr_growth: number;
+  customer_growth: number;
+  platform_breakdown: Array<{
+    platform: string;
+    revenue: number;
+    customers: number;
+    percentage: number;
+  }>;
+  mrr_trend: Array<{
+    date: string;
+    value: number;
+    platform_breakdown?: Record<string, number>;
+  }>;
+  monthly_growth: Array<{
+    month: string;
+    growth: number;
+  }>;
+  customer_trend: Array<{
+    month: string;
+    customers: number;
+  }>;
+}
 
 export function AnalyticsPage() {
+  const [selectedCurrency, setSelectedCurrency] = useState<Currency>('DKK');
+  const [integrations, setIntegrations] = useState<Integration[]>([]);
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [dateRange, setDateRange] = useState('6m');
+
+  useEffect(() => {
+    loadAnalyticsData();
+  }, [selectedCurrency, dateRange]);
+
+  const loadAnalyticsData = async () => {
+    setLoading(true);
+    setError('');
+    
+    try {
+      const [analyticsResponse, integrationsResponse] = await Promise.all([
+        dashboardApi.getAnalytics({ 
+          granularity: 'monthly',
+          start_date: getDateRangeStart(dateRange),
+          end_date: new Date().toISOString()
+        }),
+        integrationsApi.getAll()
+      ]);
+
+
+
+      if (integrationsResponse.data.success) {
+        setIntegrations(integrationsResponse.data.data);
+      }
+
+      // Use real analytics data from the API
+      if (analyticsResponse.data && integrationsResponse.data.success && integrationsResponse.data.data.length > 0) {
+        const integrationData = integrationsResponse.data.data;
+        const totalRevenue = integrationData.reduce((sum: number, int: Integration) => sum + (int.revenue || 0), 0);
+        const totalCustomers = integrationData.reduce((sum: number, int: Integration) => sum + (int.customer_count || 0), 0);
+        
+        // Map the real analytics API response
+        const analyticsData = analyticsResponse.data;
+        
+        // Transform MRR trend data
+        const mrrTrend = analyticsData.mrr_trend?.map((item: any) => ({
+          date: item.date,
+          value: item.value || item.mrr || 0
+        })) || [];
+
+        // Transform customer trend data
+        const customerTrend = analyticsData.customer_trend?.map((item: any) => ({
+          month: item.month || item.date,
+          customers: item.customers || item.total_customers || 0
+        })) || [];
+
+        // Calculate monthly growth from MRR trend
+        const monthlyGrowth = mrrTrend.map((item: any, index: number) => {
+          if (index === 0) return { month: item.date, growth: 0 };
+          const prevValue = mrrTrend[index - 1]?.value || 0;
+          const currentValue = item.value || 0;
+          const growth = prevValue > 0 ? ((currentValue - prevValue) / prevValue) * 100 : 0;
+          return { month: item.date, growth: Math.round(growth * 10) / 10 };
+        });
+
+        setAnalyticsData({
+          total_mrr: totalRevenue,
+          mrr_growth: totalRevenue > 0 && mrrTrend.length >= 2 ? 
+            ((mrrTrend[mrrTrend.length - 1]?.value - mrrTrend[mrrTrend.length - 2]?.value) / mrrTrend[mrrTrend.length - 2]?.value) * 100 : 0,
+          customer_growth: totalCustomers > 0 && customerTrend.length >= 2 ?
+            ((customerTrend[customerTrend.length - 1]?.customers - customerTrend[customerTrend.length - 2]?.customers) / customerTrend[customerTrend.length - 2]?.customers) * 100 : 0,
+          platform_breakdown: integrationData.map((integration: Integration) => ({
+            platform: integration.platform,
+            revenue: integration.revenue || 0,
+            customers: integration.customer_count || 0,
+            percentage: totalRevenue > 0 ? ((integration.revenue || 0) / totalRevenue) * 100 : 0
+          })),
+          mrr_trend: mrrTrend,
+          monthly_growth: monthlyGrowth,
+          customer_trend: customerTrend
+        });
+      } else {
+        // No integrations connected - set empty data
+        setAnalyticsData({
+          total_mrr: 0,
+          mrr_growth: 0,
+          customer_growth: 0,
+          platform_breakdown: [],
+          mrr_trend: [],
+          monthly_growth: [],
+          customer_trend: []
+        });
+        setError('No integrations connected. Connect your platforms to see analytics data.');
+      }
+
+    } catch (err: any) {
+      console.error('Failed to load analytics data:', err);
+      setError('Failed to load analytics data. Please check your API connection.');
+      setAnalyticsData({
+        total_mrr: 0,
+        mrr_growth: 0,
+        customer_growth: 0,
+        platform_breakdown: [],
+        mrr_trend: [],
+        monthly_growth: [],
+        customer_trend: []
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getDateRangeStart = (range: string): string => {
+    const now = new Date();
+    switch (range) {
+      case '7d':
+        return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      case '30d':
+        return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      case '90d':
+        return new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000).toISOString();
+      case '6m':
+        const sixMonthsAgo = new Date(now);
+        sixMonthsAgo.setMonth(now.getMonth() - 6);
+        return sixMonthsAgo.toISOString();
+      case '1y':
+        const oneYearAgo = new Date(now);
+        oneYearAgo.setFullYear(now.getFullYear() - 1);
+        return oneYearAgo.toISOString();
+      default:
+        // Default to 1 year of historical data, starting from when subscriptions began
+        const defaultStart = new Date('2024-08-01'); // When our subscriptions actually start
+        return defaultStart.toISOString();
+    }
+  };
+
+  const handleSyncIntegration = async (integrationId: number) => {
+    try {
+      await integrationsApi.sync(integrationId.toString());
+      await loadAnalyticsData();
+    } catch (err: any) {
+      console.error('Sync failed:', err);
+      setError('Sync failed. Please try again.');
+    }
+  };
+
   const safeFormatCurrency = (amount: number | undefined): string => {
-    if (typeof amount !== 'number' || isNaN(amount)) return 'kr 0';
-    return formatCurrency(amount, 'DKK');
+    if (typeof amount !== 'number' || isNaN(amount)) return formatCurrency(0, selectedCurrency);
+    return formatCurrency(amount, selectedCurrency);
   };
 
   const safeToLocaleString = (value: number | undefined): string => {
@@ -45,246 +221,484 @@ export function AnalyticsPage() {
     return value.toLocaleString();
   };
 
+  // Calculate platform breakdown with percentages
+  const platformBreakdownWithPercentages = analyticsData?.platform_breakdown.map(item => {
+    const totalRevenue = analyticsData.platform_breakdown.reduce((sum, p) => sum + p.revenue, 0);
+    const percentage = totalRevenue > 0 ? (item.revenue / totalRevenue) * 100 : 0;
+    const config = platformConfig[item.platform as keyof typeof platformConfig] || 
+                   { name: item.platform, icon: '🔗', color: '#6B7280' };
+    
+    return {
+      ...item,
+      percentage: Math.round(percentage * 10) / 10,
+      name: config.name,
+      icon: config.icon,
+      color: config.color
+    };
+  }) || [];
+
+  const connectedIntegrations = integrations.filter(i => i.status === 'active');
+
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-6 sm:space-y-8 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
       {/* Responsive Header */}
       <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900">Analytics</h1>
-          <p className="text-gray-600 text-sm sm:text-base lg:text-lg">Historic revenue trends and customer growth</p>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">Analytics</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">
+            Deep insights into your revenue performance across all platforms
+          </p>
         </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
-          <Button variant="outline" size="sm" className="w-full sm:w-auto bg-white/80 backdrop-blur-sm border-gray-200 hover:bg-violet-50 hover:border-violet-200 text-gray-700 font-medium transition-all duration-200">
-            <Calendar className="mr-2 h-4 w-4" />
-            <span>Last 12 months</span>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <CurrencySelector 
+            currentCurrency={selectedCurrency} 
+            onCurrencyChange={setSelectedCurrency} 
+          />
+          <select 
+            value={dateRange}
+            onChange={(e) => setDateRange(e.target.value)}
+            className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm"
+          >
+            <option value="last_3_months">Last 3 Months</option>
+            <option value="last_6_months">Last 6 Months</option>
+            <option value="last_12_months">Last 12 Months</option>
+          </select>
+          <Button variant="outline" size="sm" onClick={loadAnalyticsData}>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Refresh
           </Button>
-          <Button variant="outline" size="sm" className="w-full sm:w-auto bg-white/80 backdrop-blur-sm border-gray-200 hover:bg-violet-50 hover:border-violet-200 text-gray-700 font-medium transition-all duration-200">
+          <Button variant="outline" size="sm">
             <Download className="mr-2 h-4 w-4" />
-            <span>Export Report</span>
+            Export
           </Button>
         </div>
       </div>
 
-      {/* Summary Cards - Responsive grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center space-x-3">
-              <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 flex-shrink-0" />
-              <div className="min-w-0 flex-1">
-                <p className="text-xs sm:text-sm text-muted-foreground">Avg Monthly Growth</p>
-                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600">6.8%</p>
+      {/* Error Alert */}
+      {error && (
+        <Alert className="border-orange-200 bg-orange-50">
+          <AlertCircle className="h-4 w-4 text-orange-600" />
+          <AlertDescription className="text-orange-700">{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Loading State */}
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin mr-2" />
+          <span>Loading analytics...</span>
+        </div>
+      )}
+
+      {!loading && (
+        <>
+          {/* No Integrations State */}
+          {integrations.length === 0 && (
+            <div className="text-center py-16">
+              <div className="max-w-md mx-auto">
+                <div className="mb-6">
+                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <BarChart3 className="w-8 h-8 text-blue-600" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">No Analytics Data</h3>
+                  <p className="text-gray-600 mb-6">
+                    Connect your Stripe or E-conomic accounts to see detailed analytics and revenue insights.
+                    No mock data - only your real business metrics.
+                  </p>
+                </div>
+                
+                <div className="space-y-3">
+                  <Button 
+                    className="w-full" 
+                    onClick={() => {
+                      // Navigate to integrations page - this would need proper routing
+                      window.location.hash = 'integrations';
+                    }}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Connect Your First Integration
+                  </Button>
+                  
+                  <div className="grid grid-cols-2 gap-3 mt-4">
+                    <div className="p-3 border rounded-lg text-center">
+                      <span className="text-2xl mb-2 block">💳</span>
+                      <p className="text-sm font-medium">Stripe</p>
+                      <p className="text-xs text-gray-500">Payment data</p>
+                    </div>
+                    <div className="p-3 border rounded-lg text-center">
+                      <span className="text-2xl mb-2 block">🔗</span>
+                      <p className="text-sm font-medium">E-conomic</p>
+                      <p className="text-xs text-gray-500">Accounting data</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Analytics Content - Only show if integrations exist */}
+          {integrations.length > 0 && (
+            <>
+              {/* Integration Overview */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <BarChart3 className="h-5 w-5" />
+                    <span>Platform Performance</span>
+                    <Badge variant="secondary">{connectedIntegrations.length} Active</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {integrations.map((integration) => {
+                      const config = platformConfig[integration.platform as keyof typeof platformConfig] || 
+                                     { name: integration.platform_name, icon: '🔗', color: '#6B7280' };
+                      
+                      return (
+                        <div key={integration.id} className="p-4 rounded-lg border bg-white">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-xl">{config.icon}</span>
+                              <div>
+                                <p className="font-medium text-sm">{config.name}</p>
+                                <Badge 
+                                  variant={integration.status === 'active' ? 'default' : 'secondary'}
+                                  className={`text-xs ${
+                                    integration.status === 'active' ? 'bg-green-100 text-green-800' :
+                                    integration.status === 'error' ? 'bg-red-100 text-red-800' :
+                                    integration.status === 'syncing' ? 'bg-blue-100 text-blue-800' :
+                                    'bg-gray-100 text-gray-800'
+                                  }`}
+                                >
+                                  {integration.status === 'active' ? 'Connected' : integration.status}
+                                </Badge>
+                              </div>
+                            </div>
+                            {integration.status === 'active' && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleSyncIntegration(integration.id)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <RefreshCw className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm text-muted-foreground">Revenue:</span>
+                              <span className="font-semibold">{safeFormatCurrency(integration.revenue)}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm text-muted-foreground">Customers:</span>
+                              <span className="font-semibold">{integration.customer_count || 0}</span>
+                            </div>
+                            {integration.last_sync_at && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm text-muted-foreground">Last Sync:</span>
+                                <span className="text-sm">{new Date(integration.last_sync_at).toLocaleDateString()}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Key Metrics */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                <Card>
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Total MRR</p>
+                        <p className="text-2xl sm:text-3xl font-bold">{safeFormatCurrency(analyticsData?.total_mrr)}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {analyticsData?.mrr_growth ? `+${analyticsData.mrr_growth}% from last period` : 'Current total from integrations'}
+                        </p>
+                      </div>
+                      <div className="p-3 bg-blue-100 rounded-full">
+                        <DollarSign className="h-6 w-6 text-blue-600" />
               </div>
             </div>
           </CardContent>
         </Card>
+
         <Card>
           <CardContent className="p-4 sm:p-6">
-            <div className="min-w-0">
-              <p className="text-xs sm:text-sm text-muted-foreground">Total Revenue (6 months)</p>
-              <p className="text-lg sm:text-xl lg:text-2xl font-bold">kr 4,546,000</p>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Total Customers</p>
+                        <p className="text-2xl sm:text-3xl font-bold">
+                          {safeToLocaleString(integrations.reduce((sum, int) => sum + (int.customer_count || 0), 0))}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {analyticsData?.customer_growth ? `+${analyticsData.customer_growth}% growth` : 'Across all platforms'}
+                        </p>
+                      </div>
+                      <div className="p-3 bg-green-100 rounded-full">
+                        <Users className="h-6 w-6 text-green-600" />
+                      </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="sm:col-span-2 lg:col-span-1">
+
+                <Card>
           <CardContent className="p-4 sm:p-6">
-            <div className="min-w-0">
-              <p className="text-xs sm:text-sm text-muted-foreground">Customer Growth</p>
-              <p className="text-lg sm:text-xl lg:text-2xl font-bold">+86 customers</p>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Avg per Customer</p>
+                        <p className="text-2xl sm:text-3xl font-bold">
+                          {safeFormatCurrency(
+                            analyticsData && integrations.length > 0 ? 
+                            (analyticsData.total_mrr / Math.max(1, integrations.reduce((sum, int) => sum + (int.customer_count || 0), 0))) : 
+                            0
+                          )}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">Monthly average</p>
+                      </div>
+                      <div className="p-3 bg-purple-100 rounded-full">
+                        <TrendingUp className="h-6 w-6 text-purple-600" />
+                      </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Main Growth Chart - Mobile optimized */}
+              {/* Charts Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* MRR Growth Trend */}
       <Card>
-        <CardHeader className="pb-4 sm:pb-6">
-          <CardTitle className="text-lg sm:text-xl">MRR History</CardTitle>
+                  <CardHeader>
+                    <CardTitle>MRR Growth Trend</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[250px] sm:h-[300px] lg:h-[400px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={mockMRRData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    {analyticsData?.mrr_trend && analyticsData.mrr_trend.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={300}>
+                        <AreaChart data={analyticsData.mrr_trend}>
+                          <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
-                  dataKey="month" 
-                  stroke="#6b7280" 
-                  fontSize={10}
-                  tick={{ fontSize: 10 }}
-                  interval="preserveStartEnd"
+                            dataKey="date" 
+                            fontSize={12}
+                            tickFormatter={(value) => {
+                              if (typeof value === 'string' && value.includes('-')) {
+                                const [year, month] = value.split('-');
+                                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                                                   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                                return monthNames[parseInt(month) - 1] || value.slice(0, 3);
+                              }
+                              return value.slice(0, 3);
+                            }}
                 />
                 <YAxis 
-                  stroke="#6b7280"
-                  tickFormatter={(value) => safeFormatCurrency(value)}
-                  fontSize={10}
-                  tick={{ fontSize: 10 }}
-                  width={60}
+                            fontSize={12}
+                            tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
                 />
                 <Tooltip 
-                  formatter={(value: number) => [safeFormatCurrency(value), 'MRR']}
-                  contentStyle={{ 
-                    backgroundColor: 'white', 
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    fontSize: '12px'
-                  }} 
+                            formatter={(value: any) => [safeFormatCurrency(value), 'MRR']}
+                            labelFormatter={(label) => `Month: ${label}`}
                 />
                 <Area 
                   type="monotone" 
-                  dataKey="mrr" 
-                  stroke="#3b82f6" 
-                  fill="#3b82f6" 
+                            dataKey="value" 
+                            stroke="#3B82F6" 
+                            fill="#3B82F6" 
                   fillOpacity={0.1}
                   strokeWidth={2}
                 />
               </AreaChart>
             </ResponsiveContainer>
+                    ) : (
+                      <div className="text-center py-12">
+                        <TrendingUp className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                        <p className="text-muted-foreground">No historical MRR data available</p>
+                        <p className="text-sm text-muted-foreground mt-1">Sync more data or wait for historical tracking</p>
           </div>
+                    )}
         </CardContent>
       </Card>
 
-      {/* Secondary Charts - Responsive layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                {/* Platform Revenue Distribution */}
         <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg sm:text-xl">Monthly Growth Rate</CardTitle>
+                  <CardHeader>
+                    <CardTitle>Revenue by Platform</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-[200px] sm:h-[250px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={monthlyGrowthData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis 
-                    dataKey="month" 
-                    stroke="#6b7280" 
-                    fontSize={10}
-                    tick={{ fontSize: 10 }}
-                  />
-                  <YAxis 
-                    stroke="#6b7280" 
-                    fontSize={10}
-                    tick={{ fontSize: 10 }}
-                    width={40}
-                  />
+                    {platformBreakdownWithPercentages.length > 0 ? (
+                      <div className="space-y-4">
+                        <ResponsiveContainer width="100%" height={200}>
+                          <PieChart>
+                            <Pie
+                              data={platformBreakdownWithPercentages}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={60}
+                              outerRadius={80}
+                              paddingAngle={5}
+                              dataKey="revenue"
+                            >
+                              {platformBreakdownWithPercentages.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                              ))}
+                            </Pie>
                   <Tooltip 
-                    formatter={(value: number) => [`${value}%`, 'Growth']}
-                    contentStyle={{ 
-                      backgroundColor: 'white', 
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      fontSize: '12px'
-                    }} 
-                  />
-                  <Bar dataKey="growth" fill="#10b981" />
+                              formatter={(value: any) => [safeFormatCurrency(value), 'Revenue']}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                        <div className="space-y-2">
+                          {platformBreakdownWithPercentages.map((platform, index) => (
+                            <div key={index} className="flex items-center justify-between">
+                              <div className="flex items-center space-x-2">
+                                <div 
+                                  className="w-3 h-3 rounded-full" 
+                                  style={{ backgroundColor: platform.color }}
+                                ></div>
+                                <span className="text-sm font-medium">{platform.icon} {platform.name}</span>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-sm font-semibold">{safeFormatCurrency(platform.revenue)}</p>
+                                <p className="text-xs text-muted-foreground">{platform.percentage}%</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <p className="text-muted-foreground">No platform data available</p>
+                        <p className="text-sm text-muted-foreground mt-1">Connect integrations to see revenue breakdown</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Monthly Growth Rate */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Monthly Growth Rate</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {analyticsData?.monthly_growth && analyticsData.monthly_growth.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={analyticsData.monthly_growth}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="month" fontSize={12} 
+                            tickFormatter={(value) => {
+                              if (typeof value === 'string' && value.includes('-')) {
+                                const [year, month] = value.split('-');
+                                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                                                   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                                return monthNames[parseInt(month) - 1] || value.slice(0, 3);
+                              }
+                              return value.slice(0, 3);
+                            }}
+                          />
+                          <YAxis fontSize={12} tickFormatter={(value) => `${value}%`} />
+                          <Tooltip formatter={(value: any) => [`${value}%`, 'Growth']} />
+                          <Bar dataKey="growth" fill="#10B981" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
+                    ) : (
+                      <div className="text-center py-12">
+                        <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                        <p className="text-muted-foreground">No growth data available</p>
+                        <p className="text-sm text-muted-foreground mt-1">Historical data needed to calculate growth rates</p>
             </div>
+                    )}
           </CardContent>
         </Card>
 
+                {/* Customer Growth */}
         <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg sm:text-xl">Customer Growth</CardTitle>
+                  <CardHeader>
+                    <CardTitle>Customer Growth</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-[200px] sm:h-[250px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={customerGrowthData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis 
-                    dataKey="month" 
-                    stroke="#6b7280" 
-                    fontSize={10}
-                    tick={{ fontSize: 10 }}
-                  />
-                  <YAxis 
-                    stroke="#6b7280" 
-                    fontSize={10}
-                    tick={{ fontSize: 10 }}
-                    width={50}
-                  />
-                  <Tooltip 
-                    formatter={(value: number) => [value, 'Customers']}
-                    contentStyle={{ 
-                      backgroundColor: 'white', 
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      fontSize: '12px'
-                    }} 
-                  />
+                    {analyticsData?.customer_trend && analyticsData.customer_trend.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={300}>
+                        <LineChart data={analyticsData.customer_trend}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="month" fontSize={12} 
+                            tickFormatter={(value) => {
+                              if (typeof value === 'string' && value.includes('-')) {
+                                const [year, month] = value.split('-');
+                                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                                                   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                                return monthNames[parseInt(month) - 1] || value.slice(0, 3);
+                              }
+                              return value.slice(0, 3);
+                            }}
+                          />
+                          <YAxis fontSize={12} />
+                          <Tooltip formatter={(value: any) => [value, 'Customers']} />
                   <Line 
                     type="monotone" 
                     dataKey="customers" 
-                    stroke="#f59e0b" 
+                            stroke="#8B5CF6" 
                     strokeWidth={3}
-                    dot={{ fill: '#f59e0b', r: 3 }}
+                            dot={{ fill: '#8B5CF6', r: 6 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
+                    ) : (
+                      <div className="text-center py-12">
+                        <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                        <p className="text-muted-foreground">No customer trend data available</p>
+                        <p className="text-sm text-muted-foreground mt-1">Need historical customer data to show trends</p>
             </div>
+                    )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Monthly Breakdown Table - Fully responsive */}
+              {/* Platform Comparison Table */}
+              {platformBreakdownWithPercentages.length > 0 && (
       <Card>
-        <CardHeader className="pb-4">
-          <CardTitle className="text-lg sm:text-xl">Monthly Breakdown</CardTitle>
+                  <CardHeader>
+                    <CardTitle>Platform Performance Comparison</CardTitle>
         </CardHeader>
         <CardContent>
-          {/* Mobile Card View */}
-          <div className="lg:hidden space-y-3">
-            {mockMRRData.slice().reverse().map((row) => (
-              <div key={row.month} className="p-3 sm:p-4 border rounded-lg space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="font-medium text-sm sm:text-base">{row.month || 'N/A'}</span>
-                  <span className="text-green-600 text-sm sm:text-base font-medium">+{(row.growth || 0).toFixed(1)}%</span>
-                </div>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <span className="text-muted-foreground block text-xs">MRR:</span>
-                    <div className="font-medium text-sm sm:text-base">{safeFormatCurrency(row.mrr)}</div>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground block text-xs">Customers:</span>
-                    <div className="font-medium text-sm sm:text-base">{safeToLocaleString(row.customers)}</div>
-                  </div>
-                  <div className="col-span-2">
-                    <span className="text-muted-foreground block text-xs">Avg per Customer:</span>
-                    <div className="font-medium text-sm sm:text-base">
-                      {safeFormatCurrency(row.customers > 0 ? row.mrr / row.customers : 0)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Desktop Table View */}
-          <div className="hidden lg:block overflow-x-auto">
+                    <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left py-3 text-sm font-medium text-muted-foreground">Month</th>
-                  <th className="text-right py-3 text-sm font-medium text-muted-foreground">MRR</th>
-                  <th className="text-right py-3 text-sm font-medium text-muted-foreground">Growth</th>
-                  <th className="text-right py-3 text-sm font-medium text-muted-foreground">Customers</th>
-                  <th className="text-right py-3 text-sm font-medium text-muted-foreground">Avg per Customer</th>
+                            <th className="text-left py-2">Platform</th>
+                            <th className="text-right py-2">Revenue</th>
+                            <th className="text-right py-2">Customers</th>
+                            <th className="text-right py-2">Avg per Customer</th>
+                            <th className="text-right py-2">Share</th>
                 </tr>
               </thead>
               <tbody>
-                {mockMRRData.slice().reverse().map((row) => (
-                  <tr key={row.month} className="border-b">
-                    <td className="py-3 text-sm">{row.month || 'N/A'}</td>
-                    <td className="py-3 text-sm text-right font-medium">
-                      {safeFormatCurrency(row.mrr)}
+                          {platformBreakdownWithPercentages
+                            .sort((a, b) => b.revenue - a.revenue)
+                            .map((platform, index) => (
+                              <tr key={index} className="border-b last:border-b-0">
+                                <td className="py-3">
+                                  <div className="flex items-center space-x-2">
+                                    <span>{platform.icon}</span>
+                                    <span className="font-medium">{platform.name}</span>
+                                  </div>
+                                </td>
+                                <td className="text-right py-3 font-semibold">
+                                  {safeFormatCurrency(platform.revenue)}
+                                </td>
+                                <td className="text-right py-3">
+                                  {safeToLocaleString(platform.customers)}
                     </td>
-                    <td className="py-3 text-sm text-right text-green-600 font-medium">
-                      +{(row.growth || 0).toFixed(1)}%
+                                <td className="text-right py-3">
+                                  {safeFormatCurrency(
+                                    platform.customers > 0 ? platform.revenue / platform.customers : 0
+                                  )}
                     </td>
-                    <td className="py-3 text-sm text-right">{safeToLocaleString(row.customers)}</td>
-                    <td className="py-3 text-sm text-right">
-                      {safeFormatCurrency(row.customers > 0 ? row.mrr / row.customers : 0)}
+                                <td className="text-right py-3">
+                                  <Badge variant="secondary">
+                                    {platform.percentage}%
+                                  </Badge>
                     </td>
                   </tr>
                 ))}
@@ -293,6 +707,11 @@ export function AnalyticsPage() {
           </div>
         </CardContent>
       </Card>
+              )}
+            </>
+          )}
+        </>
+      )}
     </div>
   );
 }
