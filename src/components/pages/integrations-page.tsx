@@ -42,8 +42,8 @@ const availablePlatforms = [
     icon: '🛒',
     description: 'Connect your Shopify store for subscription data',
     connectionType: 'OAuth 2.0 (Secure)',
-    available: false,
-    comingSoon: true
+    available: true,
+    comingSoon: false
   },
   {
     name: 'Stripe',
@@ -617,6 +617,15 @@ export function IntegrationsPage() {
                             </div>
                           </DialogContent>
                         </Dialog>
+                      )}
+                      {platform.available && !platform.comingSoon && platform.name === 'Shopify' && (
+                        <Button 
+                          className="w-full" 
+                          onClick={() => window.location.href = '/integrations/shopify'}
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          Connect {platform.name}
+                        </Button>
                       )}
                       {platform.comingSoon && (
                         <Button disabled className="w-full">

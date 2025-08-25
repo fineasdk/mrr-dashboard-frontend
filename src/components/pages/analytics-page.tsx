@@ -129,7 +129,7 @@ export function AnalyticsPage() {
           const growth = prevValue > 0 ? ((currentValue - prevValue) / prevValue) * 100 : 0;
           return { month: item.date, growth: Math.round(growth * 10) / 10 };
         });
-
+        
         setAnalyticsData({
           total_mrr: totalRevenue,
           mrr_growth: totalRevenue > 0 && mrrTrend.length >= 2 ? 

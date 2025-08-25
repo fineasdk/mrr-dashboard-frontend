@@ -137,4 +137,21 @@ export const integrationsApi = {
 
   disconnect: (id: string) =>
     api.post(`/integrations/${id}/disconnect`),
+};
+
+// Shopify API
+export const shopifyApi = {
+  initiateOAuth: (data: { 
+    shop_domain: string;
+    api_key: string;
+    api_secret: string;
+    webhook_secret?: string;
+  }) =>
+    api.post('/shopify/oauth/initiate', data),
+  
+  testConnection: () =>
+    api.post('/shopify/test-connection'),
+  
+  sync: () =>
+    api.post('/shopify/sync'),
 }; 
