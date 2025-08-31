@@ -463,14 +463,14 @@ export function DashboardPage() {
                   </Button>
 
                   <div className='grid grid-cols-2 gap-3 mt-4'>
-                    <div className='p-3 border rounded-lg text-center'>
+                    <div className='p-3 rounded-lg text-center'>
                       <span className='text-2xl mb-2 block'>💳</span>
                       <p className='text-sm font-medium'>Stripe</p>
                       <p className='text-xs text-gray-500'>
                         Payment processing
                       </p>
                     </div>
-                    <div className='p-3 border rounded-lg text-center'>
+                    <div className='p-3 rounded-lg text-center'>
                       <span className='text-2xl mb-2 block'>🔗</span>
                       <p className='text-sm font-medium'>E-conomic</p>
                       <p className='text-xs text-gray-500'>Accounting system</p>
@@ -483,7 +483,7 @@ export function DashboardPage() {
 
           {/* Integration Status Alert */}
           {!hasIntegrations && !isLoading && (
-            <Alert className='border-blue-200 bg-blue-50'>
+            <Alert className='border-gray-200 border-blue-200 bg-blue-50'>
               <Plus className='h-4 w-4 text-blue-600' />
               <AlertDescription className='text-blue-700'>
                 <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3'>
@@ -507,7 +507,7 @@ export function DashboardPage() {
           {integrations.some(
             (integration) => integration.status === 'syncing'
           ) && (
-            <Alert className='border-blue-200 bg-blue-50'>
+            <Alert className='border-gray-200 border-blue-200 bg-blue-50'>
               <RefreshCw className='h-4 w-4 text-blue-600 animate-spin' />
               <AlertDescription className='text-blue-700'>
                 Data synchronization in progress. This may take a few minutes
@@ -549,7 +549,7 @@ export function DashboardPage() {
                   return (
                     <div
                       key={metric.title}
-                      className='bg-white rounded-lg shadow-sm border p-4 sm:p-6'
+                      className='bg-white rounded-lg shadow-sm p-4 sm:p-6'
                     >
                       <div className='flex items-center justify-between'>
                         <div className='space-y-2 flex-1 min-w-0'>
@@ -594,8 +594,8 @@ export function DashboardPage() {
               {hasIntegrations && (
                 <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
                   {/* Connected Platforms */}
-                  <div className='bg-white rounded-lg shadow-sm border'>
-                    <div className='p-4 sm:p-6 border-b'>
+                  <div className='bg-white rounded-lg shadow-sm card'>
+                    <div className='p-4 sm:p-6 border-gray-200 border-b'>
                       <div className='flex items-center justify-between'>
                         <h3 className='text-lg font-semibold'>
                           Connected Platforms
@@ -609,7 +609,7 @@ export function DashboardPage() {
                       {platformBreakdown.map((platform, index) => (
                         <div
                           key={index}
-                          className='flex items-center justify-between p-3 rounded-lg border'
+                          className='flex items-center justify-between p-3 rounded-lg card'
                         >
                           <div className='flex items-center space-x-3'>
                             <span className='text-xl'>{platform.icon}</span>
@@ -656,8 +656,8 @@ export function DashboardPage() {
                   </div>
 
                   {/* Revenue Distribution */}
-                  <div className='bg-white rounded-lg shadow-sm border'>
-                    <div className='p-4 sm:p-6 border-b'>
+                  <div className='bg-white rounded-lg shadow-sm'>
+                    <div className='p-4 sm:p-6 border-gray-200 border-b'>
                       <h3 className='text-lg font-semibold'>
                         Revenue Distribution
                       </h3>
@@ -673,8 +673,8 @@ export function DashboardPage() {
               )}
 
               {/* MRR Trend Chart */}
-              <div className='bg-white rounded-lg shadow-sm border'>
-                <div className='p-4 sm:p-6 border-b'>
+              <div className='bg-white rounded-lg shadow-sm'>
+                <div className='p-4 sm:p-6 border-gray-200 border-b'>
                   <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
                     <h3 className='text-lg font-semibold'>MRR Trend</h3>
                     <div className='flex items-center space-x-2'>
@@ -717,8 +717,8 @@ export function DashboardPage() {
 
               {/* Quick Actions */}
               {hasIntegrations && (
-                <div className='bg-white rounded-lg shadow-sm border'>
-                  <div className='p-4 sm:p-6 border-b'>
+                <div className='bg-white rounded-lg shadow-sm'>
+                  <div className='p-4 sm:p-6 border-gray-200 border-b'>
                     <h3 className='text-lg font-semibold'>Quick Actions</h3>
                   </div>
                   <div className='p-4 sm:p-6'>

@@ -164,18 +164,6 @@ export function AnalyticsPage() {
         if (analyticsResponse.data && integrationsResponse.data.success && integrationsResponse.data.data.length > 0) {
           const integrationData = integrationsResponse.data.data;
           
-          // Convert each platform's revenue to selected currency before summing
-          const totalRevenue = integrationData.reduce((sum: number, int: Integration) => {
-            const platformRevenue = int.revenue || 0;
-            // Determine original currency based on platform
-            const originalCurrency = int.platform === 'shopify' ? 'BDT' : 
-                                   int.platform === 'stripe' ? 'USD' : 'DKK';
-            const convertedRevenue = convertCurrency(platformRevenue, originalCurrency, selectedCurrency);
-            return sum + convertedRevenue;
-          }, 0);
-          
-          const totalCustomers = integrationData.reduce((sum: number, int: Integration) => sum + (int.customer_count || 0), 0);
-        
         // Map the real analytics API response
         const analyticsData = analyticsResponse.data;
         
@@ -199,18 +187,47 @@ export function AnalyticsPage() {
           const growth = prevValue > 0 ? ((currentValue - prevValue) / prevValue) * 100 : 0;
           return { month: item.date, growth: Math.round(growth * 10) / 10 };
         });
+
+        // Use the LAST data point from time-period-filtered trend for totals
+        // This shows the "ending value" for the selected time period
+        const lastMRRValue = mrrTrend.length > 0 ? mrrTrend[mrrTrend.length - 1]?.value || 0 : 0;
+        const lastCustomerValue = customerTrend.length > 0 ? customerTrend[customerTrend.length - 1]?.customers || 0 : 0;
+
+        // Convert MRR from DKK (backend) to selected currency (frontend)
+        const totalMRRInSelectedCurrency = convertCurrency(lastMRRValue, 'DKK', selectedCurrency);
+
+        // For growth calculations: Compare first vs last in the time period
+        const firstMRRValue = mrrTrend.length > 0 ? mrrTrend[0]?.value || 0 : 0;
+        const firstCustomerValue = customerTrend.length > 0 ? customerTrend[0]?.customers || 0 : 0;
+
+        console.log('📊 Analytics Data Calculation:', {
+          dateRange,
+          startDate,
+          endDate,
+          mrrTrendPoints: mrrTrend.length,
+          mrrTrendData: mrrTrend,
+          firstMRRValue,
+          lastMRRValue,
+          totalMRRInSelectedCurrency,
+          customerTrendPoints: customerTrend.length,
+          customerTrendData: customerTrend,
+          firstCustomerValue,
+          lastCustomerValue,
+          selectedCurrency,
+          rawAnalyticsResponse: analyticsData
+        });
         
         setAnalyticsData({
-          total_mrr: totalRevenue,
-          mrr_growth: totalRevenue > 0 && mrrTrend.length >= 2 ? 
-            ((mrrTrend[mrrTrend.length - 1]?.value - mrrTrend[mrrTrend.length - 2]?.value) / mrrTrend[mrrTrend.length - 2]?.value) * 100 : 0,
-          customer_growth: totalCustomers > 0 && customerTrend.length >= 2 ?
-            ((customerTrend[customerTrend.length - 1]?.customers - customerTrend[customerTrend.length - 2]?.customers) / customerTrend[customerTrend.length - 2]?.customers) * 100 : 0,
+          total_mrr: totalMRRInSelectedCurrency, // Last point from time-filtered data
+          mrr_growth: firstMRRValue > 0 && lastMRRValue > 0 ? 
+            ((lastMRRValue - firstMRRValue) / firstMRRValue) * 100 : 0, // Growth over selected time period
+          customer_growth: firstCustomerValue > 0 && lastCustomerValue > 0 ?
+            ((lastCustomerValue - firstCustomerValue) / firstCustomerValue) * 100 : 0, // Growth over selected time period
           platform_breakdown: integrationData.map((integration: Integration) => ({
             platform: integration.platform,
             revenue: integration.revenue || 0,
             customers: integration.customer_count || 0,
-            percentage: totalRevenue > 0 ? ((integration.revenue || 0) / totalRevenue) * 100 : 0
+            percentage: totalMRRInSelectedCurrency > 0 ? ((convertCurrency(integration.revenue || 0, integration.platform === 'shopify' ? 'BDT' : integration.platform === 'stripe' ? 'USD' : 'DKK', selectedCurrency)) / totalMRRInSelectedCurrency) * 100 : 0
           })),
           mrr_trend: mrrTrend,
           monthly_growth: monthlyGrowth,
@@ -385,6 +402,17 @@ export function AnalyticsPage() {
               })));
               console.log('📈 MRR Trend Data Points:', analyticsData?.mrr_trend?.length || 0);
               console.log('👥 Customer Trend Data Points:', analyticsData?.customer_trend?.length || 0);
+              console.log('🔢 KEY METRICS (should change with time period):');
+              console.log('- Total MRR:', analyticsData?.total_mrr);
+              console.log('- Total Customers (from trend):', analyticsData?.customer_trend?.[analyticsData.customer_trend.length - 1]?.customers);
+              console.log('- Avg per Customer:', analyticsData?.total_mrr && analyticsData?.customer_trend?.length ? 
+                (analyticsData.total_mrr / Math.max(1, analyticsData.customer_trend[analyticsData.customer_trend.length - 1]?.customers || 1)) : 0);
+              console.log('- MRR Growth % (over period):', analyticsData?.mrr_growth);
+              console.log('- Customer Growth % (over period):', analyticsData?.customer_growth);
+              console.log('🎯 THE ISSUE: If all numbers are the same across time periods, then either:');
+              console.log('   1. Backend MRR/Customer trend data is identical for all periods');
+              console.log('   2. Historical data is missing - all months have same values');
+              console.log('   3. Time period filtering is not working in backend API');
             }}
           >
             🧪 Test Currency
@@ -561,7 +589,11 @@ export function AnalyticsPage() {
                       <div>
                         <p className="text-sm font-medium text-muted-foreground">Total Customers</p>
                         <p className="text-2xl sm:text-3xl font-bold">
-                          {safeToLocaleString(integrations.reduce((sum, int) => sum + (int.customer_count || 0), 0))}
+                          {safeToLocaleString(
+                            analyticsData?.customer_trend && analyticsData.customer_trend.length > 0 
+                              ? analyticsData.customer_trend[analyticsData.customer_trend.length - 1]?.customers || 0
+                              : integrations.reduce((sum, int) => sum + (int.customer_count || 0), 0)
+                          )}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
                           {analyticsData?.customer_growth ? `+${analyticsData.customer_growth}% growth` : 'Across all platforms'}
@@ -581,8 +613,8 @@ export function AnalyticsPage() {
                         <p className="text-sm font-medium text-muted-foreground">Avg per Customer</p>
                         <p className="text-2xl sm:text-3xl font-bold">
                           {safeFormatCurrency(
-                            analyticsData && integrations.length > 0 ? 
-                            (analyticsData.total_mrr / Math.max(1, integrations.reduce((sum, int) => sum + (int.customer_count || 0), 0))) : 
+                            analyticsData && analyticsData.total_mrr && analyticsData.customer_trend && analyticsData.customer_trend.length > 0 ? 
+                            (analyticsData.total_mrr / Math.max(1, analyticsData.customer_trend[analyticsData.customer_trend.length - 1]?.customers || 1)) : 
                             0
                           )}
                         </p>
