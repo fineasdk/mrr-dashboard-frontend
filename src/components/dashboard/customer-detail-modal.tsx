@@ -22,7 +22,8 @@ import {
 } from '../ui/table';
 import { AlertTriangle, Eye, Calendar, User, CreditCard } from 'lucide-react';
 import { Customer, Invoice, AuditLogEntry } from '../../lib/types';
-import { formatCurrency, mockInvoices, mockAuditLog } from '../../lib/mock-data';
+import { formatCurrency, convertCurrency } from '../../lib/currency-service';
+import { mockInvoices, mockAuditLog } from '../../lib/mock-data';
 
 interface CustomerDetailModalProps {
   customer: Customer | null;

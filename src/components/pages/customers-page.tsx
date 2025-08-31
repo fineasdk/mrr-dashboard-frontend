@@ -29,7 +29,8 @@ import {
 } from '../ui/select';
 // import { CustomerDetailModal } from '../dashboard/customer-detail-modal';
 import { CurrencySelector } from '../dashboard/currency-selector';
-import { mockCustomers, formatCurrency, convertCurrency } from '../../lib/mock-data';
+import { mockCustomers } from '../../lib/mock-data';
+import { formatCurrency, convertCurrency } from '../../lib/currency-service';
 import { Customer, Currency } from '../../lib/types';
 import { customersApi, integrationsApi } from '../../lib/api';
 
@@ -81,7 +82,7 @@ export function CustomersPage() {
   const [platformFilter, setPlatformFilter] = useState<string>('all');
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>('DKK');
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage] = useState(50); // Increased from 10 to 50 to show more customers per page
 
   useEffect(() => {
     Promise.all([loadCustomers(), loadIntegrations()]);
@@ -101,7 +102,7 @@ export function CustomersPage() {
         search: searchTerm || undefined,
         status: statusFilter !== 'all' ? statusFilter : undefined,
         platform: platformFilter !== 'all' ? platformFilter : undefined,
-        per_page: 50
+        per_page: 500 // Increased to show customers from all platforms
       });
 
       if (response.data.success) {

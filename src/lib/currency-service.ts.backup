@@ -1,0 +1,262 @@
+import { Currency } from './types';
+
+// Currency conversion rates (updated rates as of 2025)
+// DKK as base currency with support for many international currencies
+export interface CurrencyRates {
+  [key: string]: {
+    [key: string]: number;
+  };
+}
+
+export const currencyRates: CurrencyRates = {
+  // DKK as base currency
+  'DKK': {
+    'EUR': 0.134, 'USD': 0.146, 'DKK': 1, 'BDT': 0.017,
+    'GBP': 0.115, 'CAD': 0.203, 'AUD': 0.221, 'JPY': 21.3,
+    'CNY': 1.06, 'INR': 12.22, 'SEK': 1.55, 'NOK': 1.61,
+    'CHF': 0.131, 'PLN': 0.590, 'CZK': 3.41, 'HUF': 55.2,
+    // Handle lowercase
+    'eur': 0.134, 'usd': 0.146, 'dkk': 1, 'bdt': 0.017,
+    'gbp': 0.115, 'cad': 0.203, 'aud': 0.221, 'jpy': 21.3,
+    'cny': 1.06, 'inr': 12.22, 'sek': 1.55, 'nok': 1.61,
+  },
+  'EUR': {
+    'DKK': 7.46, 'USD': 1.09, 'EUR': 1, 'BDT': 0.126,
+    'GBP': 0.86, 'CAD': 1.52, 'AUD': 1.65, 'JPY': 159.0,
+    'CNY': 7.93, 'INR': 91.2, 'SEK': 11.6, 'NOK': 12.0,
+    // Handle lowercase
+    'dkk': 7.46, 'usd': 1.09, 'eur': 1, 'bdt': 0.126,
+    'gbp': 0.86, 'cad': 1.52, 'aud': 1.65, 'jpy': 159.0,
+  },
+  'USD': {
+    'DKK': 6.85, 'EUR': 0.92, 'USD': 1, 'BDT': 0.116,
+    'GBP': 0.79, 'CAD': 1.39, 'AUD': 1.51, 'JPY': 146.0,
+    'CNY': 7.28, 'INR': 83.7, 'SEK': 10.6, 'NOK': 11.0,
+    // Handle lowercase
+    'dkk': 6.85, 'eur': 0.92, 'usd': 1, 'bdt': 0.116,
+    'gbp': 0.79, 'cad': 1.39, 'aud': 1.51, 'jpy': 146.0,
+  },
+  'BDT': {
+    'DKK': 58.8, 'EUR': 7.94, 'USD': 8.61, 'BDT': 1,
+    'GBP': 6.78, 'CAD': 11.98, 'AUD': 13.01, 'JPY': 1258.0,
+    'CNY': 62.7, 'INR': 720.5, 'SEK': 91.3, 'NOK': 94.7,
+    // Handle lowercase
+    'dkk': 58.8, 'eur': 7.94, 'usd': 8.61, 'bdt': 1,
+    'gbp': 6.78, 'cad': 11.98, 'aud': 13.01, 'jpy': 1258.0,
+  },
+  // Additional major currencies
+  'GBP': { 'DKK': 8.67, 'EUR': 1.16, 'USD': 1.27, 'BDT': 0.147, 'GBP': 1, 'gbp': 1, 'dkk': 8.67, 'eur': 1.16, 'usd': 1.27 },
+  'CAD': { 'DKK': 4.92, 'EUR': 0.66, 'USD': 0.72, 'BDT': 0.083, 'CAD': 1, 'cad': 1, 'dkk': 4.92, 'eur': 0.66, 'usd': 0.72 },
+  'AUD': { 'DKK': 4.53, 'EUR': 0.61, 'USD': 0.66, 'BDT': 0.077, 'AUD': 1, 'aud': 1, 'dkk': 4.53, 'eur': 0.61, 'usd': 0.66 },
+  'JPY': { 'DKK': 0.047, 'EUR': 0.0063, 'USD': 0.0068, 'BDT': 0.0008, 'JPY': 1, 'jpy': 1, 'dkk': 0.047, 'eur': 0.0063, 'usd': 0.0068 },
+  'CNY': { 'DKK': 0.943, 'EUR': 0.126, 'USD': 0.137, 'BDT': 0.016, 'CNY': 1, 'cny': 1, 'dkk': 0.943, 'eur': 0.126, 'usd': 0.137 },
+  'INR': { 'DKK': 0.082, 'EUR': 0.011, 'USD': 0.012, 'BDT': 0.0014, 'INR': 1, 'inr': 1, 'dkk': 0.082, 'eur': 0.011, 'usd': 0.012 },
+  
+  // Handle lowercase versions for all major currencies
+  'usd': { 'DKK': 6.85, 'EUR': 0.92, 'USD': 1, 'BDT': 0.116, 'dkk': 6.85, 'eur': 0.92, 'usd': 1, 'bdt': 0.116 },
+  'eur': { 'DKK': 7.46, 'USD': 1.09, 'EUR': 1, 'BDT': 0.126, 'dkk': 7.46, 'usd': 1.09, 'eur': 1, 'bdt': 0.126 },
+  'bdt': { 'DKK': 58.8, 'EUR': 7.94, 'USD': 8.61, 'BDT': 1, 'dkk': 58.8, 'eur': 7.94, 'usd': 8.61, 'bdt': 1 },
+  'dkk': { 'EUR': 0.134, 'USD': 0.146, 'DKK': 1, 'BDT': 0.017, 'eur': 0.134, 'usd': 0.146, 'dkk': 1, 'bdt': 0.017 },
+  'gbp': { 'DKK': 8.67, 'EUR': 1.16, 'USD': 1.27, 'BDT': 0.147, 'dkk': 8.67, 'eur': 1.16, 'usd': 1.27, 'gbp': 1 },
+  'cad': { 'DKK': 4.92, 'EUR': 0.66, 'USD': 0.72, 'BDT': 0.083, 'dkk': 4.92, 'eur': 0.66, 'usd': 0.72, 'cad': 1 },
+  'aud': { 'DKK': 4.53, 'EUR': 0.61, 'USD': 0.66, 'BDT': 0.077, 'dkk': 4.53, 'eur': 0.61, 'usd': 0.66, 'aud': 1 },
+  'jpy': { 'DKK': 0.047, 'EUR': 0.0063, 'USD': 0.0068, 'BDT': 0.0008, 'dkk': 0.047, 'eur': 0.0063, 'usd': 0.0068, 'jpy': 1 },
+  'cny': { 'DKK': 0.943, 'EUR': 0.126, 'USD': 0.137, 'BDT': 0.016, 'dkk': 0.943, 'eur': 0.126, 'usd': 0.137, 'cny': 1 },
+  'inr': { 'DKK': 0.082, 'EUR': 0.011, 'USD': 0.012, 'BDT': 0.0014, 'dkk': 0.082, 'eur': 0.011, 'usd': 0.012, 'inr': 1 },
+};
+
+/**
+ * Convert currency amount from one currency to another
+ * Handles any input currency to DKK, EUR, USD conversion
+ */
+export function convertCurrency(
+  amount: number, 
+  fromCurrency: string, 
+  toCurrency: string
+): number {
+  if (!amount || amount === 0) return 0;
+  
+  // Normalize currency codes - handle both upper and lowercase
+  const from = fromCurrency?.toString().toUpperCase();
+  const to = toCurrency?.toString().toUpperCase();
+  
+  // If same currency, return original amount
+  if (from === to) return amount;
+  
+  // Try multiple approaches to find conversion rate
+  let rate = null;
+  
+  // 1. Direct conversion rate (uppercase)
+  rate = currencyRates[from]?.[to];
+  
+  // 2. Try lowercase versions
+  if (!rate) {
+    rate = currencyRates[fromCurrency.toLowerCase()]?.[toCurrency.toLowerCase()];
+  }
+  
+  // 3. Try mixed case
+  if (!rate) {
+    rate = currencyRates[from]?.[toCurrency.toLowerCase()] || 
+           currencyRates[fromCurrency.toLowerCase()]?.[to];
+  }
+  
+  // 4. Skip USD fallback for now to avoid undefined variables
+  
+  // 5. Final fallback: warn and return original amount
+  if (!rate) {
+    console.warn(`Currency conversion rate not found for ${from} to ${to}. Returning original amount.`);
+    return amount;
+  }
+  
+  const convertedAmount = amount * rate;
+  return Math.round(convertedAmount * 100) / 100; // Round to 2 decimal places
+}
+
+/**
+ * Format currency amount with proper symbol and formatting
+ */
+export function formatCurrency(
+  amount: number, 
+  currency: string = 'DKK', 
+  options?: {
+    showDecimals?: boolean;
+    compact?: boolean;
+  }
+): string {
+  const { showDecimals = true, compact = false } = options || {};
+  
+  // Normalize currency code
+  const currencyCode = currency.toUpperCase();
+  
+  // Currency symbols and formatting
+  const currencyConfig = {
+    'DKK': { symbol: 'kr.', locale: 'da-DK', code: 'DKK' },
+    'EUR': { symbol: '€', locale: 'de-DE', code: 'EUR' },
+    'USD': { symbol: '$', locale: 'en-US', code: 'USD' },
+    'BDT': { symbol: '৳', locale: 'bn-BD', code: 'BDT' },
+    'GBP': { symbol: '£', locale: 'en-GB', code: 'GBP' },
+    'CAD': { symbol: 'C$', locale: 'en-CA', code: 'CAD' },
+    'AUD': { symbol: 'A$', locale: 'en-AU', code: 'AUD' },
+    'JPY': { symbol: '¥', locale: 'ja-JP', code: 'JPY' },
+    'CNY': { symbol: '¥', locale: 'zh-CN', code: 'CNY' },
+    'INR': { symbol: '₹', locale: 'hi-IN', code: 'INR' },
+  };
+  
+  const config = currencyConfig[currencyCode] || currencyConfig['DKK'];
+  
+  try {
+    // Format for compact display (K, M, B)
+    if (compact && Math.abs(amount) >= 1000) {
+      if (Math.abs(amount) >= 1000000000) {
+        return `${config.symbol}${(amount / 1000000000).toFixed(1)}B`;
+      } else if (Math.abs(amount) >= 1000000) {
+        return `${config.symbol}${(amount / 1000000).toFixed(1)}M`;
+      } else {
+        return `${config.symbol}${(amount / 1000).toFixed(1)}K`;
+      }
+    }
+    
+    // Standard formatting
+    const formatter = new Intl.NumberFormat(config.locale, {
+      style: 'currency',
+      currency: config.code,
+      minimumFractionDigits: showDecimals ? 2 : 0,
+      maximumFractionDigits: showDecimals ? 2 : 0,
+    });
+    
+    return formatter.format(amount);
+  } catch (error) {
+    // Fallback formatting
+    const decimals = showDecimals ? 2 : 0;
+    const formattedAmount = amount.toLocaleString('en-US', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    });
+    
+    return `${config.symbol}${formattedAmount}`;
+  }
+}
+
+/**
+ * Get currency symbol for a given currency code
+ */
+export function getCurrencySymbol(currency: string): string {
+  const symbols = {
+    'DKK': 'kr.',
+    'EUR': '€',
+    'USD': '$',
+    'BDT': '৳',
+    'GBP': '£',
+    'CAD': 'C$',
+    'AUD': 'A$',
+    'JPY': '¥',
+    'CNY': '¥',
+    'INR': '₹',
+    // Handle lowercase
+    'dkk': 'kr.',
+    'eur': '€',
+    'usd': '$',
+    'bdt': '৳',
+    'gbp': '£',
+    'cad': 'C$',
+    'aud': 'A$',
+    'jpy': '¥',
+    'cny': '¥',
+    'inr': '₹',
+  };
+  
+  return symbols[currency] || symbols[currency.toUpperCase()] || currency;
+}
+
+/**
+ * Get all supported currencies
+ */
+export function getSupportedCurrencies(): Array<{code: string, name: string, symbol: string}> {
+  return [
+    { code: 'DKK', name: 'Danish Krone', symbol: 'kr.' },
+    { code: 'EUR', name: 'Euro', symbol: '€' },
+    { code: 'USD', name: 'US Dollar', symbol: '$' },
+    { code: 'BDT', name: 'Bangladesh Taka', symbol: '৳' },
+    { code: 'GBP', name: 'British Pound', symbol: '£' },
+    { code: 'CAD', name: 'Canadian Dollar', symbol: 'C$' },
+    { code: 'AUD', name: 'Australian Dollar', symbol: 'A$' },
+    { code: 'JPY', name: 'Japanese Yen', symbol: '¥' },
+    { code: 'CNY', name: 'Chinese Yuan', symbol: '¥' },
+    { code: 'INR', name: 'Indian Rupee', symbol: '₹' },
+  ];
+}
+
+/**
+ * Convert multi-currency platform data to a single currency
+ */
+export function convertPlatformData(
+  platformData: Array<{platform: string, revenue: number, currency?: string}>,
+  targetCurrency: string
+): Array<{platform: string, revenue: number, originalCurrency?: string}> {
+  return platformData.map(platform => ({
+    ...platform,
+    originalCurrency: platform.currency || 'DKK',
+    revenue: convertCurrency(
+      platform.revenue, 
+      platform.currency || 'DKK', 
+      targetCurrency
+    )
+  }));
+}
+
+/**
+ * Format percentage change
+ */
+export function formatPercentageChange(change: number): string {
+  const formatted = Math.abs(change).toFixed(1);
+  const sign = change >= 0 ? '+' : '-';
+  return `${sign}${formatted}%`;
+}
+
+/**
+ * Calculate percentage change between two values
+ */
+export function calculatePercentageChange(current: number, previous: number): number {
+  if (previous === 0) return current > 0 ? 100 : 0;
+  return ((current - previous) / previous) * 100;
+}

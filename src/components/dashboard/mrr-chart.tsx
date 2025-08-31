@@ -10,6 +10,23 @@ import {
 } from 'recharts'
 import { MRRData } from '../../lib/types'
 import { Currency } from '../../lib/types'
+// import { formatCurrency as formatCurrencyService } from '../../lib/currency-service'
+
+// Inline formatCurrency for MRR chart
+const formatCurrencyService = (amount: number, currency: string): string => {
+  try {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  } catch {
+    const symbols = { DKK: 'kr', EUR: '€', USD: '$' };
+    const symbol = symbols[currency as keyof typeof symbols] || currency;
+    return `${symbol}${Math.round(amount).toLocaleString()}`;
+  }
+};
 
 interface MRRChartProps {
   data: MRRData[]
@@ -18,18 +35,7 @@ interface MRRChartProps {
 
 export function MRRChart({ data, currency = 'DKK' }: MRRChartProps) {
   const formatCurrency = (value: number) => {
-    const currencyMap: Record<Currency, string> = {
-      DKK: 'DKK',
-      EUR: 'EUR',
-      USD: 'USD',
-    }
-
-    return new Intl.NumberFormat('da-DK', {
-      style: 'currency',
-      currency: currencyMap[currency],
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value)
+    return formatCurrencyService(value, currency, { showDecimals: false })
   }
 
   // Transform data to ensure proper format

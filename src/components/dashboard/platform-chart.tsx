@@ -9,6 +9,23 @@ import {
 } from 'recharts'
 import { PlatformBreakdown } from '../../lib/types'
 import { Currency } from '../../lib/types'
+// import { formatCurrency as formatCurrencyService } from '../../lib/currency-service'
+
+// Inline formatCurrency for Platform chart
+const formatCurrencyService = (amount: number, currency: string): string => {
+  try {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  } catch {
+    const symbols = { DKK: 'kr', EUR: '€', USD: '$' };
+    const symbol = symbols[currency as keyof typeof symbols] || currency;
+    return `${symbol}${Math.round(amount).toLocaleString()}`;
+  }
+};
 
 interface PlatformChartProps {
   data: PlatformBreakdown[]
@@ -17,18 +34,7 @@ interface PlatformChartProps {
 
 export function PlatformChart({ data, currency = 'DKK' }: PlatformChartProps) {
   const formatCurrency = (value: number) => {
-    const currencyMap: Record<Currency, string> = {
-      DKK: 'DKK',
-      EUR: 'EUR',
-      USD: 'USD',
-    }
-
-    return new Intl.NumberFormat('da-DK', {
-      style: 'currency',
-      currency: currencyMap[currency],
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value)
+    return formatCurrencyService(value, currency, { showDecimals: false })
   }
 
   // Calculate total revenue

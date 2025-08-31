@@ -20,7 +20,45 @@ import {
   Pie,
   Cell,
 } from 'recharts';
-import { formatCurrency } from '../../lib/mock-data';
+// import { formatCurrency, convertCurrency } from '../../lib/currency-service';
+
+// Inline currency functions to bypass import issues
+const EXCHANGE_RATES = {
+  DKK: 1,
+  EUR: 0.134,
+  USD: 0.146,
+  BDT: 16.4,
+};
+
+const convertCurrency = (amount: number, fromCurrency: string, toCurrency: string): number => {
+  if (fromCurrency === toCurrency) return amount;
+  
+  const from = fromCurrency.toUpperCase();
+  const to = toCurrency.toUpperCase();
+  
+  // Convert from source currency to DKK, then to target currency
+  const inDKK = amount / (EXCHANGE_RATES[from as keyof typeof EXCHANGE_RATES] || 1);
+  const result = inDKK * (EXCHANGE_RATES[to as keyof typeof EXCHANGE_RATES] || 1);
+  
+  return Math.round(result * 100) / 100;
+};
+
+const formatCurrency = (amount: number, currency: Currency): string => {
+  try {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  } catch (error) {
+    // Fallback formatting
+    const symbols = { DKK: 'kr', EUR: '€', USD: '$' };
+    const symbol = symbols[currency] || currency;
+    const formatted = amount.toFixed(2);
+    return `${symbol}${formatted.toLocaleString()}`;
+  }
+};
 import { dashboardApi, integrationsApi } from '../../lib/api';
 import { CurrencySelector } from '../dashboard/currency-selector';
 import { Currency } from '../../lib/types';
@@ -74,22 +112,44 @@ export function AnalyticsPage() {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [dateRange, setDateRange] = useState('6m');
+  const [dateRange, setDateRange] = useState('last_6_months');
+  const [forceUpdate, setForceUpdate] = useState(0);
 
   useEffect(() => {
     loadAnalyticsData();
   }, [selectedCurrency, dateRange]);
+
+  // Force re-render when currency changes to update computed values
+  useEffect(() => {
+    console.log('📈 Analytics: Currency changed to:', selectedCurrency);
+    setForceUpdate(prev => prev + 1);
+  }, [selectedCurrency]);
+
+  // Log when date range changes
+  useEffect(() => {
+    console.log('📅 Analytics: Date range changed to:', dateRange);
+  }, [dateRange]);
 
   const loadAnalyticsData = async () => {
     setLoading(true);
     setError('');
     
     try {
+      const startDate = getDateRangeStart(dateRange);
+      const endDate = new Date().toISOString();
+      
+      console.log('📅 Analytics API Call:', {
+        dateRange,
+        startDate,
+        endDate,
+        granularity: 'monthly'
+      });
+      
       const [analyticsResponse, integrationsResponse] = await Promise.all([
         dashboardApi.getAnalytics({ 
           granularity: 'monthly',
-          start_date: getDateRangeStart(dateRange),
-          end_date: new Date().toISOString()
+          start_date: startDate,
+          end_date: endDate
         }),
         integrationsApi.getAll()
       ]);
@@ -100,11 +160,21 @@ export function AnalyticsPage() {
         setIntegrations(integrationsResponse.data.data);
       }
 
-      // Use real analytics data from the API
-      if (analyticsResponse.data && integrationsResponse.data.success && integrationsResponse.data.data.length > 0) {
-        const integrationData = integrationsResponse.data.data;
-        const totalRevenue = integrationData.reduce((sum: number, int: Integration) => sum + (int.revenue || 0), 0);
-        const totalCustomers = integrationData.reduce((sum: number, int: Integration) => sum + (int.customer_count || 0), 0);
+              // Use real analytics data from the API
+        if (analyticsResponse.data && integrationsResponse.data.success && integrationsResponse.data.data.length > 0) {
+          const integrationData = integrationsResponse.data.data;
+          
+          // Convert each platform's revenue to selected currency before summing
+          const totalRevenue = integrationData.reduce((sum: number, int: Integration) => {
+            const platformRevenue = int.revenue || 0;
+            // Determine original currency based on platform
+            const originalCurrency = int.platform === 'shopify' ? 'BDT' : 
+                                   int.platform === 'stripe' ? 'USD' : 'DKK';
+            const convertedRevenue = convertCurrency(platformRevenue, originalCurrency, selectedCurrency);
+            return sum + convertedRevenue;
+          }, 0);
+          
+          const totalCustomers = integrationData.reduce((sum: number, int: Integration) => sum + (int.customer_count || 0), 0);
         
         // Map the real analytics API response
         const analyticsData = analyticsResponse.data;
@@ -180,23 +250,29 @@ export function AnalyticsPage() {
   const getDateRangeStart = (range: string): string => {
     const now = new Date();
     switch (range) {
-      case '7d':
-        return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
-      case '30d':
-        return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      case 'last_3_months':
       case '90d':
-        return new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000).toISOString();
+        const threeMonthsAgo = new Date(now);
+        threeMonthsAgo.setMonth(now.getMonth() - 3);
+        return threeMonthsAgo.toISOString();
+      case 'last_6_months':
       case '6m':
         const sixMonthsAgo = new Date(now);
         sixMonthsAgo.setMonth(now.getMonth() - 6);
         return sixMonthsAgo.toISOString();
+      case 'last_12_months':
       case '1y':
         const oneYearAgo = new Date(now);
         oneYearAgo.setFullYear(now.getFullYear() - 1);
         return oneYearAgo.toISOString();
+      case '7d':
+        return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      case '30d':
+        return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
       default:
-        // Default to 1 year of historical data, starting from when subscriptions began
-        const defaultStart = new Date('2024-08-01'); // When our subscriptions actually start
+        // Default to 6 months of historical data
+        const defaultStart = new Date(now);
+        defaultStart.setMonth(now.getMonth() - 6);
         return defaultStart.toISOString();
     }
   };
@@ -221,21 +297,35 @@ export function AnalyticsPage() {
     return value.toLocaleString();
   };
 
-  // Calculate platform breakdown with percentages
+  // Calculate platform breakdown with percentages and currency conversion
   const platformBreakdownWithPercentages = analyticsData?.platform_breakdown.map(item => {
-    const totalRevenue = analyticsData.platform_breakdown.reduce((sum, p) => sum + p.revenue, 0);
-    const percentage = totalRevenue > 0 ? (item.revenue / totalRevenue) * 100 : 0;
     const config = platformConfig[item.platform as keyof typeof platformConfig] || 
                    { name: item.platform, icon: '🔗', color: '#6B7280' };
     
+    // Determine original currency based on platform
+    const originalCurrency = item.platform === 'Shopify' ? 'BDT' : 
+                            item.platform === 'Stripe' ? 'USD' : 'DKK';
+    
+    // Convert revenue to selected currency
+    const convertedRevenue = convertCurrency(item.revenue, originalCurrency, selectedCurrency);
+    
     return {
       ...item,
-      percentage: Math.round(percentage * 10) / 10,
+      revenue: convertedRevenue,
+      originalRevenue: item.revenue,
+      originalCurrency: originalCurrency,
       name: config.name,
       icon: config.icon,
       color: config.color
     };
   }) || [];
+
+  // Calculate percentages after currency conversion
+  const totalConvertedRevenue = platformBreakdownWithPercentages.reduce((sum, p) => sum + p.revenue, 0);
+  platformBreakdownWithPercentages.forEach(platform => {
+    platform.percentage = totalConvertedRevenue > 0 ? 
+      Math.round(((platform.revenue / totalConvertedRevenue) * 100) * 10) / 10 : 0;
+  });
 
   const connectedIntegrations = integrations.filter(i => i.status === 'active');
 
@@ -256,8 +346,11 @@ export function AnalyticsPage() {
           />
           <select 
             value={dateRange}
-            onChange={(e) => setDateRange(e.target.value)}
-            className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm"
+            onChange={(e) => {
+              console.log('📅 Time period changed to:', e.target.value);
+              setDateRange(e.target.value);
+            }}
+            className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="last_3_months">Last 3 Months</option>
             <option value="last_6_months">Last 6 Months</option>
@@ -266,6 +359,35 @@ export function AnalyticsPage() {
           <Button variant="outline" size="sm" onClick={loadAnalyticsData}>
             <RefreshCw className="mr-2 h-4 w-4" />
             Refresh
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              console.log('🧪 ANALYTICS FULL TEST:');
+              console.log('📅 Time Period:', {
+                selected: dateRange,
+                startDate: getDateRangeStart(dateRange),
+                endDate: new Date().toISOString()
+              });
+              console.log('💱 Currency Conversion:');
+              console.log('- 1000 DKK → EUR:', convertCurrency(1000, 'DKK', 'EUR'));
+              console.log('- 1000 DKK → USD:', convertCurrency(1000, 'DKK', 'USD'));
+              console.log('📊 Current Data:');
+              console.log('- Analytics data:', analyticsData);
+              console.log('- Selected currency:', selectedCurrency);
+              console.log('- Integrations:', integrations.map(i => ({
+                platform: i.platform,
+                revenue: i.revenue,
+                converted: convertCurrency(i.revenue || 0, 
+                  i.platform === 'shopify' ? 'BDT' : i.platform === 'stripe' ? 'USD' : 'DKK',
+                  selectedCurrency)
+              })));
+              console.log('📈 MRR Trend Data Points:', analyticsData?.mrr_trend?.length || 0);
+              console.log('👥 Customer Trend Data Points:', analyticsData?.customer_trend?.length || 0);
+            }}
+          >
+            🧪 Test Currency
           </Button>
           <Button variant="outline" size="sm">
             <Download className="mr-2 h-4 w-4" />
@@ -388,7 +510,13 @@ export function AnalyticsPage() {
                           <div className="space-y-2">
                             <div className="flex justify-between items-center">
                               <span className="text-sm text-muted-foreground">Revenue:</span>
-                              <span className="font-semibold">{safeFormatCurrency(integration.revenue)}</span>
+                              <span className="font-semibold">{(() => {
+                                const platformRevenue = integration.revenue || 0;
+                                const originalCurrency = integration.platform === 'shopify' ? 'BDT' : 
+                                                       integration.platform === 'stripe' ? 'USD' : 'DKK';
+                                const convertedRevenue = convertCurrency(platformRevenue, originalCurrency, selectedCurrency);
+                                return safeFormatCurrency(convertedRevenue);
+                              })()}</span>
                             </div>
                             <div className="flex justify-between items-center">
                               <span className="text-sm text-muted-foreground">Customers:</span>
@@ -473,7 +601,12 @@ export function AnalyticsPage() {
                 {/* MRR Growth Trend */}
       <Card>
                   <CardHeader>
-                    <CardTitle>MRR Growth Trend</CardTitle>
+                    <CardTitle className="flex items-center justify-between">
+                      <span>MRR Growth Trend</span>
+                      <Badge variant="outline" className="text-xs">
+                        {dateRange.replace('last_', '').replace('_', ' ')}
+                      </Badge>
+                    </CardTitle>
         </CardHeader>
         <CardContent>
                     {analyticsData?.mrr_trend && analyticsData.mrr_trend.length > 0 ? (
@@ -579,7 +712,12 @@ export function AnalyticsPage() {
                 {/* Monthly Growth Rate */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>Monthly Growth Rate</CardTitle>
+                    <CardTitle className="flex items-center justify-between">
+                      <span>Monthly Growth Rate</span>
+                      <Badge variant="outline" className="text-xs">
+                        {dateRange.replace('last_', '').replace('_', ' ')}
+                      </Badge>
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     {analyticsData?.monthly_growth && analyticsData.monthly_growth.length > 0 ? (
@@ -615,7 +753,12 @@ export function AnalyticsPage() {
                 {/* Customer Growth */}
         <Card>
                   <CardHeader>
-                    <CardTitle>Customer Growth</CardTitle>
+                    <CardTitle className="flex items-center justify-between">
+                      <span>Customer Growth</span>
+                      <Badge variant="outline" className="text-xs">
+                        {dateRange.replace('last_', '').replace('_', ' ')}
+                      </Badge>
+                    </CardTitle>
           </CardHeader>
           <CardContent>
                     {analyticsData?.customer_trend && analyticsData.customer_trend.length > 0 ? (

@@ -2,9 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { ShoppingBag, Info, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,66 +12,63 @@ import { Badge } from '@/components/ui/badge';
 import { api } from '@/lib/api';
 // Toast functionality will be added later
 
-const shopifyDomainSchema = z.object({
-  shop_domain: z
-    .string()
-    .min(1, 'Shop domain is required')
-    .regex(
-      /^[a-zA-Z0-9\-_]+\.myshopify\.com$/,
-      'Must be a valid Shopify domain (e.g., your-store.myshopify.com)'
-    ),
-  api_key: z
-    .string()
-    .min(10, 'API Key must be at least 10 characters')
-    .trim(),
-  api_secret: z
-    .string()
-    .min(10, 'API Secret must be at least 10 characters')
-    .trim(),
-  webhook_secret: z
-    .string()
-    .optional(),
-});
-
-type ShopifyDomainForm = z.infer<typeof shopifyDomainSchema>;
+interface ShopifyFormData {
+  shop_domain: string;
+  access_token: string;
+  webhook_secret: string;
+}
 
 export default function ShopifyIntegrationPage() {
   const router = useRouter();
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
-
-  const form = useForm<ShopifyDomainForm>({
-    resolver: zodResolver(shopifyDomainSchema),
-    defaultValues: {
-      shop_domain: '',
-      api_key: '',
-      api_secret: '',
-      webhook_secret: '',
-    },
+  
+  // Use controlled inputs
+  const [formData, setFormData] = useState<ShopifyFormData>({
+    shop_domain: '',
+    access_token: '',
+    webhook_secret: '',
   });
 
-  const onSubmit = async (data: ShopifyDomainForm) => {
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log('Form submitted with data:', formData);
     setIsConnecting(true);
     setConnectionError(null);
 
+    // Basic validation
+    if (!formData.shop_domain?.trim()) {
+      console.log('Shop domain validation failed:', formData.shop_domain);
+      setConnectionError('Shop domain is required');
+      setIsConnecting(false);
+      return;
+    }
+    
+    if (!formData.access_token?.trim()) {
+      setConnectionError('Admin API access token is required');
+      setIsConnecting(false);
+      return;
+    }
+
     try {
-      const response = await api.post('/shopify/oauth/initiate', data);
+      // Clean the domain before sending to API
+      const cleanedData = {
+        ...formData,
+        shop_domain: formData.shop_domain.replace(/^https?:\/\//, '').replace(/\/$/, '').trim()
+      };
+      
+      const response = await api.post('/shopify/connect-direct', cleanedData);
       
       if (response.data.success) {
-        const { auth_url } = response.data.data;
+        console.log('Shopify integration created successfully:', response.data);
         
-        // Store the shop domain for later use
-        localStorage.setItem('shopify_connecting_domain', data.shop_domain);
-        
-        console.log('Redirecting to Shopify...');
-        
-        // Redirect to Shopify OAuth
-        window.location.href = auth_url;
+        // Redirect to integrations page with success
+        router.push('/integrations?shopify=connected');
       } else {
-        throw new Error(response.data.message || 'Failed to initiate Shopify connection');
+        throw new Error(response.data.message || 'Failed to create Shopify integration');
       }
     } catch (error: any) {
-      console.error('Shopify OAuth initiation failed:', error);
+      console.error('Shopify integration failed:', error);
       
       const errorMessage = error.response?.data?.message || error.message || 'Failed to connect to Shopify';
       setConnectionError(errorMessage);
@@ -142,15 +136,11 @@ export default function ShopifyIntegrationPage() {
           <Info className="w-4 h-4" />
           <AlertDescription>
             <div className="space-y-2">
-              <p className="font-medium">First Time Setup Required</p>
+              <p className="font-medium">Private App Required</p>
               <p className="text-sm">
-                Before connecting, you need to create a Shopify app in your 
-                <a href="https://partners.shopify.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-1">
-                  Shopify Partners Dashboard
-                </a>. 
-                Set the OAuth redirect URL to: <code className="bg-gray-100 px-1 rounded text-xs">
-                  https://your-domain.com/api/shopify/oauth/callback
-                </code>
+                You need to create a <strong>Private App</strong> in your Shopify Admin. 
+                Go to: <strong>Settings → Apps and sales channels → Develop apps → Create an app</strong>.
+                Then get the <strong>Admin API access token</strong> from the API credentials section.
               </p>
             </div>
           </AlertDescription>
@@ -180,63 +170,39 @@ export default function ShopifyIntegrationPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={onSubmit} noValidate className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="shop_domain">Shopify Store Domain</Label>
                 <Input
                   id="shop_domain"
-                  {...form.register('shop_domain')}
-                  placeholder="your-store.myshopify.com"
+                  name="shop_domain"
+                  value={formData.shop_domain}
+                  onChange={(e) => setFormData({...formData, shop_domain: e.target.value})}
+                  placeholder="your-store.myshopify.com or https://your-store.myshopify.com/"
                   disabled={isConnecting}
                   className="font-mono"
                 />
-                {form.formState.errors.shop_domain && (
-                  <p className="text-sm text-red-600">
-                    {form.formState.errors.shop_domain.message}
-                  </p>
-                )}
+
                 <p className="text-sm text-gray-500">
-                  Enter your full Shopify domain (e.g., magnus-store.myshopify.com)
+                  Enter your Shopify domain. You can include https:// and trailing slash - we'll clean it up automatically.
                 </p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="api_key">Shopify API Key</Label>
+                <Label htmlFor="access_token">Admin API Access Token</Label>
                 <Input
-                  id="api_key"
-                  {...form.register('api_key')}
-                  placeholder="Your Shopify app API key"
+                  id="access_token"
+                  name="access_token"
+                  value={formData.access_token}
+                  onChange={(e) => setFormData({...formData, access_token: e.target.value})}
+                  placeholder="shpat_..."
                   disabled={isConnecting}
                   type="password"
                   className="font-mono"
                 />
-                {form.formState.errors.api_key && (
-                  <p className="text-sm text-red-600">
-                    {form.formState.errors.api_key.message}
-                  </p>
-                )}
-                <p className="text-sm text-gray-500">
-                  Find this in your Shopify Partners Dashboard → Apps → [Your App] → API credentials
-                </p>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="api_secret">Shopify API Secret</Label>
-                <Input
-                  id="api_secret"
-                  {...form.register('api_secret')}
-                  placeholder="Your Shopify app API secret"
-                  disabled={isConnecting}
-                  type="password"
-                  className="font-mono"
-                />
-                {form.formState.errors.api_secret && (
-                  <p className="text-sm text-red-600">
-                    {form.formState.errors.api_secret.message}
-                  </p>
-                )}
                 <p className="text-sm text-gray-500">
-                  This is shown only once when you create your app
+                  Find this in your Shopify Admin → Settings → Apps and sales channels → Develop apps → [Your App] → API credentials
                 </p>
               </div>
 
@@ -244,17 +210,15 @@ export default function ShopifyIntegrationPage() {
                 <Label htmlFor="webhook_secret">Webhook Secret (Optional)</Label>
                 <Input
                   id="webhook_secret"
-                  {...form.register('webhook_secret')}
+                  name="webhook_secret"
+                  value={formData.webhook_secret}
+                  onChange={(e) => setFormData({...formData, webhook_secret: e.target.value})}
                   placeholder="Your webhook verification secret"
                   disabled={isConnecting}
                   type="password"
                   className="font-mono"
                 />
-                {form.formState.errors.webhook_secret && (
-                  <p className="text-sm text-red-600">
-                    {form.formState.errors.webhook_secret.message}
-                  </p>
-                )}
+
                 <p className="text-sm text-gray-500">
                   Used to verify webhook authenticity (recommended for security)
                 </p>
@@ -276,12 +240,12 @@ export default function ShopifyIntegrationPage() {
                 {isConnecting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Connecting to Shopify...
+                    Creating Integration...
                   </>
                 ) : (
                   <>
                     <ShoppingBag className="mr-2 h-4 w-4" />
-                    Connect with Shopify
+                    Create Shopify Integration
                   </>
                 )}
               </Button>

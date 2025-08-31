@@ -32,7 +32,7 @@ import {
 } from '../ui/dialog'
 
 import { integrationsApi } from '../../lib/api'
-import { formatCurrency } from '@/lib/mock-data'
+import { formatCurrency, convertCurrency } from '../../lib/currency-service'
 
 // Available platforms configuration
 const availablePlatforms = [

@@ -26,11 +26,48 @@ import {
   mockMetrics,
   mockMRRData,
   mockPlatformBreakdown,
-  convertCurrency,
 } from '../../lib/mock-data'
 import { Currency } from '../../lib/types'
 import { dashboardApi, integrationsApi } from '../../lib/api'
-import { formatCurrency } from '../../lib/mock-data'
+// Currency functions are now inline below to avoid import issues
+
+// Inline currency functions to bypass import issues
+const EXCHANGE_RATES = {
+  DKK: 1,
+  EUR: 0.134,
+  USD: 0.146,
+  BDT: 16.4,
+};
+
+const convertCurrency = (amount: number, fromCurrency: string, toCurrency: string): number => {
+  if (fromCurrency === toCurrency) return amount;
+  
+  const from = fromCurrency.toUpperCase();
+  const to = toCurrency.toUpperCase();
+  
+  // Convert from source currency to DKK, then to target currency
+  const inDKK = amount / (EXCHANGE_RATES[from as keyof typeof EXCHANGE_RATES] || 1);
+  const result = inDKK * (EXCHANGE_RATES[to as keyof typeof EXCHANGE_RATES] || 1);
+  
+  return Math.round(result * 100) / 100;
+};
+
+const formatCurrency = (amount: number, currency: Currency): string => {
+  try {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  } catch (error) {
+    // Fallback formatting
+    const symbols = { DKK: 'kr', EUR: '€', USD: '$' };
+    const symbol = symbols[currency] || currency;
+    const formatted = amount.toFixed(2);
+    return `${symbol}${formatted.toLocaleString()}`;
+  }
+};
 
 const metricIcons = [TrendingUp, Users, CreditCard, Activity]
 
@@ -71,6 +108,8 @@ interface Integration {
   last_sync_at: string | null
   customer_count: number
   revenue: number
+  currency?: string
+  original_revenue?: number
 }
 
 export function DashboardPage() {
@@ -103,7 +142,7 @@ export function DashboardPage() {
     try {
       console.log('🔍 Loading dashboard data...')
       const [metricsResponse, integrationsResponse] = await Promise.all([
-        dashboardApi.getMetrics({ currency: selectedCurrency }),
+        dashboardApi.getMetrics({ currency: 'DKK' }), // Always get data in base currency
         integrationsApi.getAll(),
       ])
 
@@ -173,11 +212,27 @@ export function DashboardPage() {
   // Create metrics array from real data or fallback to mock data
   const getMetricsData = () => {
     console.log('📈 Getting metrics data, current metrics:', metrics)
+    console.log('📈 Selected currency:', selectedCurrency)
+    
+    // Convert from base currency (DKK) to selected currency
+    const baseCurrency = 'DKK'; // Backend returns data in DKK
+    const mrrValue = metrics?.total_mrr?.value || 0;
+    const arrValue = metrics?.arr?.value || 0;
+    
+    console.log('📈 Raw MRR value:', mrrValue, baseCurrency)
+    console.log('📈 Raw ARR value:', arrValue, baseCurrency)
+    
+    // Convert currencies from DKK to selected currency
+    const convertedMRR = convertCurrency(mrrValue, baseCurrency, selectedCurrency);
+    const convertedARR = convertCurrency(arrValue, baseCurrency, selectedCurrency);
+    
+    console.log('📈 Converted MRR:', convertedMRR, selectedCurrency)
+    console.log('📈 Converted ARR:', convertedARR, selectedCurrency)
+    
     return [
       {
         title: 'Total MRR',
-        value:
-          metrics?.total_mrr?.formatted || formatCurrency(0, selectedCurrency),
+        value: formatCurrency(convertedMRR, selectedCurrency),
         change: `${
           metrics?.total_mrr?.change_percentage || 0
         }% from last month`,
@@ -208,7 +263,7 @@ export function DashboardPage() {
       },
       {
         title: 'ARR',
-        value: metrics?.arr?.formatted || formatCurrency(0, selectedCurrency),
+        value: formatCurrency(convertedARR, selectedCurrency),
         change: 'Annual Recurring Revenue',
         trend: 'neutral' as const,
         icon: DollarSign,
@@ -216,26 +271,35 @@ export function DashboardPage() {
     ]
   }
 
+  const [forceUpdate, setForceUpdate] = useState(0);
+  
+  // Force re-render when currency changes
+  useEffect(() => {
+    console.log('🔄 Currency changed to:', selectedCurrency);
+    setForceUpdate(prev => prev + 1);
+  }, [selectedCurrency]);
+
   const metricsData = getMetricsData()
 
-  // Get platform breakdown from integrations
+  // Get platform breakdown from integrations with currency conversion
   const platformBreakdown = integrations.map((integration, index) => {
     const config = platformConfig[
       integration.platform as keyof typeof platformConfig
     ] || { name: integration.platform_name, icon: '🔗', color: 'gray' }
-    const totalRevenue = integrations.reduce(
-      (sum, int) => sum + (int.revenue || 0),
-      0
-    )
-    const percentage =
-      totalRevenue > 0 ? ((integration.revenue || 0) / totalRevenue) * 100 : 0
-
+    
+    // Convert revenue from DKK (base currency) to selected currency
+    const originalRevenue = integration.revenue || 0;
+    const baseCurrency = 'DKK'; // Backend returns data in DKK
+    const convertedRevenue = convertCurrency(originalRevenue, baseCurrency, selectedCurrency);
+    
     return {
       platform: config.name,
       icon: config.icon,
-      revenue: integration.revenue || 0,
+      revenue: convertedRevenue,
+      originalRevenue: originalRevenue,
+      originalCurrency: baseCurrency,
       customers: integration.customer_count || 0,
-      percentage: Math.round(percentage * 10) / 10,
+      percentage: 0, // Will be calculated after all conversions
       color: config.color,
       currency: selectedCurrency,
       lastSync: integration.last_sync_at || new Date().toISOString(),
@@ -246,6 +310,13 @@ export function DashboardPage() {
         : 'syncing') as 'connected' | 'error' | 'syncing',
     }
   })
+
+  // Calculate percentages after currency conversion
+  const totalConvertedRevenue = platformBreakdown.reduce((sum, platform) => sum + platform.revenue, 0);
+  platformBreakdown.forEach(platform => {
+    platform.percentage = totalConvertedRevenue > 0 ? 
+      Math.round(((platform.revenue / totalConvertedRevenue) * 100) * 10) / 10 : 0;
+  });
 
   const connectedIntegrations = integrations.filter(
     (i) => i.status === 'active'
@@ -292,6 +363,20 @@ export function DashboardPage() {
                     }`}
                   />
                   {isLoading ? 'Syncing...' : 'Sync Data'}
+                </Button>
+                <Button
+                  variant='outline'
+                  size='sm'
+                  onClick={() => {
+                    console.log('🧪 CURRENCY TEST:');
+                    console.log('- 1000 DKK → EUR:', convertCurrency(1000, 'DKK', 'EUR'));
+                    console.log('- 1000 DKK → USD:', convertCurrency(1000, 'DKK', 'USD'));
+                    console.log('- Current metrics:', metrics);
+                    console.log('- Selected currency:', selectedCurrency);
+                  }}
+                  className='btn-secondary w-full sm:w-auto'
+                >
+                  🧪 Test Currency
                 </Button>
               </div>
             </div>
