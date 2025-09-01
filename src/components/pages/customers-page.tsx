@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select';
-// import { CustomerDetailModal } from '../dashboard/customer-detail-modal';
+import { CustomerDetailModal } from '../dashboard/customer-detail-modal';
 import { CurrencySelector } from '../dashboard/currency-selector';
 import { mockCustomers } from '../../lib/mock-data';
 import { formatCurrency, convertCurrency } from '../../lib/currency-service';
@@ -46,6 +46,21 @@ const platformColors = {
   'economic': 'bg-blue-100 text-blue-800',
   'shopify': 'bg-green-100 text-green-800',
   'stripe': 'bg-purple-100 text-purple-800',
+};
+
+// Helper function to get display name for platform
+const getPlatformDisplayName = (platform: string): string => {
+  switch (platform) {
+    case 'economic':
+    case 'e-conomic':
+      return 'E-conomic';
+    case 'shopify':
+      return 'Shopify';
+    case 'stripe':
+      return 'Stripe';
+    default:
+      return platform.charAt(0).toUpperCase() + platform.slice(1);
+  }
 };
 
 const statusColors = {
@@ -98,12 +113,16 @@ export function CustomersPage() {
     setError('');
     
     try {
-      const response = await customersApi.getAll({
+      const apiParams = {
         search: searchTerm || undefined,
         status: statusFilter !== 'all' ? statusFilter : undefined,
         platform: platformFilter !== 'all' ? platformFilter : undefined,
         per_page: 500 // Increased to show customers from all platforms
-      });
+      };
+      
+      console.log('🔍 Loading customers with params:', apiParams);
+      
+      const response = await customersApi.getAll(apiParams);
 
       if (response.data.success) {
         // Normalize the API data to match frontend expectations
@@ -128,6 +147,15 @@ export function CustomersPage() {
           clv: typeof customer.clv === 'number' ? customer.clv : 0,
           churnRisk: customer.churnRisk || 'low',
         })) || [];
+        
+        console.log('📊 Customer results:', {
+          totalCustomers: normalizedCustomers.length,
+          platformDistribution: normalizedCustomers.reduce((acc: any, customer: any) => {
+            acc[customer.platform] = (acc[customer.platform] || 0) + 1;
+            return acc;
+          }, {}),
+          currentFilters: { searchTerm, statusFilter, platformFilter }
+        });
         
         setCustomers(normalizedCustomers);
       } else {
@@ -205,8 +233,46 @@ export function CustomersPage() {
     console.log('Exporting customers...');
   };
 
+  const handleToggleExclusion = async (customer: Customer) => {
+    try {
+      await customersApi.update(customer.id, {
+        excluded_from_mrr: !customer.isExcluded,
+        exclusion_reason: !customer.isExcluded ? 'Manually excluded' : null
+      });
+      await loadCustomers(); // Reload the customer list
+    } catch (err: any) {
+      console.error('Failed to update customer:', err);
+      setError('Failed to update customer. Please try again.');
+    }
+  };
+
+  const handleEditCustomer = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setIsModalOpen(true);
+  };
+
+  const handleBulkEdit = async () => {
+    if (selectedCustomers.length === 0) return;
+    
+    try {
+      // For bulk edit, we'll exclude all selected customers from MRR
+      await customersApi.bulkUpdate({
+        customer_ids: selectedCustomers,
+        excluded_from_mrr: true,
+        exclusion_reason: 'Bulk excluded'
+      });
+      
+      setSelectedCustomers([]);
+      await loadCustomers();
+    } catch (err: any) {
+      console.error('Bulk update failed:', err);
+      setError('Bulk update failed. Please try again.');
+    }
+  };
+
   const connectedPlatforms = integrations.filter(i => i.status === 'active');
-  const availablePlatforms = ['e-conomic', 'shopify', 'stripe'];
+  // Get available platforms from actual integrations instead of hardcoded list
+  const availablePlatforms = Array.from(new Set(integrations.map(i => i.platform))).sort();
 
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6">
@@ -261,7 +327,7 @@ export function CustomersPage() {
                       {platformIcons[integration.platform as keyof typeof platformIcons] || '🔗'}
                     </span>
                     <div>
-                      <p className="font-medium text-sm">{integration.platform_name}</p>
+                      <p className="font-medium text-sm">{integration.platform_name || getPlatformDisplayName(integration.platform)}</p>
                       <p className="text-xs text-muted-foreground">
                         {integration.customer_count} customers
                       </p>
@@ -343,8 +409,8 @@ export function CustomersPage() {
                   {availablePlatforms.map(platform => (
                     <SelectItem key={platform} value={platform}>
                       <div className="flex items-center space-x-2">
-                        <span>{platformIcons[platform as keyof typeof platformIcons]}</span>
-                        <span className="capitalize">{platform.replace('-', ' ')}</span>
+                        <span>{platformIcons[platform as keyof typeof platformIcons] || '🔗'}</span>
+                        <span>{getPlatformDisplayName(platform)}</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -428,9 +494,9 @@ export function CustomersPage() {
                   <span className="text-sm text-muted-foreground">
                     {selectedCustomers.length} selected
                   </span>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={handleBulkEdit}>
                     <Edit className="mr-2 h-4 w-4" />
-                    Bulk Edit
+                    Bulk Exclude
                   </Button>
                 </div>
               )}
@@ -479,7 +545,7 @@ export function CustomersPage() {
                           <span className="mr-1">
                             {platformIcons[customer.platform as keyof typeof platformIcons] || '🔗'}
                           </span>
-                          {customer.platform.replace('-', ' ')}
+                          {getPlatformDisplayName(customer.platform)}
                         </Badge>
                     </TableCell>
                     <TableCell>
@@ -535,23 +601,23 @@ export function CustomersPage() {
                                 setIsModalOpen(true);
                               }}
                             >
-                            <Eye className="mr-2 h-4 w-4" />
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit Customer
-                          </DropdownMenuItem>
+                              <Eye className="mr-2 h-4 w-4" />
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEditCustomer(customer)}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              Edit Customer
+                            </DropdownMenuItem>
                             {customer.isExcluded ? (
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleToggleExclusion(customer)}>
                                 <Plus className="mr-2 h-4 w-4" />
                                 Include in MRR
                               </DropdownMenuItem>
                             ) : (
-                          <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleToggleExclusion(customer)}>
                                 <Trash2 className="mr-2 h-4 w-4" />
-                            Exclude from MRR
-                          </DropdownMenuItem>
+                                Exclude from MRR
+                              </DropdownMenuItem>
                             )}
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -603,6 +669,21 @@ export function CustomersPage() {
         </CardContent>
       </Card>
       )}
+
+      {/* Customer Detail Modal */}
+      <CustomerDetailModal
+        customer={selectedCustomer}
+        open={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedCustomer(null);
+        }}
+        onSave={async (updatedCustomer: Customer) => {
+          await loadCustomers(); // Reload the customer list
+          setIsModalOpen(false);
+          setSelectedCustomer(null);
+        }}
+      />
     </div>
   );
 }

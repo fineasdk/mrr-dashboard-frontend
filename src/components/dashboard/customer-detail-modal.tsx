@@ -20,7 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from '../ui/table';
-import { AlertTriangle, Eye, Calendar, User, CreditCard } from 'lucide-react';
+import { AlertTriangle, Eye, Calendar, User, CreditCard, Building2, Mail, MapPin, Phone, DollarSign, TrendingUp, Activity, Clock } from 'lucide-react';
 import { Customer, Invoice, AuditLogEntry } from '../../lib/types';
 import { formatCurrency, convertCurrency } from '../../lib/currency-service';
 import { mockInvoices, mockAuditLog } from '../../lib/mock-data';
@@ -34,14 +34,35 @@ interface CustomerDetailModalProps {
 
 const platformIcons = {
   'e-conomic': '🔗',
+  'economic': '🔗',
   'shopify': '🛒',
   'stripe': '💳',
 };
 
+const getPlatformDisplayName = (platform: string): string => {
+  switch (platform) {
+    case 'economic':
+    case 'e-conomic':
+      return 'E-conomic';
+    case 'shopify':
+      return 'Shopify';
+    case 'stripe':
+      return 'Stripe';
+    default:
+      return platform.charAt(0).toUpperCase() + platform.slice(1);
+  }
+};
+
 const statusColors = {
-  active: 'bg-green-100 text-green-800',
-  paused: 'bg-yellow-100 text-yellow-800',
-  inactive: 'bg-red-100 text-red-800',
+  active: 'bg-green-100 text-green-800 border-green-200',
+  paused: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  inactive: 'bg-red-100 text-red-800 border-red-200',
+};
+
+const churnRiskColors = {
+  low: 'bg-green-50 text-green-700 border-green-200',
+  medium: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+  high: 'bg-red-50 text-red-700 border-red-200',
 };
 
 export function CustomerDetailModal({ customer, open, onClose, onSave }: CustomerDetailModalProps) {
@@ -77,164 +98,91 @@ export function CustomerDetailModal({ customer, open, onClose, onSave }: Custome
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white">
         <DialogHeader>
-          <DialogTitle className="flex items-center space-x-2">
-            <span>Customer Details - {customer.name}</span>
-            <Badge 
-              variant="secondary" 
-              className={statusColors[customer.status]}
-            >
-              {customer.status === 'active' && '✅'} 
-              {customer.status === 'paused' && '⚠️'} 
-              {customer.status === 'inactive' && '❌'} 
-              {customer.status}
-            </Badge>
+          <DialogTitle className="text-xl font-semibold text-gray-900">
+            Customer Details
           </DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Customer Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <User className="h-5 w-5" />
-                <span>Customer Information</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label className="text-sm text-muted-foreground">Company</Label>
-                <p className="font-medium">{customer.name}</p>
+        <div className="space-y-6">
+          {/* Basic Information */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label className="text-sm text-gray-600">Company Name</Label>
+              <p className="font-medium text-gray-900">{customer.name}</p>
+            </div>
+            <div>
+              <Label className="text-sm text-gray-600">Email</Label>
+              <p className="font-medium text-gray-900">{customer.email}</p>
+            </div>
+            <div>
+              <Label className="text-sm text-gray-600">Platform</Label>
+              <div className="flex items-center space-x-2">
+                <span>{platformIcons[customer.platform as keyof typeof platformIcons] || '🔗'}</span>
+                <span className="font-medium">{getPlatformDisplayName(customer.platform)}</span>
               </div>
-              <div>
-                <Label className="text-sm text-muted-foreground">Email</Label>
-                <p className="font-medium">{customer.email}</p>
-              </div>
-              <div>
-                <Label className="text-sm text-muted-foreground">Platform</Label>
-                <div className="flex items-center space-x-2">
-                  <span className="text-lg">{platformIcons[customer.platform]}</span>
-                  <span className="capitalize font-medium">{customer.platform}</span>
-                </div>
-              </div>
-              <div>
-                <Label className="text-sm text-muted-foreground">Customer Since</Label>
-                <p className="font-medium">{new Date(customer.joinDate).toLocaleDateString()}</p>
-              </div>
-              <div>
-                <Label className="text-sm text-muted-foreground">Churn Risk</Label>
-                <Badge variant={
-                  customer.churnRisk === 'high' ? 'destructive' : 
-                  customer.churnRisk === 'medium' ? 'secondary' : 'outline'
-                }>
-                  {customer.churnRisk} risk
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+            <div>
+              <Label className="text-sm text-gray-600">Status</Label>
+              <Badge className={statusColors[customer.status]}>
+                {customer.status}
+              </Badge>
+            </div>
+          </div>
 
-          {/* Subscription Details */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <CreditCard className="h-5 w-5" />
-                <span>Subscription Details</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label className="text-sm text-muted-foreground">Current MRR</Label>
-                <p className="text-2xl font-bold">{formatCurrency(customer.mrr, customer.currency)}</p>
-              </div>
-              <div>
-                <Label className="text-sm text-muted-foreground">Original MRR</Label>
-                <p className="font-medium">{formatCurrency(customer.originalMrr, customer.currency)}</p>
-              </div>
-              <div>
-                <Label className="text-sm text-muted-foreground">Billing Frequency</Label>
-                <p className="capitalize font-medium">{customer.billingFrequency}</p>
-              </div>
-              <div>
-                <Label className="text-sm text-muted-foreground">Currency</Label>
-                <p className="font-medium">{customer.currency}</p>
-              </div>
-              <div>
-                <Label className="text-sm text-muted-foreground">Customer Lifetime Value</Label>
-                <p className="font-medium">{formatCurrency(customer.clv, customer.currency)}</p>
-              </div>
-              <div>
-                <Label className="text-sm text-muted-foreground">Total Invoices</Label>
-                <p className="font-medium">{customer.invoiceCount}</p>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Revenue Information */}
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <Label className="text-sm text-gray-600">Current MRR</Label>
+              <p className="text-xl font-bold text-gray-900">{formatCurrency(customer.mrr, customer.currency)}</p>
+            </div>
+            <div>
+              <Label className="text-sm text-gray-600">Original MRR</Label>
+              <p className="text-xl font-bold text-gray-900">{formatCurrency(customer.originalMrr, customer.currency)}</p>
+            </div>
+            <div>
+              <Label className="text-sm text-gray-600">Lifetime Value</Label>
+              <p className="text-xl font-bold text-gray-900">{formatCurrency(customer.clv, customer.currency)}</p>
+            </div>
+          </div>
         </div>
 
-        {/* Exclusion Controls */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <AlertTriangle className="h-5 w-5" />
-              <span>Revenue Control</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label className="text-base">Exclude Customer from MRR</Label>
-                <p className="text-sm text-muted-foreground">
-                  Remove this customer from recurring revenue calculations
-                </p>
-              </div>
-              <Switch checked={isExcluded} onCheckedChange={setIsExcluded} />
+        {/* MRR Control */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <Label className="text-base font-medium">Exclude from MRR</Label>
+              <p className="text-sm text-gray-600">Remove this customer from revenue calculations</p>
             </div>
-            
-            {isExcluded && (
-              <div className="space-y-3">
-                <div>
-                  <Label htmlFor="exclusion-reason">Reason for Exclusion</Label>
-                  <Textarea
-                    id="exclusion-reason"
-                    placeholder="Explain why this customer should be excluded..."
-                    value={exclusionReason}
-                    onChange={(e) => setExclusionReason(e.target.value)}
-                    className="mt-1"
-                  />
-                </div>
-                <div className="p-3 bg-orange-50 rounded-lg border border-orange-200">
-                  <p className="text-sm text-orange-800">
-                    <strong>Impact:</strong> {mrrImpact < 0 ? '' : '+'}{formatCurrency(mrrImpact, customer.currency)} MRR change
-                  </p>
-                </div>
-              </div>
-            )}
-            
-            {customer.isExcluded && !isExcluded && (
-              <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                <p className="text-sm text-green-800">
-                  <strong>Restore Impact:</strong> +{formatCurrency(customer.originalMrr, customer.currency)} MRR
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+            <Switch checked={isExcluded} onCheckedChange={setIsExcluded} />
+          </div>
+          
+          {isExcluded && (
+            <div>
+              <Label htmlFor="exclusion-reason">Reason for Exclusion</Label>
+              <Textarea
+                id="exclusion-reason"
+                placeholder="Why is this customer excluded?"
+                value={exclusionReason}
+                onChange={(e) => setExclusionReason(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+          )}
+        </div>
 
         {/* Invoice History */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Invoice History</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">Invoice History</h3>
+          {customerInvoices.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Date</TableHead>
                   <TableHead>Amount</TableHead>
-                  <TableHead>Currency</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Type</TableHead>
-                  <TableHead>Excluded</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -242,29 +190,22 @@ export function CustomerDetailModal({ customer, open, onClose, onSave }: Custome
                   <TableRow key={invoice.id}>
                     <TableCell>{new Date(invoice.date).toLocaleDateString()}</TableCell>
                     <TableCell>{formatCurrency(invoice.amount, invoice.currency)}</TableCell>
-                    <TableCell>{invoice.currency}</TableCell>
                     <TableCell>
                       <Badge variant={invoice.status === 'paid' ? 'secondary' : 'destructive'}>
                         {invoice.status}
                       </Badge>
                     </TableCell>
                     <TableCell className="capitalize">{invoice.type}</TableCell>
-                    <TableCell>
-                      <Switch 
-                        checked={invoice.isExcluded} 
-                        disabled={invoice.type === 'setup'} 
-                      />
-                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
+          ) : (
+            <p className="text-gray-500 text-center py-8">No invoices found</p>
+          )}
+        </div>
 
-        <Separator />
-
-        <div className="flex justify-end space-x-3">
+        <div className="flex justify-end space-x-3 pt-6 border-t">
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
