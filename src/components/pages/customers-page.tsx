@@ -92,6 +92,7 @@ export function CustomersPage() {
   const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<'view' | 'edit'>('view');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [platformFilter, setPlatformFilter] = useState<string>('all');
@@ -235,19 +236,39 @@ export function CustomersPage() {
 
   const handleToggleExclusion = async (customer: Customer) => {
     try {
-      await customersApi.update(customer.id, {
+      console.log('🔄 Toggle exclusion for customer:', {
+        id: customer.id,
+        name: customer.name,
+        currentlyExcluded: customer.isExcluded,
+        willBeExcluded: !customer.isExcluded
+      });
+      
+      const updateData = {
         excluded_from_mrr: !customer.isExcluded,
         exclusion_reason: !customer.isExcluded ? 'Manually excluded' : null
-      });
+      };
+      
+      console.log('📡 Sending toggle update:', updateData);
+      
+      await customersApi.update(customer.id, updateData);
+      
+      console.log('✅ Toggle exclusion successful');
       await loadCustomers(); // Reload the customer list
     } catch (err: any) {
-      console.error('Failed to update customer:', err);
+      console.error('❌ Failed to toggle customer exclusion:', err);
       setError('Failed to update customer. Please try again.');
     }
   };
 
   const handleEditCustomer = (customer: Customer) => {
     setSelectedCustomer(customer);
+    setModalMode('edit');
+    setIsModalOpen(true);
+  };
+
+  const handleViewCustomer = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setModalMode('view');
     setIsModalOpen(true);
   };
 
@@ -289,10 +310,6 @@ export function CustomersPage() {
             currentCurrency={selectedCurrency} 
             onCurrencyChange={setSelectedCurrency} 
           />
-          <Button variant="outline" size="sm" onClick={handleExportCustomers}>
-            <Download className="mr-2 h-4 w-4" />
-            Export
-          </Button>
           <Button size="sm" onClick={loadCustomers}>
             <RefreshCw className="mr-2 h-4 w-4" />
             Refresh
@@ -595,12 +612,7 @@ export function CustomersPage() {
                           </Button>
                         </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="bg-white">
-                            <DropdownMenuItem 
-                              onClick={() => {
-                                setSelectedCustomer(customer);
-                                setIsModalOpen(true);
-                              }}
-                            >
+                                                        <DropdownMenuItem onClick={() => handleViewCustomer(customer)}>
                               <Eye className="mr-2 h-4 w-4" />
                               View Details
                             </DropdownMenuItem>
@@ -674,14 +686,51 @@ export function CustomersPage() {
       <CustomerDetailModal
         customer={selectedCustomer}
         open={isModalOpen}
+        mode={modalMode}
         onClose={() => {
           setIsModalOpen(false);
           setSelectedCustomer(null);
         }}
         onSave={async (updatedCustomer: Customer) => {
-          await loadCustomers(); // Reload the customer list
-          setIsModalOpen(false);
-          setSelectedCustomer(null);
+          try {
+            console.log('💾 Saving customer changes:', {
+              id: updatedCustomer.id,
+              name: updatedCustomer.name,
+              isExcluded: updatedCustomer.isExcluded,
+              exclusionReason: updatedCustomer.exclusionReason
+            });
+            
+            // Prepare the update data
+            const updateData: any = {
+              excluded_from_mrr: updatedCustomer.isExcluded || false,
+            };
+            
+            // Add exclusion reason if customer is being excluded
+            if (updatedCustomer.isExcluded && updatedCustomer.exclusionReason) {
+              updateData.exclusion_reason = updatedCustomer.exclusionReason;
+            } else if (!updatedCustomer.isExcluded) {
+              updateData.exclusion_reason = null;
+            }
+            
+            console.log('📡 Sending update data to API:', {
+              customerId: updatedCustomer.id,
+              updateData: updateData
+            });
+            
+            // Call the API to update the customer
+            await customersApi.update(updatedCustomer.id, updateData);
+            
+            console.log('✅ Customer updated successfully');
+            
+            // Reload the customer list to reflect changes
+            await loadCustomers();
+            
+            setIsModalOpen(false);
+            setSelectedCustomer(null);
+          } catch (error) {
+            console.error('❌ Failed to update customer:', error);
+            setError('Failed to update customer. Please try again.');
+          }
         }}
       />
     </div>

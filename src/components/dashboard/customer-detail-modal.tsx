@@ -30,6 +30,7 @@ interface CustomerDetailModalProps {
   open: boolean;
   onClose: () => void;
   onSave: (customer: Customer) => void;
+  mode?: 'view' | 'edit';
 }
 
 const platformIcons = {
@@ -65,7 +66,7 @@ const churnRiskColors = {
   high: 'bg-red-50 text-red-700 border-red-200',
 };
 
-export function CustomerDetailModal({ customer, open, onClose, onSave }: CustomerDetailModalProps) {
+export function CustomerDetailModal({ customer, open, onClose, onSave, mode = 'view' }: CustomerDetailModalProps) {
   const [isExcluded, setIsExcluded] = React.useState(customer?.isExcluded || false);
   const [exclusionReason, setExclusionReason] = React.useState(customer?.exclusionReason || '');
   
@@ -101,7 +102,7 @@ export function CustomerDetailModal({ customer, open, onClose, onSave }: Custome
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold text-gray-900">
-            Customer Details
+            {mode === 'edit' ? 'Edit Customer' : 'Customer Details'}
           </DialogTitle>
         </DialogHeader>
 
@@ -149,28 +150,42 @@ export function CustomerDetailModal({ customer, open, onClose, onSave }: Custome
         </div>
 
         {/* MRR Control */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <Label className="text-base font-medium">Exclude from MRR</Label>
-              <p className="text-sm text-gray-600">Remove this customer from revenue calculations</p>
+        {mode === 'edit' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-base font-medium">Exclude from MRR</Label>
+                <p className="text-sm text-gray-600">Remove this customer from revenue calculations</p>
+              </div>
+              <Switch checked={isExcluded} onCheckedChange={setIsExcluded} />
             </div>
-            <Switch checked={isExcluded} onCheckedChange={setIsExcluded} />
+            
+            {isExcluded && (
+              <div>
+                <Label htmlFor="exclusion-reason">Reason for Exclusion</Label>
+                <Textarea
+                  id="exclusion-reason"
+                  placeholder="Why is this customer excluded?"
+                  value={exclusionReason}
+                  onChange={(e) => setExclusionReason(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+            )}
           </div>
-          
-          {isExcluded && (
-            <div>
-              <Label htmlFor="exclusion-reason">Reason for Exclusion</Label>
-              <Textarea
-                id="exclusion-reason"
-                placeholder="Why is this customer excluded?"
-                value={exclusionReason}
-                onChange={(e) => setExclusionReason(e.target.value)}
-                className="mt-1"
-              />
+        )}
+        
+        {mode === 'view' && customer.isExcluded && (
+          <div className="space-y-2">
+            <Label className="text-base font-medium">MRR Status</Label>
+            <div className="p-3 bg-orange-50 rounded-lg border border-orange-200">
+              <p className="text-sm text-orange-800 font-medium">This customer is excluded from MRR calculations</p>
+              {customer.exclusionReason && (
+                <p className="text-sm text-orange-600 mt-1">Reason: {customer.exclusionReason}</p>
+              )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Invoice History */}
         <div className="space-y-4">
@@ -207,11 +222,13 @@ export function CustomerDetailModal({ customer, open, onClose, onSave }: Custome
 
         <div className="flex justify-end space-x-3 pt-6 border-t">
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            {mode === 'edit' ? 'Cancel' : 'Close'}
           </Button>
-          <Button onClick={handleSave}>
-            Save Changes
-          </Button>
+          {mode === 'edit' && (
+            <Button onClick={handleSave}>
+              Save Changes
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>

@@ -364,20 +364,6 @@ export function DashboardPage() {
                   />
                   {isLoading ? 'Syncing...' : 'Sync Data'}
                 </Button>
-                <Button
-                  variant='outline'
-                  size='sm'
-                  onClick={() => {
-                    console.log('🧪 CURRENCY TEST:');
-                    console.log('- 1000 DKK → EUR:', convertCurrency(1000, 'DKK', 'EUR'));
-                    console.log('- 1000 DKK → USD:', convertCurrency(1000, 'DKK', 'USD'));
-                    console.log('- Current metrics:', metrics);
-                    console.log('- Selected currency:', selectedCurrency);
-                  }}
-                  className='btn-secondary w-full sm:w-auto'
-                >
-                  🧪 Test Currency
-                </Button>
               </div>
             </div>
           </div>
@@ -677,12 +663,6 @@ export function DashboardPage() {
                 <div className='p-4 sm:p-6 border-gray-200 border-b'>
                   <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
                     <h3 className='text-lg font-semibold'>MRR Trend</h3>
-                    <div className='flex items-center space-x-2'>
-                      <Button variant='outline' size='sm'>
-                        <Download className='mr-2 h-4 w-4' />
-                        Export
-                      </Button>
-                    </div>
                   </div>
                 </div>
                 <div className='p-4 sm:p-6'>
@@ -715,62 +695,6 @@ export function DashboardPage() {
                 </div>
               </div>
 
-              {/* Quick Actions */}
-              {hasIntegrations && (
-                <div className='bg-white rounded-lg shadow-sm'>
-                  <div className='p-4 sm:p-6 border-gray-200 border-b'>
-                    <h3 className='text-lg font-semibold'>Quick Actions</h3>
-                  </div>
-                  <div className='p-4 sm:p-6'>
-                    <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
-                      {integrations
-                        .filter(
-                          (integration) => integration.status === 'active'
-                        )
-                        .map((integration) => (
-                          <Button
-                            key={integration.id}
-                            variant='outline'
-                            className='h-auto p-4 flex flex-col items-center space-y-2'
-                            onClick={() =>
-                              handleSyncIntegration(integration.id)
-                            }
-                          >
-                            <span className='text-lg'>
-                              {platformConfig[
-                                integration.platform as keyof typeof platformConfig
-                              ]?.icon || '🔗'}
-                            </span>
-                            <span className='text-sm font-medium'>
-                              Sync {integration.platform_name}
-                            </span>
-                            <span className='text-xs text-muted-foreground'>
-                              Last:{' '}
-                              {integration.last_sync_at
-                                ? new Date(
-                                    integration.last_sync_at
-                                  ).toLocaleDateString()
-                                : 'Never'}
-                            </span>
-                          </Button>
-                        ))}
-                      <Button
-                        variant='outline'
-                        className='h-auto p-4 flex flex-col items-center space-y-2 border-dashed'
-                        onClick={() => (window.location.href = '#integrations')}
-                      >
-                        <Plus className='h-5 w-5' />
-                        <span className='text-sm font-medium'>
-                          Add Integration
-                        </span>
-                        <span className='text-xs text-muted-foreground'>
-                          Connect new platform
-                        </span>
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
             </>
           )}
         </div>

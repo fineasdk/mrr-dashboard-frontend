@@ -136,10 +136,27 @@ export function IntegrationsPage() {
   )
   const [isConnecting, setIsConnecting] = useState(false)
   const [isSyncing, setIsSyncing] = useState<Record<number, boolean>>({})
+  const [isSavingSettings, setIsSavingSettings] = useState(false)
 
   useEffect(() => {
     loadIntegrations()
+    loadSyncSettings()
   }, [])
+
+  const loadSyncSettings = async () => {
+    try {
+      // First check if we can get user sync settings
+      const response = await integrationsApi.getSyncSettings()
+      if (response.data.success) {
+        const settings = response.data.data
+        setAutoSync(settings.auto_sync ?? true)
+        setSyncFrequency(settings.sync_frequency?.toString() ?? '15')
+      }
+    } catch (err: any) {
+      console.log('No sync settings found, using defaults')
+      // Use defaults if no settings found
+    }
+  }
 
   const loadIntegrations = async () => {
     try {
@@ -327,6 +344,32 @@ export function IntegrationsPage() {
     })
   }
 
+  const handleSaveSyncSettings = async () => {
+    setIsSavingSettings(true)
+    setError('')
+
+    try {
+      const settingsData = {
+        auto_sync: autoSync,
+        sync_frequency: parseInt(syncFrequency) || 15,
+      }
+
+      console.log('💾 Saving sync settings:', settingsData)
+
+      const response = await integrationsApi.updateSyncSettings(settingsData)
+      
+      if (response.data.success) {
+        console.log('✅ Sync settings saved successfully')
+        // Could show a success toast here
+      }
+    } catch (err: any) {
+      console.error('❌ Failed to save sync settings:', err)
+      setError('Failed to save sync settings: ' + (err.response?.data?.message || err.message))
+    } finally {
+      setIsSavingSettings(false)
+    }
+  }
+
   const totalRevenue = integrations.reduce(
     (sum, integration) => sum + (integration.revenue || 0),
     0
@@ -425,140 +468,7 @@ export function IntegrationsPage() {
         </Card>
       </div>
 
-      {/* Connected Integrations */}
-      {integrations.length > 0 && (
-        <div className='space-y-4'>
-          <h2 className='text-lg font-semibold'>Connected Integrations</h2>
-          {integrations.map((integration) => {
-            const StatusIcon =
-              statusConfig[integration.status]?.icon || AlertCircle
-            const platformConfig = availablePlatforms.find(
-              (p) => p.name.toLowerCase() === integration.platform
-            )
 
-            return (
-              <Card key={integration.id}>
-                <CardHeader className='pb-4'>
-                  <div className='flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 gap-4'>
-                    <CardTitle className='flex items-center space-x-3'>
-                      <span className='text-xl sm:text-2xl'>
-                        {platformConfig?.icon || '🔗'}
-                      </span>
-                      <div>
-                        <div className='flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-2'>
-                          <span className='text-lg sm:text-xl'>
-                            {integration.platform_name}
-                          </span>
-                          <Badge
-                            className={
-                              statusConfig[integration.status]?.badge ||
-                              'bg-gray-100 text-gray-800'
-                            }
-                          >
-                            <StatusIcon className='mr-1 h-3 w-3' />
-                            {statusConfig[integration.status]?.label ||
-                              integration.status}
-                          </Badge>
-                        </div>
-                        <p className='text-xs sm:text-sm text-muted-foreground font-normal mt-1'>
-                          {platformConfig?.description ||
-                            `${integration.platform} integration`}
-                        </p>
-                      </div>
-                    </CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6'>
-                    {/* Connection Info */}
-                    <div className='space-y-3'>
-                      <div className='flex items-center space-x-2'>
-                        <Shield className='h-4 w-4 text-muted-foreground flex-shrink-0' />
-                        <span className='text-sm font-medium'>Connection</span>
-                      </div>
-                      <p className='text-sm text-muted-foreground'>
-                        {platformConfig?.connectionType || 'API Connection'}
-                      </p>
-                      <p className='text-sm text-muted-foreground'>
-                        Last sync:{' '}
-                        {integration.last_sync_at
-                          ? new Date(integration.last_sync_at).toLocaleString()
-                          : 'Never'}
-                      </p>
-                    </div>
-
-                    {/* Metrics */}
-                    <div className='space-y-3'>
-                      <div className='grid grid-cols-2 gap-4'>
-                        <div>
-                          <span className='text-xs sm:text-sm text-muted-foreground'>
-                            Customers:
-                          </span>
-                          <div className='font-medium text-sm sm:text-base'>
-                            {integration.customer_count || 0}
-                          </div>
-                        </div>
-                        <div>
-                          <span className='text-xs sm:text-sm text-muted-foreground'>
-                            MRR:
-                          </span>
-                          <div className='font-medium text-sm sm:text-base'>
-                            {formatCurrency(integration.revenue || 0, 'DKK')}/mo
-                          </div>
-                        </div>
-                      </div>
-                      <div>
-                        <span className='text-xs sm:text-sm text-muted-foreground'>
-                          Avg per customer:
-                        </span>
-                        <div className='font-medium text-sm sm:text-base'>
-                          {integration.customer_count
-                            ? formatCurrency(
-                                (integration.revenue || 0) /
-                                  integration.customer_count,
-                                'DKK'
-                              )
-                            : 'N/A'}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className='space-y-2 sm:col-span-2 lg:col-span-1'>
-                      <Button
-                        size='sm'
-                        className='w-full'
-                        onClick={() => handleSyncNow(integration.id)}
-                        disabled={
-                          isSyncing[integration.id] ||
-                          integration.status === 'syncing'
-                        }
-                      >
-                        {isSyncing[integration.id] ||
-                        integration.status === 'syncing' ? (
-                          <>
-                            <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                            Syncing...
-                          </>
-                        ) : (
-                          <>
-                            <RefreshCw className='mr-2 h-4 w-4' />
-                            Sync Now
-                          </>
-                        )}
-                      </Button>
-                      <Button variant='outline' size='sm' className='w-full'>
-                        <Settings className='mr-2 h-4 w-4' />
-                        Configure
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
-      )}
 
       {/* Available Platforms */}
       <div className='space-y-4'>
@@ -570,7 +480,7 @@ export function IntegrationsPage() {
             return (
               <Card
                 key={platform.name}
-                className={existingIntegration ? 'opacity-50' : ''}
+                className={existingIntegration ? '' : ''}
               >
                 <CardHeader className='pb-4'>
                   <CardTitle className='flex items-center space-x-3'>
@@ -982,7 +892,20 @@ export function IntegrationsPage() {
           )}
 
           <div className='flex flex-col sm:flex-row justify-stretch sm:justify-end'>
-            <Button className='w-full sm:w-auto'>Save Settings</Button>
+            <Button 
+              className='w-full sm:w-auto' 
+              onClick={handleSaveSyncSettings}
+              disabled={isSavingSettings}
+            >
+              {isSavingSettings ? (
+                <>
+                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                  Saving...
+                </>
+              ) : (
+                'Save Settings'
+              )}
+            </Button>
           </div>
         </CardContent>
       </Card>

@@ -48,7 +48,7 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
       </nav>
       
       {/* Modern Help Section */}
-      <div className="p-4">
+      {/* <div className="p-4">
         <div className="bg-slate-50 rounded-lg p-4">
           <div className="flex items-center gap-3 mb-3">
             <div className="p-2 bg-indigo-100 rounded-lg">
@@ -67,7 +67,7 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
             View Docs
           </Button>
         </div>
-      </div>
+      </div> */}
     </aside>
   );
 }

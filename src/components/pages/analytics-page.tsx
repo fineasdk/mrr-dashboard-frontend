@@ -377,50 +377,6 @@ export function AnalyticsPage() {
             <RefreshCw className="mr-2 h-4 w-4" />
             Refresh
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              console.log('🧪 ANALYTICS FULL TEST:');
-              console.log('📅 Time Period:', {
-                selected: dateRange,
-                startDate: getDateRangeStart(dateRange),
-                endDate: new Date().toISOString()
-              });
-              console.log('💱 Currency Conversion:');
-              console.log('- 1000 DKK → EUR:', convertCurrency(1000, 'DKK', 'EUR'));
-              console.log('- 1000 DKK → USD:', convertCurrency(1000, 'DKK', 'USD'));
-              console.log('📊 Current Data:');
-              console.log('- Analytics data:', analyticsData);
-              console.log('- Selected currency:', selectedCurrency);
-              console.log('- Integrations:', integrations.map(i => ({
-                platform: i.platform,
-                revenue: i.revenue,
-                converted: convertCurrency(i.revenue || 0, 
-                  i.platform === 'shopify' ? 'BDT' : i.platform === 'stripe' ? 'USD' : 'DKK',
-                  selectedCurrency)
-              })));
-              console.log('📈 MRR Trend Data Points:', analyticsData?.mrr_trend?.length || 0);
-              console.log('👥 Customer Trend Data Points:', analyticsData?.customer_trend?.length || 0);
-              console.log('🔢 KEY METRICS (should change with time period):');
-              console.log('- Total MRR:', analyticsData?.total_mrr);
-              console.log('- Total Customers (from trend):', analyticsData?.customer_trend?.[analyticsData.customer_trend.length - 1]?.customers);
-              console.log('- Avg per Customer:', analyticsData?.total_mrr && analyticsData?.customer_trend?.length ? 
-                (analyticsData.total_mrr / Math.max(1, analyticsData.customer_trend[analyticsData.customer_trend.length - 1]?.customers || 1)) : 0);
-              console.log('- MRR Growth % (over period):', analyticsData?.mrr_growth);
-              console.log('- Customer Growth % (over period):', analyticsData?.customer_growth);
-              console.log('🎯 THE ISSUE: If all numbers are the same across time periods, then either:');
-              console.log('   1. Backend MRR/Customer trend data is identical for all periods');
-              console.log('   2. Historical data is missing - all months have same values');
-              console.log('   3. Time period filtering is not working in backend API');
-            }}
-          >
-            🧪 Test Currency
-          </Button>
-          <Button variant="outline" size="sm">
-            <Download className="mr-2 h-4 w-4" />
-            Export
-          </Button>
         </div>
       </div>
 

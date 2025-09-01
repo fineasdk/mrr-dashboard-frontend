@@ -133,6 +133,13 @@ export const integrationsApi = {
   testConnection: (id: string) => api.post(`/integrations/${id}/test`),
 
   disconnect: (id: string) => api.post(`/integrations/${id}/disconnect`),
+
+  getSyncSettings: () => api.get('/user/sync-settings'),
+
+  updateSyncSettings: (data: {
+    auto_sync: boolean
+    sync_frequency: number
+  }) => api.put('/user/sync-settings', data),
 }
 
 // Shopify API

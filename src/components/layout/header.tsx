@@ -76,14 +76,14 @@ export function Header({ onLogout }: HeaderProps) {
     <header className='header h-16 px-6 flex items-center justify-between'>
       {/* Search Section */}
       <div className='flex items-center flex-1 max-w-xl'>
-        <div className='hidden md:block p-6 border-b border-slate-200'>
+        <div className='hidden md:block p-6'>
           <div className='flex items-center gap-3'>
             {/* <div className="p-2 bg-indigo-600 rounded-lg">
             <BarChart3 className="h-5 w-5 text-white" />
           </div> */}
             <div>
-              <h1 className='font-semibold text-slate-900'>MRR</h1>
-              <p className='text-xs text-slate-500'>Revenue Analytics</p>
+              <h1 className='font-semibold text-slate-900'>FINEAS</h1>
+              <p className='text-xs text-slate-500'>MRR Dashboard</p>
             </div>
           </div>
         </div>
@@ -115,15 +115,6 @@ export function Header({ onLogout }: HeaderProps) {
             align='end'
             className='dropdown-content w-56 bg-white'
           >
-            <DropdownMenuItem className='dropdown-item'>
-              <User className='mr-2 h-4 w-4' />
-              Profile
-            </DropdownMenuItem>
-            <DropdownMenuItem className='dropdown-item'>
-              <Settings className='mr-2 h-4 w-4' />
-              Settings
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={handleLogout}
               className='dropdown-item text-red-600 hover:bg-red-50'
