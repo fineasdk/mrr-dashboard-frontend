@@ -188,7 +188,7 @@ export function CustomerDetailModal({ customer, open, onClose, onSave, mode = 'v
         )}
 
         {/* Invoice History */}
-        <div className="space-y-4">
+        {/* <div className="space-y-4">
           <h3 className="text-lg font-medium">Invoice History</h3>
           {customerInvoices.length > 0 ? (
             <Table>
@@ -218,7 +218,7 @@ export function CustomerDetailModal({ customer, open, onClose, onSave, mode = 'v
           ) : (
             <p className="text-gray-500 text-center py-8">No invoices found</p>
           )}
-        </div>
+        </div> */}
 
         <div className="flex justify-end space-x-3 pt-6 border-t">
           <Button variant="outline" onClick={onClose}>

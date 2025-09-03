@@ -798,15 +798,15 @@ export function IntegrationsPage() {
                             </>
                           )}
                         </Button>
-                        <div className='grid grid-cols-2 gap-2'>
-                          <Button
+                        <div className='text-center mt-3'>
+                          {/* <Button
                             variant='ghost'
                             size='sm'
                             className='text-gray-600 hover:text-gray-900'
                           >
                             <Settings className='mr-1 h-4 w-4' />
                             Settings
-                          </Button>
+                          </Button> */}
                           <Button
                             variant='ghost'
                             size='sm'
