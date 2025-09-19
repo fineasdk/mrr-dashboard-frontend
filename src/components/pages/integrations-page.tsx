@@ -405,10 +405,7 @@ export function IntegrationsPage() {
             Connect your revenue sources
           </p>
         </div>
-        <Button className='w-full sm:w-auto' onClick={loadIntegrations}>
-          <RefreshCw className='mr-2 h-4 w-4' />
-          Refresh
-        </Button>
+        
       </div>
 
       {/* Error Alert */}

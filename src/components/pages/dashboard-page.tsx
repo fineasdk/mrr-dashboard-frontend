@@ -26,48 +26,11 @@ import {
   mockMetrics,
   mockMRRData,
   mockPlatformBreakdown,
+  convertCurrency,
 } from '../../lib/mock-data'
 import { Currency } from '../../lib/types'
 import { dashboardApi, integrationsApi } from '../../lib/api'
-// Currency functions are now inline below to avoid import issues
-
-// Inline currency functions to bypass import issues
-const EXCHANGE_RATES = {
-  DKK: 1,
-  EUR: 0.134,
-  USD: 0.146,
-  BDT: 16.4,
-};
-
-const convertCurrency = (amount: number, fromCurrency: string, toCurrency: string): number => {
-  if (fromCurrency === toCurrency) return amount;
-  
-  const from = fromCurrency.toUpperCase();
-  const to = toCurrency.toUpperCase();
-  
-  // Convert from source currency to DKK, then to target currency
-  const inDKK = amount / (EXCHANGE_RATES[from as keyof typeof EXCHANGE_RATES] || 1);
-  const result = inDKK * (EXCHANGE_RATES[to as keyof typeof EXCHANGE_RATES] || 1);
-  
-  return Math.round(result * 100) / 100;
-};
-
-const formatCurrency = (amount: number, currency: Currency): string => {
-  try {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency,
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  } catch (error) {
-    // Fallback formatting
-    const symbols = { DKK: 'kr', EUR: '€', USD: '$' };
-    const symbol = symbols[currency] || currency;
-    const formatted = amount.toFixed(2);
-    return `${symbol}${formatted.toLocaleString()}`;
-  }
-};
+import { formatCurrency } from '../../lib/mock-data'
 
 const metricIcons = [TrendingUp, Users, CreditCard, Activity]
 
@@ -108,8 +71,6 @@ interface Integration {
   last_sync_at: string | null
   customer_count: number
   revenue: number
-  currency?: string
-  original_revenue?: number
 }
 
 export function DashboardPage() {
@@ -142,7 +103,7 @@ export function DashboardPage() {
     try {
       console.log('🔍 Loading dashboard data...')
       const [metricsResponse, integrationsResponse] = await Promise.all([
-        dashboardApi.getMetrics({ currency: 'DKK' }), // Always get data in base currency
+        dashboardApi.getMetrics({ currency: selectedCurrency }),
         integrationsApi.getAll(),
       ])
 
@@ -212,27 +173,11 @@ export function DashboardPage() {
   // Create metrics array from real data or fallback to mock data
   const getMetricsData = () => {
     console.log('📈 Getting metrics data, current metrics:', metrics)
-    console.log('📈 Selected currency:', selectedCurrency)
-    
-    // Convert from base currency (DKK) to selected currency
-    const baseCurrency = 'DKK'; // Backend returns data in DKK
-    const mrrValue = metrics?.total_mrr?.value || 0;
-    const arrValue = metrics?.arr?.value || 0;
-    
-    console.log('📈 Raw MRR value:', mrrValue, baseCurrency)
-    console.log('📈 Raw ARR value:', arrValue, baseCurrency)
-    
-    // Convert currencies from DKK to selected currency
-    const convertedMRR = convertCurrency(mrrValue, baseCurrency, selectedCurrency);
-    const convertedARR = convertCurrency(arrValue, baseCurrency, selectedCurrency);
-    
-    console.log('📈 Converted MRR:', convertedMRR, selectedCurrency)
-    console.log('📈 Converted ARR:', convertedARR, selectedCurrency)
-    
     return [
       {
         title: 'Total MRR',
-        value: formatCurrency(convertedMRR, selectedCurrency),
+        value:
+          metrics?.total_mrr?.formatted || formatCurrency(0, selectedCurrency),
         change: `${
           metrics?.total_mrr?.change_percentage || 0
         }% from last month`,
@@ -263,7 +208,7 @@ export function DashboardPage() {
       },
       {
         title: 'ARR',
-        value: formatCurrency(convertedARR, selectedCurrency),
+        value: metrics?.arr?.formatted || formatCurrency(0, selectedCurrency),
         change: 'Annual Recurring Revenue',
         trend: 'neutral' as const,
         icon: DollarSign,
@@ -271,35 +216,26 @@ export function DashboardPage() {
     ]
   }
 
-  const [forceUpdate, setForceUpdate] = useState(0);
-  
-  // Force re-render when currency changes
-  useEffect(() => {
-    console.log('🔄 Currency changed to:', selectedCurrency);
-    setForceUpdate(prev => prev + 1);
-  }, [selectedCurrency]);
-
   const metricsData = getMetricsData()
 
-  // Get platform breakdown from integrations with currency conversion
+  // Get platform breakdown from integrations
   const platformBreakdown = integrations.map((integration, index) => {
     const config = platformConfig[
       integration.platform as keyof typeof platformConfig
     ] || { name: integration.platform_name, icon: '🔗', color: 'gray' }
-    
-    // Convert revenue from DKK (base currency) to selected currency
-    const originalRevenue = integration.revenue || 0;
-    const baseCurrency = 'DKK'; // Backend returns data in DKK
-    const convertedRevenue = convertCurrency(originalRevenue, baseCurrency, selectedCurrency);
-    
+    const totalRevenue = integrations.reduce(
+      (sum, int) => sum + (int.revenue || 0),
+      0
+    )
+    const percentage =
+      totalRevenue > 0 ? ((integration.revenue || 0) / totalRevenue) * 100 : 0
+
     return {
       platform: config.name,
       icon: config.icon,
-      revenue: convertedRevenue,
-      originalRevenue: originalRevenue,
-      originalCurrency: baseCurrency,
+      revenue: integration.revenue || 0,
       customers: integration.customer_count || 0,
-      percentage: 0, // Will be calculated after all conversions
+      percentage: Math.round(percentage * 10) / 10,
       color: config.color,
       currency: selectedCurrency,
       lastSync: integration.last_sync_at || new Date().toISOString(),
@@ -310,13 +246,6 @@ export function DashboardPage() {
         : 'syncing') as 'connected' | 'error' | 'syncing',
     }
   })
-
-  // Calculate percentages after currency conversion
-  const totalConvertedRevenue = platformBreakdown.reduce((sum, platform) => sum + platform.revenue, 0);
-  platformBreakdown.forEach(platform => {
-    platform.percentage = totalConvertedRevenue > 0 ? 
-      Math.round(((platform.revenue / totalConvertedRevenue) * 100) * 10) / 10 : 0;
-  });
 
   const connectedIntegrations = integrations.filter(
     (i) => i.status === 'active'
@@ -449,14 +378,14 @@ export function DashboardPage() {
                   </Button>
 
                   <div className='grid grid-cols-2 gap-3 mt-4'>
-                    <div className='p-3 rounded-lg text-center'>
+                    <div className='p-3 border rounded-lg text-center'>
                       <span className='text-2xl mb-2 block'>💳</span>
                       <p className='text-sm font-medium'>Stripe</p>
                       <p className='text-xs text-gray-500'>
                         Payment processing
                       </p>
                     </div>
-                    <div className='p-3 rounded-lg text-center'>
+                    <div className='p-3 border rounded-lg text-center'>
                       <span className='text-2xl mb-2 block'>🔗</span>
                       <p className='text-sm font-medium'>E-conomic</p>
                       <p className='text-xs text-gray-500'>Accounting system</p>
@@ -469,7 +398,7 @@ export function DashboardPage() {
 
           {/* Integration Status Alert */}
           {!hasIntegrations && !isLoading && (
-            <Alert className='border-gray-200 border-blue-200 bg-blue-50'>
+            <Alert className='border-blue-200 bg-blue-50'>
               <Plus className='h-4 w-4 text-blue-600' />
               <AlertDescription className='text-blue-700'>
                 <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3'>
@@ -493,7 +422,7 @@ export function DashboardPage() {
           {integrations.some(
             (integration) => integration.status === 'syncing'
           ) && (
-            <Alert className='border-gray-200 border-blue-200 bg-blue-50'>
+            <Alert className='border-blue-200 bg-blue-50'>
               <RefreshCw className='h-4 w-4 text-blue-600 animate-spin' />
               <AlertDescription className='text-blue-700'>
                 Data synchronization in progress. This may take a few minutes
@@ -535,7 +464,7 @@ export function DashboardPage() {
                   return (
                     <div
                       key={metric.title}
-                      className='bg-white rounded-lg shadow-sm p-4 sm:p-6'
+                      className='bg-white rounded-lg shadow-sm border p-4 sm:p-6'
                     >
                       <div className='flex items-center justify-between'>
                         <div className='space-y-2 flex-1 min-w-0'>
@@ -580,8 +509,8 @@ export function DashboardPage() {
               {hasIntegrations && (
                 <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
                   {/* Connected Platforms */}
-                  <div className='bg-white rounded-lg shadow-sm card'>
-                    <div className='p-4 sm:p-6 border-gray-200 border-b'>
+                  <div className='bg-white rounded-lg shadow-sm border'>
+                    <div className='p-4 sm:p-6 border-b'>
                       <div className='flex items-center justify-between'>
                         <h3 className='text-lg font-semibold'>
                           Connected Platforms
@@ -595,7 +524,7 @@ export function DashboardPage() {
                       {platformBreakdown.map((platform, index) => (
                         <div
                           key={index}
-                          className='flex items-center justify-between p-3 rounded-lg card'
+                          className='flex items-center justify-between p-3 rounded-lg border'
                         >
                           <div className='flex items-center space-x-3'>
                             <span className='text-xl'>{platform.icon}</span>
@@ -642,8 +571,8 @@ export function DashboardPage() {
                   </div>
 
                   {/* Revenue Distribution */}
-                  <div className='bg-white rounded-lg shadow-sm'>
-                    <div className='p-4 sm:p-6 border-gray-200 border-b'>
+                  <div className='bg-white rounded-lg shadow-sm border'>
+                    <div className='p-4 sm:p-6 border-b'>
                       <h3 className='text-lg font-semibold'>
                         Revenue Distribution
                       </h3>
@@ -659,10 +588,16 @@ export function DashboardPage() {
               )}
 
               {/* MRR Trend Chart */}
-              <div className='bg-white rounded-lg shadow-sm'>
-                <div className='p-4 sm:p-6 border-gray-200 border-b'>
+              <div className='bg-white rounded-lg shadow-sm border'>
+                <div className='p-4 sm:p-6 border-b'>
                   <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
                     <h3 className='text-lg font-semibold'>MRR Trend</h3>
+                    <div className='flex items-center space-x-2'>
+                      <Button variant='outline' size='sm'>
+                        <Download className='mr-2 h-4 w-4' />
+                        Export
+                      </Button>
+                    </div>
                   </div>
                 </div>
                 <div className='p-4 sm:p-6'>
@@ -695,6 +630,62 @@ export function DashboardPage() {
                 </div>
               </div>
 
+              {/* Quick Actions */}
+              {hasIntegrations && (
+                <div className='bg-white rounded-lg shadow-sm border'>
+                  <div className='p-4 sm:p-6 border-b'>
+                    <h3 className='text-lg font-semibold'>Quick Actions</h3>
+                  </div>
+                  <div className='p-4 sm:p-6'>
+                    <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
+                      {integrations
+                        .filter(
+                          (integration) => integration.status === 'active'
+                        )
+                        .map((integration) => (
+                          <Button
+                            key={integration.id}
+                            variant='outline'
+                            className='h-auto p-4 flex flex-col items-center space-y-2'
+                            onClick={() =>
+                              handleSyncIntegration(integration.id)
+                            }
+                          >
+                            <span className='text-lg'>
+                              {platformConfig[
+                                integration.platform as keyof typeof platformConfig
+                              ]?.icon || '🔗'}
+                            </span>
+                            <span className='text-sm font-medium'>
+                              Sync {integration.platform_name}
+                            </span>
+                            <span className='text-xs text-muted-foreground'>
+                              Last:{' '}
+                              {integration.last_sync_at
+                                ? new Date(
+                                    integration.last_sync_at
+                                  ).toLocaleDateString()
+                                : 'Never'}
+                            </span>
+                          </Button>
+                        ))}
+                      <Button
+                        variant='outline'
+                        className='h-auto p-4 flex flex-col items-center space-y-2 border-dashed'
+                        onClick={() => (window.location.href = '#integrations')}
+                      >
+                        <Plus className='h-5 w-5' />
+                        <span className='text-sm font-medium'>
+                          Add Integration
+                        </span>
+                        <span className='text-xs text-muted-foreground'>
+                          Connect new platform
+                        </span>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>

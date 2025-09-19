@@ -1,5 +1,5 @@
 // Script to set valid auth token in browser localStorage
-// Run this in the browser console at http://localhost:3000
+// Run this in the browser console at your frontend URL
 
 console.log('🔧 Setting up auth token for testing...')
 
@@ -20,7 +20,7 @@ console.log('✅ User data set:', testUser)
 console.log('🔄 Please refresh the page to see the dashboard with data')
 
 // Verify the token works by testing the API
-fetch('http://localhost:8000/api/dashboard/metrics', {
+fetch('https://mrr-dashboard-api-production.up.railway.app/api/dashboard/metrics', {
   headers: {
     Accept: 'application/json',
     Authorization: `Bearer ${validToken}`,
