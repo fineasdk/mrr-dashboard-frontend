@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORS Test</title>
+</head>
+<body>
+    <h1>CORS Test</h1>
+    <button onclick="testCORS()">Test CORS</button>
+    <div id="result"></div>
+
+    <script>
+        async function testCORS() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                // Test 1: Simple GET request
+                console.log('Testing GET request...');
+                const response1 = await fetch('https://mrr-dashboard-api-production.up.railway.app/api/health');
+                const data1 = await response1.json();
+                console.log('GET Success:', data1);
+                
+                // Test 2: OPTIONS preflight
+                console.log('Testing OPTIONS preflight...');
+                const response2 = await fetch('https://mrr-dashboard-api-production.up.railway.app/api/auth/register', {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Origin': window.location.origin
+                    }
+                });
+                console.log('OPTIONS Success:', response2.status);
+                
+                // Test 3: POST request
+                console.log('Testing POST request...');
+                const response3 = await fetch('https://mrr-dashboard-api-production.up.railway.app/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: 'Test User',
+                        email: 'test@example.com',
+                        password: 'password123',
+                        password_confirmation: 'password123'
+                    })
+                });
+                
+                const data3 = await response3.json();
+                console.log('POST Response:', data3);
+                
+                resultDiv.innerHTML = `
+                    <h3>✅ CORS Tests Completed</h3>
+                    <p><strong>GET Health:</strong> ${JSON.stringify(data1)}</p>
+                    <p><strong>OPTIONS Status:</strong> ${response2.status}</p>
+                    <p><strong>POST Response:</strong> ${JSON.stringify(data3)}</p>
+                `;
+                
+            } catch (error) {
+                console.error('CORS Error:', error);
+                resultDiv.innerHTML = `
+                    <h3>❌ CORS Error</h3>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                    <p>Check the browser console for more details.</p>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
