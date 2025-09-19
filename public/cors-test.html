@@ -16,11 +16,17 @@
             resultDiv.innerHTML = 'Testing...';
             
             try {
-                // Test 1: Simple GET request
-                console.log('Testing GET request...');
+                // Test 1: Simple GET request to root
+                console.log('Testing root endpoint...');
+                const response0 = await fetch('https://mrr-dashboard-api-production.up.railway.app/');
+                const data0 = await response0.json();
+                console.log('Root Success:', data0);
+                
+                // Test 2: API Health endpoint
+                console.log('Testing API health...');
                 const response1 = await fetch('https://mrr-dashboard-api-production.up.railway.app/api/health');
                 const data1 = await response1.json();
-                console.log('GET Success:', data1);
+                console.log('Health Success:', data1);
                 
                 // Test 2: OPTIONS preflight
                 console.log('Testing OPTIONS preflight...');
@@ -54,7 +60,8 @@
                 
                 resultDiv.innerHTML = `
                     <h3>✅ CORS Tests Completed</h3>
-                    <p><strong>GET Health:</strong> ${JSON.stringify(data1)}</p>
+                    <p><strong>Root:</strong> ${JSON.stringify(data0)}</p>
+                    <p><strong>Health:</strong> ${JSON.stringify(data1)}</p>
                     <p><strong>OPTIONS Status:</strong> ${response2.status}</p>
                     <p><strong>POST Response:</strong> ${JSON.stringify(data3)}</p>
                 `;
