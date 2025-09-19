@@ -4,10 +4,12 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://mrr-dashboard-a
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: false, // Changed for production deployment
+  withCredentials: false,
+  timeout: 30000, // 30 second timeout
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
+    'X-Requested-With': 'XMLHttpRequest',
   },
 });
 
