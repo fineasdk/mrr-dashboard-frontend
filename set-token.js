@@ -20,7 +20,7 @@ console.log('✅ User data set:', testUser)
 console.log('🔄 Please refresh the page to see the dashboard with data')
 
 // Verify the token works by testing the API
-fetch('https://mrr-dashboard-api-production.up.railway.app/api/dashboard/metrics', {
+fetch('https://sea-lion-app-kpc8g.ondigitalocean.app/api/dashboard/metrics', {
   headers: {
     Accept: 'application/json',
     Authorization: `Bearer ${validToken}`,
