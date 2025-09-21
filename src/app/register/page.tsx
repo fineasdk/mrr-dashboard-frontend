@@ -20,6 +20,7 @@ export default function RegisterPage() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
@@ -51,10 +52,14 @@ export default function RegisterPage() {
         localStorage.setItem('auth_token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
         
-        // Show success message briefly before redirect
+        // Show success message
+        setError(''); // Clear any previous errors
+        setSuccess(true);
+        
+        // Redirect to dashboard after brief success display
         setTimeout(() => {
           router.push('/');
-        }, 1000);
+        }, 1500);
       } else {
         setError(data.message || 'Registration failed');
         if (data.errors) {
@@ -196,6 +201,15 @@ export default function RegisterPage() {
                   </Alert>
                 )}
 
+                {success && (
+                  <Alert className="border-green-200 bg-green-50/50 backdrop-blur-sm">
+                    <AlertDescription className="text-green-700 text-sm flex items-center">
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Account created successfully! Redirecting to dashboard...
+                    </AlertDescription>
+                  </Alert>
+                )}
+
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <div className="space-y-2">
                     <Label htmlFor="name" className="text-sm font-medium text-gray-700">
@@ -212,7 +226,7 @@ export default function RegisterPage() {
                         placeholder="Enter your full name"
                         value={formData.name}
                         onChange={handleInputChange}
-                        disabled={loading}
+                        disabled={loading || success}
                       />
                     </div>
                     {fieldErrors.name && (
@@ -235,7 +249,7 @@ export default function RegisterPage() {
                         placeholder="Enter your email"
                         value={formData.email}
                         onChange={handleInputChange}
-                        disabled={loading}
+                        disabled={loading || success}
                       />
                     </div>
                     {fieldErrors.email && (
@@ -258,7 +272,7 @@ export default function RegisterPage() {
                         placeholder="Create a strong password"
                         value={formData.password}
                         onChange={handleInputChange}
-                        disabled={loading}
+                        disabled={loading || success}
                       />
                       <button
                         type="button"
@@ -313,7 +327,7 @@ export default function RegisterPage() {
                         placeholder="Confirm your password"
                         value={formData.password_confirmation}
                         onChange={handleInputChange}
-                        disabled={loading}
+                        disabled={loading || success}
                       />
                       <button
                         type="button"
@@ -370,9 +384,14 @@ export default function RegisterPage() {
                   <Button
                     type="submit"
                     className="w-full h-11 button-primary bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-medium shadow-lg transition-all duration-300 group"
-                    disabled={loading}
+                    disabled={loading || success}
                   >
-                    {loading ? (
+                    {success ? (
+                      <div className="flex items-center justify-center">
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Account created! Redirecting...
+                      </div>
+                    ) : loading ? (
                       <div className="flex items-center justify-center">
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                         Creating account...
