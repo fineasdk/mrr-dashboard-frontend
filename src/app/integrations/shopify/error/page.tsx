@@ -128,27 +128,7 @@ export default function ShopifyErrorPage() {
           </AlertDescription>
         </Alert>
 
-        {/* Quick Actions */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <Button 
-            onClick={handleTryAgain} 
-            className="flex-1"
-            size="lg"
-          >
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Try Again
-          </Button>
-          <Button 
-            onClick={handleGoBack} 
-            variant="outline"
-            className="flex-1"
-            size="lg"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Integrations
-          </Button>
-        </div>
-
+      
         {/* Troubleshooting */}
         <Card>
           <CardHeader>

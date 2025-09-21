@@ -390,53 +390,7 @@ export function CustomersPage() {
         </Card>
       )}
 
-      {/* Filters and Search */}
-      <Card>
-        <CardContent className="p-4 sm:p-6">
-          <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 transform -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Search customers by name or email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-32">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent className="bg-white">
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="paused">Paused</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={platformFilter} onValueChange={setPlatformFilter}>
-                <SelectTrigger className="w-full sm:w-40">
-                  <SelectValue placeholder="Platform" />
-                </SelectTrigger>
-                <SelectContent className="bg-white">
-                  <SelectItem value="all">All Platforms</SelectItem>
-                  {availablePlatforms.map(platform => (
-                    <SelectItem key={platform} value={platform}>
-                      <div className="flex items-center space-x-2">
-                        <span>{platformIcons[platform as keyof typeof platformIcons] || '🔗'}</span>
-                        <span>{getPlatformDisplayName(platform)}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-                      </div>
-                    </div>
-        </CardContent>
-      </Card>
+    
 
       {/* Customer Statistics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

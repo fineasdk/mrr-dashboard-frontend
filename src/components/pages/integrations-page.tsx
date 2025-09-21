@@ -847,65 +847,7 @@ export function IntegrationsPage() {
         </div>
       </div>
 
-      {/* Sync Settings - Mobile responsive */}
-      <Card>
-        <CardHeader className='pb-4'>
-          <CardTitle className='flex items-center space-x-2 text-lg sm:text-xl'>
-            <Settings className='h-4 w-4 sm:h-5 sm:w-5' />
-            <span>Sync Settings</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className='space-y-6'>
-          <div className='flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 gap-4'>
-            <div className='space-y-0.5 flex-1'>
-              <Label className='text-sm font-medium'>Automatic sync</Label>
-              <p className='text-xs sm:text-sm text-muted-foreground'>
-                Keep your data updated automatically
-              </p>
-            </div>
-            <Switch
-              checked={autoSync}
-              onCheckedChange={setAutoSync}
-              className='shrink-0'
-            />
-          </div>
 
-          {autoSync && (
-            <div className='space-y-2'>
-              <Label htmlFor='sync-frequency' className='text-sm font-medium'>
-                Sync frequency (minutes)
-              </Label>
-              <Input
-                id='sync-frequency'
-                type='number'
-                value={syncFrequency}
-                onChange={(e) => setSyncFrequency(e.target.value)}
-                className='w-full sm:w-32'
-              />
-              <p className='text-xs sm:text-sm text-muted-foreground'>
-                How often to sync data from all platforms
-              </p>
-            </div>
-          )}
-
-          <div className='flex flex-col sm:flex-row justify-stretch sm:justify-end'>
-            <Button 
-              className='w-full sm:w-auto' 
-              onClick={handleSaveSyncSettings}
-              disabled={isSavingSettings}
-            >
-              {isSavingSettings ? (
-                <>
-                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                  Saving...
-                </>
-              ) : (
-                'Save Settings'
-              )}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 }
