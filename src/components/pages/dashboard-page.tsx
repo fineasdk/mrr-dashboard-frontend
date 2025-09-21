@@ -273,27 +273,6 @@ export function DashboardPage() {
                   Monitor your monthly recurring revenue and business metrics
                 </p>
               </div>
-
-              <div className='flex flex-col sm:flex-row items-stretch sm:items-center gap-3'>
-                <CurrencySelector
-                  currentCurrency={selectedCurrency}
-                  onCurrencyChange={setSelectedCurrency}
-                />
-                <Button
-                  variant='outline'
-                  size='sm'
-                  onClick={handleSyncData}
-                  disabled={isLoading}
-                  className='btn-secondary w-full sm:w-auto'
-                >
-                  <RefreshCw
-                    className={`mr-2 h-4 w-4 ${
-                      isLoading ? 'animate-spin' : ''
-                    }`}
-                  />
-                  {isLoading ? 'Syncing...' : 'Sync Data'}
-                </Button>
-              </div>
             </div>
           </div>
 
