@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShoppingBag, Info, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { api } from '@/lib/api';
+import { api, integrationsApi } from '@/lib/api';
 // Toast functionality will be added later
 
 interface ShopifyPartnerFormData {
@@ -17,16 +17,59 @@ interface ShopifyPartnerFormData {
   organization_id: string;
 }
 
+interface ExistingIntegration {
+  id: number;
+  platform: string;
+  platform_name: string;
+  status: 'pending' | 'active' | 'error' | 'syncing' | 'disconnected';
+  last_sync_error?: {
+    message: string;
+    occurred_at: string;
+  };
+}
+
 export default function ShopifyIntegrationPage() {
   const router = useRouter();
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [existingIntegration, setExistingIntegration] = useState<ExistingIntegration | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   
   // Partner API form data
   const [formData, setFormData] = useState<ShopifyPartnerFormData>({
     partner_access_token: '',
     organization_id: '',
   });
+
+  // Check for existing integration
+  useEffect(() => {
+    const checkExistingIntegration = async () => {
+      try {
+        const response = await integrationsApi.getAll();
+        const shopifyIntegration = response.data.data?.find(
+          (integration: any) => integration.platform === 'shopify'
+        );
+        
+        if (shopifyIntegration) {
+          setExistingIntegration(shopifyIntegration);
+          
+          // If integration has error, show the error message
+          if (shopifyIntegration.status === 'error') {
+            setConnectionError(
+              shopifyIntegration.last_sync_error?.message || 
+              'Connection failed. Please check your credentials and try again.'
+            );
+          }
+        }
+      } catch (error) {
+        console.error('Failed to check existing integration:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkExistingIntegration();
+  }, []);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,6 +112,18 @@ export default function ShopifyIntegrationPage() {
     }
   };
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="container mx-auto py-8 px-4 max-w-2xl">
+        <div className="flex justify-center items-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+          <span className="ml-2 text-gray-600">Loading integration status...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto py-8 px-4 max-w-2xl">
       <div className="space-y-6">
@@ -79,11 +134,61 @@ export default function ShopifyIntegrationPage() {
               <ShoppingBag className="w-8 h-8 text-green-600" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Connect Shopify Partners</h1>
+          <h1 className="text-3xl font-bold text-gray-900">
+            {existingIntegration && existingIntegration.status === 'error' 
+              ? 'Fix Shopify Partners Connection' 
+              : existingIntegration 
+                ? 'Update Shopify Partners Connection'
+                : 'Connect Shopify Partners'
+            }
+          </h1>
           <p className="text-gray-600">
-            Connect your Shopify Partner account to access multiple stores and revenue data
+            {existingIntegration && existingIntegration.status === 'error'
+              ? 'Your Shopify Partner integration needs attention. Please update your credentials below.'
+              : existingIntegration
+                ? 'Update your Shopify Partner account credentials'
+                : 'Connect your Shopify Partner account to access multiple stores and revenue data'
+            }
           </p>
         </div>
+
+        {/* Existing Integration Status */}
+        {existingIntegration && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <span>Current Integration Status</span>
+                <Badge 
+                  variant={existingIntegration.status === 'active' ? 'default' : 'destructive'}
+                  className={
+                    existingIntegration.status === 'active' 
+                      ? 'bg-green-100 text-green-800'
+                      : existingIntegration.status === 'error'
+                        ? 'bg-red-100 text-red-800'
+                        : 'bg-yellow-100 text-yellow-800'
+                  }
+                >
+                  {existingIntegration.status === 'active' 
+                    ? 'Connected' 
+                    : existingIntegration.status === 'error'
+                      ? 'Connection Error'
+                      : existingIntegration.status.charAt(0).toUpperCase() + existingIntegration.status.slice(1)
+                  }
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600">
+                Integration: {existingIntegration.platform_name}
+              </p>
+              {existingIntegration.status === 'active' && (
+                <p className="text-sm text-green-600 mt-1">
+                  ✓ Your Shopify Partner integration is working correctly
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Benefits Card */}
         <Card>
@@ -206,12 +311,17 @@ export default function ShopifyIntegrationPage() {
                 {isConnecting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating Integration...
+                    {existingIntegration ? 'Updating Integration...' : 'Creating Integration...'}
                   </>
                 ) : (
                   <>
                     <ShoppingBag className="mr-2 h-4 w-4" />
-                    Create Partner Integration
+                    {existingIntegration && existingIntegration.status === 'error'
+                      ? 'Fix Connection'
+                      : existingIntegration
+                        ? 'Update Partner Integration' 
+                        : 'Create Partner Integration'
+                    }
                   </>
                 )}
               </Button>

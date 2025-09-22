@@ -840,6 +840,39 @@ export function IntegrationsPage() {
                         </p>
                       </div>
                     )}
+
+                  {existingIntegration &&
+                    existingIntegration.status === 'error' && (
+                      <div className='space-y-2'>
+                        <div className='bg-red-50 border border-red-200 rounded-lg p-3 mb-3'>
+                          <div className='flex items-start space-x-2'>
+                            <XCircle className='w-4 h-4 text-red-600 mt-0.5 flex-shrink-0' />
+                            <div>
+                              <p className='text-red-800 font-medium text-sm'>
+                                Connection Error
+                              </p>
+                              <p className='text-red-600 text-xs mt-1'>
+                                {existingIntegration.last_sync_error?.message || 
+                                 'Unable to connect to your account. Please check your credentials and try reconnecting.'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        <Button
+                          className='w-full'
+                          variant='outline'
+                          onClick={() =>
+                            handleReconnect(existingIntegration.platform)
+                          }
+                        >
+                          <RefreshCw className='mr-2 h-4 w-4' />
+                          Fix Connection
+                        </Button>
+                        <p className='text-xs text-gray-500 text-center'>
+                          Re-enter your credentials to restore connection
+                        </p>
+                      </div>
+                    )}
                 </CardContent>
               </Card>
             )
