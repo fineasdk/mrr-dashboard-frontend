@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   RefreshCw,
   Download,
@@ -36,7 +36,6 @@ const metricIcons = [TrendingUp, Users, CreditCard, Activity]
 
 // Platform configuration for consistent display
 const platformConfig = {
-  'e-conomic': { name: 'E-conomic', icon: '🔗', color: 'blue' },
   economic: { name: 'E-conomic', icon: '🔗', color: 'blue' },
   shopify: { name: 'Shopify', icon: '🛒', color: 'green' },
   stripe: { name: 'Stripe', icon: '💳', color: 'purple' },
@@ -83,11 +82,7 @@ export function DashboardPage() {
     Array<{ date: string; value: number }>
   >([])
 
-  useEffect(() => {
-    loadDashboardData()
-  }, [])
-
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     setIsLoading(true)
     setError('')
 
@@ -104,7 +99,7 @@ export function DashboardPage() {
       console.log('🔍 Loading dashboard data...')
       const [metricsResponse, integrationsResponse] = await Promise.all([
         dashboardApi.getMetrics({ currency: selectedCurrency }),
-        integrationsApi.getAll(),
+        integrationsApi.getAll({ currency: selectedCurrency }),
       ])
 
       console.log('📊 Metrics response:', metricsResponse.data)
@@ -154,7 +149,11 @@ export function DashboardPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [selectedCurrency])
+
+  useEffect(() => {
+    loadDashboardData()
+  }, [loadDashboardData])
 
   const handleSyncData = async () => {
     await loadDashboardData()
@@ -173,11 +172,18 @@ export function DashboardPage() {
   // Create metrics array from real data or fallback to mock data
   const getMetricsData = () => {
     console.log('📈 Getting metrics data, current metrics:', metrics)
+    console.log('📈 Selected currency:', selectedCurrency)
+
+    // Use raw values and format them with the selected currency
+    const totalMrrValue = metrics?.total_mrr?.value || 0
+    const arrValue = metrics?.arr?.value || 0
+
+    console.log('📈 Raw MRR value:', totalMrrValue, 'Raw ARR value:', arrValue)
+
     return [
       {
         title: 'Total MRR',
-        value:
-          metrics?.total_mrr?.formatted || formatCurrency(0, selectedCurrency),
+        value: formatCurrency(totalMrrValue, selectedCurrency),
         change: `${
           metrics?.total_mrr?.change_percentage || 0
         }% from last month`,
@@ -208,7 +214,7 @@ export function DashboardPage() {
       },
       {
         title: 'ARR',
-        value: metrics?.arr?.formatted || formatCurrency(0, selectedCurrency),
+        value: formatCurrency(arrValue, selectedCurrency),
         change: 'Annual Recurring Revenue',
         trend: 'neutral' as const,
         icon: DollarSign,
@@ -608,8 +614,6 @@ export function DashboardPage() {
                   )}
                 </div>
               </div>
-
-         
             </>
           )}
         </div>

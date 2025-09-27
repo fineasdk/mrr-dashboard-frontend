@@ -481,3 +481,6 @@ export default function EconomicIntegrationPage() {
     </div>
   )
 }
+
+
+

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>MRR Dashboard - Auth Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background: #f5f5f5;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: white;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .button {
+        background: #007bff;
+        color: white;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        margin: 10px 5px;
+      }
+      .button:hover {
+        background: #0056b3;
+      }
+      .success {
+        color: #28a745;
+        font-weight: bold;
+      }
+      .error {
+        color: #dc3545;
+        font-weight: bold;
+      }
+      .data {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 4px;
+        margin: 10px 0;
+      }
+      pre {
+        background: #e9ecef;
+        padding: 10px;
+        border-radius: 4px;
+        overflow-x: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🧪 MRR Dashboard - Auth & API Test</h1>
+
+      <div class="data">
+        <h3>🔑 Authentication</h3>
+        <div style="margin-bottom: 15px">
+          <input
+            type="email"
+            id="email"
+            placeholder="Email"
+            value="test@gmail.com"
+            style="
+              padding: 8px;
+              margin: 5px;
+              border: 1px solid #ccc;
+              border-radius: 4px;
+            "
+          />
+          <input
+            type="password"
+            id="password"
+            placeholder="Password"
+            value="12345678"
+            style="
+              padding: 8px;
+              margin: 5px;
+              border: 1px solid #ccc;
+              border-radius: 4px;
+            "
+          />
+          <button class="button" onclick="login()">Login</button>
+        </div>
+        <button class="button" onclick="setToken()">Set Manual Token</button>
+        <button class="button" onclick="clearToken()">Clear Token</button>
+        <p id="tokenStatus">
+          Token Status: <span id="tokenValue">Not Set</span>
+        </p>
+      </div>
+
+      <div class="data">
+        <h3>📊 API Test</h3>
+        <button class="button" onclick="testAPI()">Test Dashboard API</button>
+        <div id="apiResult"></div>
+      </div>
+
+      <div class="data">
+        <h3>🔗 Quick Links</h3>
+        <button class="button" onclick="window.open('/', '_blank')">
+          Open Dashboard
+        </button>
+        <button class="button" onclick="window.open('/integrations', '_blank')">
+          Open Integrations
+        </button>
+      </div>
+    </div>
+
+    <script>
+      const API_TOKEN = '12|2FJ2oxRFLUYxaSPnjT8EwR84BrKMTBTM1Vy7H5A7f73e3cb3'
+      const API_BASE = 'https://sea-lion-app-kpc8g.ondigitalocean.app/api'
+
+      async function login() {
+        const email = document.getElementById('email').value
+        const password = document.getElementById('password').value
+
+        if (!email || !password) {
+          document.getElementById('apiResult').innerHTML =
+            '<p class="error">❌ Please enter email and password!</p>'
+          return
+        }
+
+        try {
+          const response = await fetch(`${API_BASE}/auth/login`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Accept: 'application/json',
+            },
+            body: JSON.stringify({ email, password }),
+          })
+
+          const data = await response.json()
+
+          if (response.ok && data.success) {
+            localStorage.setItem('auth_token', data.token)
+            updateTokenStatus()
+            document.getElementById('apiResult').innerHTML = `
+               <p class="success">✅ Login successful! Welcome ${
+                 data.user.name
+               }</p>
+               <p>Token expires: ${new Date(
+                 data.expires_at
+               ).toLocaleString()}</p>
+             `
+          } else {
+            document.getElementById(
+              'apiResult'
+            ).innerHTML = `<p class="error">❌ Login failed: ${
+              data.message || 'Unknown error'
+            }</p>`
+          }
+        } catch (error) {
+          document.getElementById(
+            'apiResult'
+          ).innerHTML = `<p class="error">❌ Login error: ${error.message}</p>`
+        }
+      }
+
+      function setToken() {
+        localStorage.setItem('auth_token', API_TOKEN)
+        updateTokenStatus()
+        document.getElementById('apiResult').innerHTML =
+          '<p class="success">✅ Manual token set! Now test the API or refresh the dashboard.</p>'
+      }
+
+      function clearToken() {
+        localStorage.removeItem('auth_token')
+        updateTokenStatus()
+        document.getElementById('apiResult').innerHTML =
+          '<p class="error">❌ Token cleared.</p>'
+      }
+
+      function updateTokenStatus() {
+        const token = localStorage.getItem('auth_token')
+        const statusEl = document.getElementById('tokenValue')
+        if (token) {
+          statusEl.innerHTML = `<span class="success">Set (***${token.slice(
+            -6
+          )})</span>`
+        } else {
+          statusEl.innerHTML = '<span class="error">Not Set</span>'
+        }
+      }
+
+      async function testAPI() {
+        const token = localStorage.getItem('auth_token')
+        if (!token) {
+          document.getElementById('apiResult').innerHTML =
+            '<p class="error">❌ No auth token set!</p>'
+          return
+        }
+
+        try {
+          const response = await fetch(`${API_BASE}/dashboard/metrics`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: 'application/json',
+              'Content-Type': 'application/json',
+            },
+          })
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+          }
+
+          const data = await response.json()
+          const metrics = data.data?.metrics
+
+          if (metrics && metrics.total_mrr.value > 0) {
+            document.getElementById('apiResult').innerHTML = `
+                        <p class="success">✅ API Success!</p>
+                        <div class="data">
+                            <strong>📊 Metrics:</strong><br>
+                            • Total MRR: ${metrics.total_mrr.formatted}<br>
+                            • Total Customers: ${
+                              metrics.total_customers.value
+                            }<br>
+                            • ARR: ${metrics.arr.formatted}<br>
+                            • ARPC: ${metrics.arpc.formatted}
+                        </div>
+                        <details>
+                            <summary>View Raw Response</summary>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    `
+          } else {
+            document.getElementById('apiResult').innerHTML = `
+                        <p class="error">❌ API returned 0 values</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `
+          }
+        } catch (error) {
+          document.getElementById('apiResult').innerHTML = `
+                    <p class="error">❌ API Error: ${error.message}</p>
+                `
+        }
+      }
+
+      // Initialize
+      updateTokenStatus()
+    </script>
+  </body>
+</html>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   RefreshCw,
   Settings,
@@ -32,66 +32,74 @@ import {
 } from '../ui/dialog'
 
 import { integrationsApi } from '../../lib/api'
-import { formatCurrency, convertCurrency } from '../../lib/currency-service'
+import { formatCurrency } from '../../lib/currency-service'
+import { Currency } from '../../lib/types'
+import { CurrencySelector } from '../dashboard/currency-selector'
 
 // Available platforms configuration
 const availablePlatforms = [
   {
     name: 'E-conomic',
+    key: 'economic',
+    description: 'Sync your accounting data',
     icon: '🔗',
-    description: 'Connect your E-conomic accounting system',
-    connectionType: 'API Tokens (App Secret + Agreement Grant)',
+    color: 'bg-blue-500',
     available: true,
     comingSoon: false,
-  },
-  {
-    name: 'Shopify',
-    icon: '🛒',
-    description: 'Connect your Shopify store for subscription data',
-    connectionType: 'OAuth 2.0 (Secure)',
-    available: true,
-    comingSoon: false,
+    features: ['Customer data', 'Invoice tracking', 'Revenue analytics'],
   },
   {
     name: 'Stripe',
+    key: 'stripe',
+    description: 'Connect your payment processor',
     icon: '💳',
-    description: 'Connect your Stripe account for payment data',
-    connectionType: 'API Key (Encrypted)',
+    color: 'bg-purple-500',
     available: true,
     comingSoon: false,
+    features: ['Payment data', 'Subscription tracking', 'Customer insights'],
+  },
+  {
+    name: 'Shopify',
+    key: 'shopify',
+    description: 'E-commerce platform integration',
+    icon: '🛒',
+    color: 'bg-green-500',
+    available: true,
+    comingSoon: false,
+    features: ['Order data', 'Customer profiles', 'Product analytics'],
   },
 ]
 
 const statusConfig = {
   pending: {
-    icon: AlertCircle,
-    color: 'text-yellow-600',
-    badge: 'bg-yellow-100 text-yellow-800',
     label: 'Pending',
+    color: 'bg-yellow-100 text-yellow-800',
+    icon: AlertCircle,
   },
   active: {
-    icon: CheckCircle,
-    color: 'text-green-600',
-    badge: 'bg-green-100 text-green-800',
     label: 'Connected',
+    color: 'bg-green-100 text-green-800',
+    icon: CheckCircle,
   },
   error: {
-    icon: XCircle,
-    color: 'text-red-600',
-    badge: 'bg-red-100 text-red-800',
     label: 'Error',
+    color: 'bg-red-100 text-red-800',
+    icon: XCircle,
   },
   syncing: {
-    icon: RefreshCw,
-    color: 'text-blue-600',
-    badge: 'bg-blue-100 text-blue-800',
     label: 'Syncing',
+    color: 'bg-blue-100 text-blue-800',
+    icon: RefreshCw,
+  },
+  inactive: {
+    label: 'Paused',
+    color: 'bg-yellow-100 text-yellow-800',
+    icon: AlertCircle,
   },
   disconnected: {
-    icon: AlertCircle,
-    color: 'text-gray-600',
-    badge: 'bg-gray-100 text-gray-800',
     label: 'Disconnected',
+    color: 'bg-gray-100 text-gray-800',
+    icon: XCircle,
   },
 }
 
@@ -99,12 +107,16 @@ interface Integration {
   id: number
   platform: string
   platform_name: string
-  status: 'pending' | 'active' | 'error' | 'syncing' | 'disconnected'
-  last_sync_at: string | null
-  last_successful_sync_at: string | null
+  status:
+    | 'pending'
+    | 'active'
+    | 'error'
+    | 'syncing'
+    | 'inactive'
+    | 'disconnected'
   customer_count: number
   revenue: number
-  recent_sync_logs: any[]
+  last_sync_at: string | null
 }
 
 interface EconomicCredentials {
@@ -120,6 +132,7 @@ export function IntegrationsPage() {
   const [integrations, setIntegrations] = useState<Integration[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [selectedCurrency, setSelectedCurrency] = useState<Currency>('DKK')
   const [autoSync, setAutoSync] = useState(true)
   const [syncFrequency, setSyncFrequency] = useState('15')
   const [isEconomicDialogOpen, setIsEconomicDialogOpen] = useState(false)
@@ -138,11 +151,6 @@ export function IntegrationsPage() {
   const [isSyncing, setIsSyncing] = useState<Record<number, boolean>>({})
   const [isSavingSettings, setIsSavingSettings] = useState(false)
 
-  useEffect(() => {
-    loadIntegrations()
-    loadSyncSettings()
-  }, [])
-
   const loadSyncSettings = async () => {
     try {
       // First check if we can get user sync settings
@@ -158,9 +166,11 @@ export function IntegrationsPage() {
     }
   }
 
-  const loadIntegrations = async () => {
+  const loadIntegrations = useCallback(async () => {
     try {
-      const response = await integrationsApi.getAll()
+      const response = await integrationsApi.getAll({
+        currency: selectedCurrency,
+      })
 
       if (response.data.success) {
         setIntegrations(response.data.data)
@@ -180,16 +190,43 @@ export function IntegrationsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedCurrency])
+
+  useEffect(() => {
+    loadIntegrations()
+    loadSyncSettings()
+  }, [loadIntegrations])
 
   const handleSyncNow = async (integrationId: number) => {
     setIsSyncing((prev) => ({ ...prev, [integrationId]: true }))
+    setError('') // Clear any previous errors
     try {
-      await integrationsApi.sync(integrationId.toString())
-      await loadIntegrations() // Refresh data
+      const response = await integrationsApi.sync(integrationId.toString())
+      if (response.data.success) {
+        // Wait a moment for the sync to start, then refresh
+        setTimeout(() => {
+          loadIntegrations()
+        }, 1000)
+      } else {
+        setError(response.data.message || 'Sync failed. Please try again.')
+      }
     } catch (err: any) {
       console.error('Sync failed:', err)
-      setError('Sync failed. Please try again.')
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        'Sync failed. Please try again.'
+      setError(errorMessage)
+
+      // If it's a MAC validation error, suggest reconnection
+      if (
+        errorMessage.includes('MAC is invalid') ||
+        errorMessage.includes('Invalid signature')
+      ) {
+        setError(
+          'Authentication failed. Please reconnect your account to refresh credentials.'
+        )
+      }
     } finally {
       setIsSyncing((prev) => ({ ...prev, [integrationId]: false }))
     }
@@ -201,77 +238,38 @@ export function IntegrationsPage() {
   ) => {
     if (
       !confirm(
-        `Are you sure you want to disconnect ${platformName}? Your historical data will be preserved, but real-time sync will stop.`
+        `Are you sure you want to disconnect ${platformName}? Your data will be preserved but no new data will be synced.`
       )
     ) {
       return
     }
 
-    setIsSyncing((prev) => ({ ...prev, [integrationId]: true }))
     try {
       await integrationsApi.disconnect(integrationId.toString())
-      await loadIntegrations() // Refresh data
+      await loadIntegrations() // Refresh the list
     } catch (err: any) {
       console.error('Disconnect failed:', err)
       setError('Failed to disconnect integration. Please try again.')
-    } finally {
-      setIsSyncing((prev) => ({ ...prev, [integrationId]: false }))
     }
   }
 
-  const handleReconnect = async (platform: string) => {
-    // Navigate to the appropriate connection page based on platform
-    switch (platform.toLowerCase()) {
-      case 'economic':
-        setIsEconomicDialogOpen(true)
-        break
-      case 'stripe':
-        setIsStripeDialogOpen(true)
-        break
-      case 'shopify':
-        window.location.href = '/integrations/shopify'
-        break
-      default:
-        setError(`Reconnection not yet supported for ${platform}`)
+  const handleReconnect = (platform: string) => {
+    if (platform === 'economic') {
+      setIsEconomicDialogOpen(true)
+    } else if (platform === 'stripe') {
+      setIsStripeDialogOpen(true)
     }
   }
 
-  const handleConnectEconomic = async () => {
-    if (
-      !economicCredentials.app_secret_token ||
-      !economicCredentials.agreement_grant_token
-    ) {
-      setError('Please fill in all required fields')
-      return
-    }
-
+  const handleEconomicConnect = async () => {
     setIsConnecting(true)
-    setError('')
-
+    setError('') // Clear any previous errors
     try {
-      const existingIntegration = getIntegrationByPlatform('E-conomic')
-
-      let response
-      if (
-        existingIntegration &&
-        existingIntegration.status === 'disconnected'
-      ) {
-        // Update existing disconnected integration
-        response = await integrationsApi.update(
-          existingIntegration.id.toString(),
-          {
-            credentials: economicCredentials,
-            status: 'pending',
-          }
-        )
-      } else {
-        // Create new integration
-        response = await integrationsApi.create({
-          platform: 'economic',
-          platform_name: 'E-conomic Integration',
-          credentials: economicCredentials,
-        })
-      }
+      const response = await integrationsApi.create({
+        platform: 'economic',
+        platform_name: 'E-conomic',
+        credentials: economicCredentials,
+      })
 
       if (response.data.success) {
         setIsEconomicDialogOpen(false)
@@ -279,116 +277,89 @@ export function IntegrationsPage() {
           app_secret_token: '',
           agreement_grant_token: '',
         })
-        await loadIntegrations() // Refresh integrations list
+        await loadIntegrations()
+      } else {
+        setError(
+          response.data.message ||
+            'Failed to connect E-conomic. Please check your credentials.'
+        )
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to connect to E-conomic')
+      console.error('Economic connection failed:', err)
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        'Failed to connect E-conomic. Please check your credentials.'
+      setError(errorMessage)
     } finally {
       setIsConnecting(false)
     }
   }
 
-  const handleConnectStripe = async () => {
-    if (!stripeCredentials.secret_key) {
-      setError('Please enter your Stripe Secret Key')
-      return
-    }
-
+  const handleStripeConnect = async () => {
     setIsConnecting(true)
-    setError('')
-
+    setError('') // Clear any previous errors
     try {
-      const existingIntegration = getIntegrationByPlatform('Stripe')
-
-      let response
-      if (
-        existingIntegration &&
-        existingIntegration.status === 'disconnected'
-      ) {
-        // Update existing disconnected integration
-        response = await integrationsApi.update(
-          existingIntegration.id.toString(),
-          {
-            credentials: stripeCredentials,
-            status: 'pending',
-          }
-        )
-      } else {
-        // Create new integration
-        response = await integrationsApi.create({
-          platform: 'stripe',
-          platform_name: 'Stripe Integration',
-          credentials: stripeCredentials,
-        })
-      }
+      const response = await integrationsApi.create({
+        platform: 'stripe',
+        platform_name: 'Stripe',
+        credentials: stripeCredentials,
+      })
 
       if (response.data.success) {
         setIsStripeDialogOpen(false)
         setStripeCredentials({ secret_key: '' })
-        await loadIntegrations() // Refresh integrations list
+        await loadIntegrations()
+      } else {
+        setError(
+          response.data.message ||
+            'Failed to connect Stripe. Please check your credentials.'
+        )
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to connect to Stripe')
+      console.error('Stripe connection failed:', err)
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        'Failed to connect Stripe. Please check your credentials.'
+      setError(errorMessage)
     } finally {
       setIsConnecting(false)
     }
   }
 
-  const getIntegrationByPlatform = (platform: string) => {
-    const platformName = platform.toLowerCase().replace('-', '')
-    return integrations.find((integration) => {
-      const integrationPlatform = integration.platform
-        .toLowerCase()
-        .replace('-', '')
-      return integrationPlatform === platformName
-    })
-  }
-
   const handleSaveSyncSettings = async () => {
     setIsSavingSettings(true)
-    setError('')
-
     try {
-      const settingsData = {
+      await integrationsApi.updateSyncSettings({
         auto_sync: autoSync,
-        sync_frequency: parseInt(syncFrequency) || 15,
-      }
-
-      console.log('💾 Saving sync settings:', settingsData)
-
-      const response = await integrationsApi.updateSyncSettings(settingsData)
-      
-      if (response.data.success) {
-        console.log('✅ Sync settings saved successfully')
-        // Could show a success toast here
-      }
+        sync_frequency: parseInt(syncFrequency),
+      })
     } catch (err: any) {
-      console.error('❌ Failed to save sync settings:', err)
-      setError('Failed to save sync settings: ' + (err.response?.data?.message || err.message))
+      console.error('Failed to save sync settings:', err)
+      setError('Failed to save sync settings. Please try again.')
     } finally {
       setIsSavingSettings(false)
     }
   }
 
-  const totalRevenue = integrations.reduce(
-    (sum, integration) => sum + (integration.revenue || 0),
-    0
+  // Calculate totals
+  const connectedIntegrations = integrations.filter(
+    (integration) => integration.status === 'active'
   )
   const totalCustomers = integrations.reduce(
     (sum, integration) => sum + (integration.customer_count || 0),
     0
   )
-  const connectedCount = integrations.filter(
-    (integration) => integration.status === 'active'
-  ).length
+  const totalRevenue = integrations.reduce(
+    (sum, integration) => sum + (integration.revenue || 0),
+    0
+  )
 
   if (loading) {
     return (
-      <div className='p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6'>
-        <div className='flex items-center justify-center py-12'>
-          <Loader2 className='h-8 w-8 animate-spin' />
-          <span className='ml-2'>Loading integrations...</span>
-        </div>
+      <div className='flex items-center justify-center min-h-screen'>
+        <Loader2 className='h-8 w-8 animate-spin' />
       </div>
     )
   }
@@ -405,7 +376,16 @@ export function IntegrationsPage() {
             Connect your revenue sources
           </p>
         </div>
-        
+        <div className='flex flex-col sm:flex-row items-stretch sm:items-center gap-3'>
+          <CurrencySelector
+            currentCurrency={selectedCurrency}
+            onCurrencyChange={setSelectedCurrency}
+          />
+          <Button variant='outline' size='sm' onClick={loadIntegrations}>
+            <RefreshCw className='mr-2 h-4 w-4' />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Error Alert */}
@@ -426,13 +406,14 @@ export function IntegrationsPage() {
                 <p className='text-xs sm:text-sm text-muted-foreground'>
                   Connected Platforms
                 </p>
-                <p className='text-lg sm:text-xl lg:text-2xl font-bold'>
-                  {connectedCount}/{availablePlatforms.length}
+                <p className='text-base sm:text-lg lg:text-2xl font-bold'>
+                  {connectedIntegrations.length}
                 </p>
               </div>
             </div>
           </CardContent>
         </Card>
+
         <Card>
           <CardContent className='p-4 sm:p-6'>
             <div className='flex items-center space-x-3'>
@@ -441,23 +422,24 @@ export function IntegrationsPage() {
                 <p className='text-xs sm:text-sm text-muted-foreground'>
                   Total Customers
                 </p>
-                <p className='text-lg sm:text-xl lg:text-2xl font-bold'>
-                  {totalCustomers}
+                <p className='text-base sm:text-lg lg:text-2xl font-bold'>
+                  {totalCustomers.toLocaleString()}
                 </p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className='sm:col-span-2 lg:col-span-1'>
+
+        <Card>
           <CardContent className='p-4 sm:p-6'>
             <div className='flex items-center space-x-3'>
-              <DollarSign className='h-4 w-4 sm:h-5 sm:w-5 text-blue-600 flex-shrink-0' />
+              <DollarSign className='h-4 w-4 sm:h-5 sm:w-5 text-purple-600 flex-shrink-0' />
               <div className='min-w-0 flex-1'>
                 <p className='text-xs sm:text-sm text-muted-foreground'>
                   Total MRR
                 </p>
                 <p className='text-base sm:text-lg lg:text-2xl font-bold'>
-                  {formatCurrency(totalRevenue, 'DKK')}
+                  {formatCurrency(totalRevenue, selectedCurrency)}
                 </p>
               </div>
             </div>
@@ -465,99 +447,92 @@ export function IntegrationsPage() {
         </Card>
       </div>
 
-
-
-      {/* Available Platforms */}
-      <div className='space-y-4'>
-        <h2 className='text-lg font-semibold'>Available Platforms</h2>
-        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+      {/* Integrations Grid */}
+      <div>
+        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6'>
           {availablePlatforms.map((platform) => {
-            const existingIntegration = getIntegrationByPlatform(platform.name)
+            const existingIntegration = integrations.find(
+              (i) =>
+                i.platform === platform.key ||
+                i.platform_name
+                  .toLowerCase()
+                  .includes(platform.name.toLowerCase())
+            )
 
             return (
-              <Card
-                key={platform.name}
-                className={existingIntegration ? '' : ''}
-              >
+              <Card key={platform.key} className='relative overflow-hidden'>
                 <CardHeader className='pb-4'>
-                  <CardTitle className='flex items-center space-x-3'>
-                    <span className='text-2xl'>{platform.icon}</span>
-                    <div>
-                      <span className='text-lg'>{platform.name}</span>
-                      {platform.comingSoon && (
-                        <Badge variant='secondary' className='ml-2'>
-                          Coming Soon
-                        </Badge>
-                      )}
-                      {existingIntegration && (
-                        <Badge
-                          variant={
-                            existingIntegration.status === 'active'
-                              ? 'default'
-                              : 'secondary'
-                          }
-                          className={`ml-2 ${
-                            existingIntegration.status === 'active'
-                              ? 'bg-green-100 text-green-800'
-                              : existingIntegration.status === 'error'
-                              ? 'bg-red-100 text-red-800'
-                              : existingIntegration.status === 'syncing'
-                              ? 'bg-blue-100 text-blue-800'
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}
-                        >
-                          {statusConfig[existingIntegration.status]?.label ||
-                            'Connected'}
-                        </Badge>
-                      )}
+                  <div className='flex items-center justify-between'>
+                    <div className='flex items-center space-x-3'>
+                      <div
+                        className={`w-10 h-10 ${platform.color} rounded-lg flex items-center justify-center text-white text-lg font-bold`}
+                      >
+                        {platform.icon}
+                      </div>
+                      <div className='min-w-0 flex-1'>
+                        <CardTitle className='text-base sm:text-lg'>
+                          {platform.name}
+                        </CardTitle>
+                        <p className='text-xs sm:text-sm text-muted-foreground truncate'>
+                          {platform.description}
+                        </p>
+                      </div>
                     </div>
-                  </CardTitle>
+                    {existingIntegration && (
+                      <Badge
+                        className={
+                          statusConfig[existingIntegration.status]?.color ||
+                          'bg-gray-100 text-gray-800'
+                        }
+                      >
+                        {statusConfig[existingIntegration.status]?.label ||
+                          existingIntegration.status}
+                      </Badge>
+                    )}
+                  </div>
                 </CardHeader>
-                <CardContent>
-                  <p className='text-sm text-muted-foreground mb-4'>
-                    {platform.description}
-                  </p>
-                  <p className='text-xs text-muted-foreground mb-4'>
-                    Connection: {platform.connectionType}
-                  </p>
 
-                  {existingIntegration && (
-                    <div className='space-y-2 mb-4 p-3 bg-gray-50 rounded-lg'>
-                      <div className='flex justify-between items-center'>
-                        <span className='text-sm font-medium'>Status:</span>
-                        <span className='text-sm text-gray-600'>
-                          {statusConfig[existingIntegration.status]?.label}
-                        </span>
-                      </div>
-                      <div className='flex justify-between items-center'>
-                        <span className='text-sm font-medium'>Customers:</span>
-                        <span className='text-sm text-gray-600'>
-                          {existingIntegration.customer_count || 0}
-                        </span>
-                      </div>
-                      <div className='flex justify-between items-center'>
-                        <span className='text-sm font-medium'>MRR:</span>
-                        <span className='text-sm text-gray-600'>
-                          {formatCurrency(
-                            existingIntegration.revenue || 0,
-                            'DKK'
-                          )}
-                        </span>
-                      </div>
-                      {existingIntegration.last_sync_at && (
+                <CardContent className='space-y-4'>
+                  {existingIntegration &&
+                    existingIntegration.status !== 'disconnected' && (
+                      <div className='space-y-2 text-sm'>
                         <div className='flex justify-between items-center'>
-                          <span className='text-sm font-medium'>
-                            Last Sync:
-                          </span>
+                          <span className='text-sm font-medium'>Status:</span>
                           <span className='text-sm text-gray-600'>
-                            {new Date(
-                              existingIntegration.last_sync_at
-                            ).toLocaleDateString()}
+                            {statusConfig[existingIntegration.status]?.label}
                           </span>
                         </div>
-                      )}
-                    </div>
-                  )}
+                        <div className='flex justify-between items-center'>
+                          <span className='text-sm font-medium'>
+                            Customers:
+                          </span>
+                          <span className='text-sm text-gray-600'>
+                            {existingIntegration.customer_count || 0}
+                          </span>
+                        </div>
+                        <div className='flex justify-between items-center'>
+                          <span className='text-sm font-medium'>MRR:</span>
+                          <span className='text-sm text-gray-600'>
+                            {formatCurrency(
+                              existingIntegration.revenue || 0,
+                              selectedCurrency
+                            )}
+                          </span>
+                        </div>
+                        {existingIntegration.last_sync_at && (
+                          <div className='flex justify-between items-center'>
+                            <span className='text-sm font-medium'>
+                              Last Sync:
+                            </span>
+                            <span className='text-sm text-gray-600'>
+                              {new Date(
+                                existingIntegration.last_sync_at
+                              ).toLocaleDateString()}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                   {(!existingIntegration ||
                     existingIntegration.status === 'disconnected') && (
@@ -575,55 +550,52 @@ export function IntegrationsPage() {
                                 {existingIntegration?.status === 'disconnected'
                                   ? 'Reconnect'
                                   : 'Connect'}{' '}
-                                {platform.name}
+                                E-conomic
                               </Button>
                             </DialogTrigger>
-                            <DialogContent className='sm:max-w-[500px] bg-white'>
+                            <DialogContent>
                               <DialogHeader>
-                                <DialogTitle className='flex items-center space-x-2'>
-                                  <Building2 className='h-5 w-5' />
-                                  <span>Connect E-conomic</span>
-                                </DialogTitle>
+                                <DialogTitle>Connect E-conomic</DialogTitle>
                                 <DialogDescription>
                                   Enter your E-conomic API credentials to
-                                  connect your accounting system.
+                                  connect your account.
                                 </DialogDescription>
                               </DialogHeader>
-                              <div className='space-y-4 py-4'>
+                              <div className='space-y-4'>
                                 <div>
-                                  <Label htmlFor='app_secret_token'>
+                                  <Label htmlFor='app-secret-token'>
                                     App Secret Token
                                   </Label>
                                   <Input
-                                    id='app_secret_token'
+                                    id='app-secret-token'
                                     type='password'
                                     value={economicCredentials.app_secret_token}
                                     onChange={(e) =>
-                                      setEconomicCredentials((prev) => ({
-                                        ...prev,
+                                      setEconomicCredentials({
+                                        ...economicCredentials,
                                         app_secret_token: e.target.value,
-                                      }))
+                                      })
                                     }
-                                    placeholder='Your E-conomic App Secret Token'
+                                    placeholder='Enter your app secret token'
                                   />
                                 </div>
                                 <div>
-                                  <Label htmlFor='agreement_grant_token'>
+                                  <Label htmlFor='agreement-grant-token'>
                                     Agreement Grant Token
                                   </Label>
                                   <Input
-                                    id='agreement_grant_token'
+                                    id='agreement-grant-token'
                                     type='password'
                                     value={
                                       economicCredentials.agreement_grant_token
                                     }
                                     onChange={(e) =>
-                                      setEconomicCredentials((prev) => ({
-                                        ...prev,
+                                      setEconomicCredentials({
+                                        ...economicCredentials,
                                         agreement_grant_token: e.target.value,
-                                      }))
+                                      })
                                     }
-                                    placeholder='Your Agreement Grant Token'
+                                    placeholder='Enter your agreement grant token'
                                   />
                                 </div>
                                 <div className='flex justify-end space-x-2'>
@@ -636,8 +608,12 @@ export function IntegrationsPage() {
                                     Cancel
                                   </Button>
                                   <Button
-                                    onClick={handleConnectEconomic}
-                                    disabled={isConnecting}
+                                    onClick={handleEconomicConnect}
+                                    disabled={
+                                      isConnecting ||
+                                      !economicCredentials.app_secret_token ||
+                                      !economicCredentials.agreement_grant_token
+                                    }
                                   >
                                     {isConnecting ? (
                                       <>
@@ -653,6 +629,7 @@ export function IntegrationsPage() {
                             </DialogContent>
                           </Dialog>
                         )}
+
                       {platform.available &&
                         !platform.comingSoon &&
                         platform.name === 'Stripe' && (
@@ -666,58 +643,32 @@ export function IntegrationsPage() {
                                 {existingIntegration?.status === 'disconnected'
                                   ? 'Reconnect'
                                   : 'Connect'}{' '}
-                                {platform.name}
+                                Stripe
                               </Button>
                             </DialogTrigger>
-                            <DialogContent className='sm:max-w-[500px] bg-white'>
+                            <DialogContent>
                               <DialogHeader>
-                                <DialogTitle className='flex items-center space-x-2'>
-                                  <div className='w-5 h-5 flex items-center justify-center bg-purple-100 rounded text-purple-600 text-sm font-bold'>
-                                    S
-                                  </div>
-                                  <span>Connect Stripe</span>
-                                </DialogTitle>
+                                <DialogTitle>Connect Stripe</DialogTitle>
                                 <DialogDescription>
-                                  Enter your Stripe Secret Key to connect your
-                                  payment processing account.
+                                  Enter your Stripe secret key to connect your
+                                  account.
                                 </DialogDescription>
                               </DialogHeader>
-                              <div className='space-y-4 py-4'>
-                                <div className='bg-blue-50 border border-blue-200 rounded-lg p-3'>
-                                  <div className='flex items-start space-x-2'>
-                                    <Shield className='w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0' />
-                                    <div>
-                                      <p className='text-blue-800 font-medium text-sm'>
-                                        Security Note
-                                      </p>
-                                      <p className='text-blue-600 text-xs'>
-                                        Your Stripe Secret Key is encrypted and
-                                        stored securely. It's only used to sync
-                                        your subscription data.
-                                      </p>
-                                    </div>
-                                  </div>
-                                </div>
+                              <div className='space-y-4'>
                                 <div>
-                                  <Label htmlFor='stripe_secret_key'>
-                                    Stripe Secret Key
-                                  </Label>
+                                  <Label htmlFor='secret-key'>Secret Key</Label>
                                   <Input
-                                    id='stripe_secret_key'
+                                    id='secret-key'
                                     type='password'
                                     value={stripeCredentials.secret_key}
                                     onChange={(e) =>
-                                      setStripeCredentials((prev) => ({
-                                        ...prev,
+                                      setStripeCredentials({
+                                        ...stripeCredentials,
                                         secret_key: e.target.value,
-                                      }))
+                                      })
                                     }
-                                    placeholder='sk_live_... or sk_test_...'
+                                    placeholder='sk_test_... or sk_live_...'
                                   />
-                                  <p className='text-xs text-gray-500 mt-1'>
-                                    Find this in your Stripe Dashboard under
-                                    Developers → API Keys
-                                  </p>
                                 </div>
                                 <div className='flex justify-end space-x-2'>
                                   <Button
@@ -727,8 +678,11 @@ export function IntegrationsPage() {
                                     Cancel
                                   </Button>
                                   <Button
-                                    onClick={handleConnectStripe}
-                                    disabled={isConnecting}
+                                    onClick={handleStripeConnect}
+                                    disabled={
+                                      isConnecting ||
+                                      !stripeCredentials.secret_key
+                                    }
                                   >
                                     {isConnecting ? (
                                       <>
@@ -796,14 +750,6 @@ export function IntegrationsPage() {
                           )}
                         </Button>
                         <div className='text-center mt-3'>
-                          {/* <Button
-                            variant='ghost'
-                            size='sm'
-                            className='text-gray-600 hover:text-gray-900'
-                          >
-                            <Settings className='mr-1 h-4 w-4' />
-                            Settings
-                          </Button> */}
                           <Button
                             variant='ghost'
                             size='sm'
@@ -852,8 +798,8 @@ export function IntegrationsPage() {
                                 Connection Error
                               </p>
                               <p className='text-red-600 text-xs mt-1'>
-                                {existingIntegration.last_sync_error?.message || 
-                                 'Unable to connect to your account. Please check your credentials and try reconnecting.'}
+                                Unable to connect to your account. Please check
+                                your credentials and try reconnecting.
                               </p>
                             </div>
                           </div>
@@ -879,8 +825,6 @@ export function IntegrationsPage() {
           })}
         </div>
       </div>
-
-
     </div>
   )
 }
