@@ -30,6 +30,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '../ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../ui/alert-dialog'
 
 import { integrationsApi } from '../../lib/api'
 import { formatCurrency } from '../../lib/currency-service'
@@ -141,6 +151,15 @@ export function IntegrationsPage() {
   const [isConnecting, setIsConnecting] = useState(false)
   const [isSyncing, setIsSyncing] = useState<Record<number, boolean>>({})
   const [isSavingSettings, setIsSavingSettings] = useState(false)
+  const [disconnectDialog, setDisconnectDialog] = useState<{
+    isOpen: boolean
+    integration: Integration | null
+    action: 'disconnect' | 'remove'
+  }>({
+    isOpen: false,
+    integration: null,
+    action: 'disconnect',
+  })
 
   const loadSyncSettings = async () => {
     try {
@@ -223,24 +242,42 @@ export function IntegrationsPage() {
     }
   }
 
-  const handleDisconnect = async (
-    integrationId: number,
-    platformName: string
+  const handleDisconnectClick = (
+    integration: Integration,
+    action: 'disconnect' | 'remove'
   ) => {
-    if (
-      !confirm(
-        `Are you sure you want to disconnect ${platformName}? Your data will be preserved but no new data will be synced.`
-      )
-    ) {
-      return
-    }
+    setDisconnectDialog({
+      isOpen: true,
+      integration,
+      action,
+    })
+  }
+
+  const handleDisconnectConfirm = async () => {
+    if (!disconnectDialog.integration) return
 
     try {
-      await integrationsApi.disconnect(integrationId.toString())
+      if (disconnectDialog.action === 'remove') {
+        // For remove, we delete the integration completely
+        await integrationsApi.delete(disconnectDialog.integration.id.toString())
+      } else {
+        // For disconnect, we just disconnect it (preserves data)
+        await integrationsApi.disconnect(
+          disconnectDialog.integration.id.toString()
+        )
+      }
+
       await loadIntegrations() // Refresh the list
+      setDisconnectDialog({
+        isOpen: false,
+        integration: null,
+        action: 'disconnect',
+      })
     } catch (err: any) {
-      console.error('Disconnect failed:', err)
-      setError('Failed to disconnect integration. Please try again.')
+      console.error('Operation failed:', err)
+      setError(
+        `Failed to ${disconnectDialog.action} integration. Please try again.`
+      )
     }
   }
 
@@ -631,21 +668,36 @@ export function IntegrationsPage() {
                             </>
                           )}
                         </Button>
-                        <div className='text-center mt-3'>
+                        <div className='flex flex-col space-y-2 mt-3'>
                           <Button
                             variant='ghost'
                             size='sm'
-                            className='text-red-600 hover:text-red-700 hover:bg-red-50'
+                            className='text-orange-600 hover:text-orange-700 hover:bg-orange-50'
                             onClick={() =>
-                              handleDisconnect(
-                                existingIntegration.id,
-                                existingIntegration.platform_name
+                              handleDisconnectClick(
+                                existingIntegration,
+                                'disconnect'
                               )
                             }
                             disabled={isSyncing[existingIntegration.id]}
                           >
                             <Unplug className='mr-1 h-4 w-4' />
                             Disconnect
+                          </Button>
+                          <Button
+                            variant='ghost'
+                            size='sm'
+                            className='text-red-600 hover:text-red-700 hover:bg-red-50'
+                            onClick={() =>
+                              handleDisconnectClick(
+                                existingIntegration,
+                                'remove'
+                              )
+                            }
+                            disabled={isSyncing[existingIntegration.id]}
+                          >
+                            <XCircle className='mr-1 h-4 w-4' />
+                            Remove & Add New
                           </Button>
                         </div>
                       </div>
@@ -714,6 +766,75 @@ export function IntegrationsPage() {
         onClose={() => setIsEconomicDialogOpen(false)}
         onSuccess={handleEconomicOAuthSuccess}
       />
+
+      {/* Disconnect/Remove Confirmation Dialog */}
+      <AlertDialog
+        open={disconnectDialog.isOpen}
+        onOpenChange={(open) =>
+          !open &&
+          setDisconnectDialog({
+            isOpen: false,
+            integration: null,
+            action: 'disconnect',
+          })
+        }
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {disconnectDialog.action === 'remove'
+                ? 'Remove Integration'
+                : 'Disconnect Integration'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {disconnectDialog.action === 'remove' ? (
+                <>
+                  Are you sure you want to <strong>permanently remove</strong>{' '}
+                  your{' '}
+                  <strong>{disconnectDialog.integration?.platform_name}</strong>{' '}
+                  integration?
+                  <br />
+                  <br />
+                  <span className='text-red-600 font-medium'>
+                    ⚠️ This will delete all historical data and cannot be
+                    undone.
+                  </span>
+                  <br />
+                  You can add a new integration immediately after removal.
+                </>
+              ) : (
+                <>
+                  Are you sure you want to disconnect your{' '}
+                  <strong>{disconnectDialog.integration?.platform_name}</strong>{' '}
+                  integration?
+                  <br />
+                  <br />
+                  <span className='text-green-600 font-medium'>
+                    ✓ Your historical data will be preserved.
+                  </span>
+                  <br />
+                  No new data will be synced until you reconnect.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDisconnectConfirm}
+              className={
+                disconnectDialog.action === 'remove'
+                  ? 'bg-red-600 hover:bg-red-700'
+                  : 'bg-orange-600 hover:bg-orange-700'
+              }
+            >
+              {disconnectDialog.action === 'remove'
+                ? 'Remove Integration'
+                : 'Disconnect'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
