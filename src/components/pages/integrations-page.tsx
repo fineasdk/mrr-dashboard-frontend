@@ -565,7 +565,7 @@ export function IntegrationsPage() {
                                 Stripe
                               </Button>
                             </DialogTrigger>
-                            <DialogContent>
+                            <DialogContent className="!bg-white">
                               <DialogHeader>
                                 <DialogTitle>Connect Stripe</DialogTitle>
                                 <DialogDescription>
@@ -779,7 +779,7 @@ export function IntegrationsPage() {
           })
         }
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="!bg-white">
           <AlertDialogHeader>
             <AlertDialogTitle>
               {disconnectDialog.action === 'remove'

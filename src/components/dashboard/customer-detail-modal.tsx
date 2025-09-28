@@ -99,7 +99,7 @@ export function CustomerDetailModal({ customer, open, onClose, onSave, mode = 'v
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto !bg-white">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold text-gray-900">
             {mode === 'edit' ? 'Edit Customer' : 'Customer Details'}

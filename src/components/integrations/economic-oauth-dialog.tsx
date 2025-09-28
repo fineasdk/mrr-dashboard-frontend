@@ -108,7 +108,7 @@ export function EconomicOAuthDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className='sm:max-w-md'>
+      <DialogContent className='sm:max-w-md !bg-white'>
         <DialogHeader>
           <DialogTitle>Connect E-conomic</DialogTitle>
           <DialogDescription>
