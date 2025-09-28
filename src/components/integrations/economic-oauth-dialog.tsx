@@ -52,8 +52,8 @@ export function EconomicOAuthDialog({
   }
 
   const handleCompleteOAuth = async () => {
-    if (!grantToken || grantToken.length !== 26) {
-      setError('Please enter a valid 26-character grant token.')
+    if (!grantToken || grantToken.length < 26 || grantToken.length > 50) {
+      setError('Please enter a valid grant token (26-50 characters).')
       return
     }
 
@@ -149,7 +149,7 @@ export function EconomicOAuthDialog({
             <div className='space-y-2'>
               <h4 className='font-medium'>Step 2: Copy the grant token</h4>
               <p className='text-sm text-muted-foreground'>
-                After authorizing, E-conomic will display a 26-character grant
+                After authorizing, E-conomic will display a grant
                 token. Copy this token and return to this dialog.
               </p>
             </div>
@@ -176,12 +176,12 @@ export function EconomicOAuthDialog({
                 type='text'
                 value={grantToken}
                 onChange={(e) => setGrantToken(e.target.value)}
-                placeholder='Enter the 26-character grant token'
-                maxLength={26}
+                placeholder='Enter the grant token (26-50 characters)'
+                maxLength={50}
                 className='font-mono'
               />
               <p className='text-xs text-muted-foreground'>
-                The token should be exactly 26 characters long
+                The token should be between 26-50 characters long
               </p>
             </div>
 
@@ -192,7 +192,7 @@ export function EconomicOAuthDialog({
               <Button
                 onClick={handleCompleteOAuth}
                 disabled={
-                  isConnecting || !grantToken || grantToken.length !== 26
+                  isConnecting || !grantToken || grantToken.length < 26 || grantToken.length > 50
                 }
               >
                 {isConnecting ? (
