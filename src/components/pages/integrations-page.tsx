@@ -35,6 +35,7 @@ import { integrationsApi } from '../../lib/api'
 import { formatCurrency } from '../../lib/currency-service'
 import { Currency } from '../../lib/types'
 import { CurrencySelector } from '../dashboard/currency-selector'
+import { EconomicOAuthDialog } from '../integrations/economic-oauth-dialog'
 
 // Available platforms configuration
 const availablePlatforms = [
@@ -119,11 +120,6 @@ interface Integration {
   last_sync_at: string | null
 }
 
-interface EconomicCredentials {
-  app_secret_token: string
-  agreement_grant_token: string
-}
-
 interface StripeCredentials {
   secret_key: string
 }
@@ -136,11 +132,6 @@ export function IntegrationsPage() {
   const [autoSync, setAutoSync] = useState(true)
   const [syncFrequency, setSyncFrequency] = useState('15')
   const [isEconomicDialogOpen, setIsEconomicDialogOpen] = useState(false)
-  const [economicCredentials, setEconomicCredentials] =
-    useState<EconomicCredentials>({
-      app_secret_token: '',
-      agreement_grant_token: '',
-    })
   const [isStripeDialogOpen, setIsStripeDialogOpen] = useState(false)
   const [stripeCredentials, setStripeCredentials] = useState<StripeCredentials>(
     {
@@ -261,39 +252,8 @@ export function IntegrationsPage() {
     }
   }
 
-  const handleEconomicConnect = async () => {
-    setIsConnecting(true)
-    setError('') // Clear any previous errors
-    try {
-      const response = await integrationsApi.create({
-        platform: 'economic',
-        platform_name: 'E-conomic',
-        credentials: economicCredentials,
-      })
-
-      if (response.data.success) {
-        setIsEconomicDialogOpen(false)
-        setEconomicCredentials({
-          app_secret_token: '',
-          agreement_grant_token: '',
-        })
-        await loadIntegrations()
-      } else {
-        setError(
-          response.data.message ||
-            'Failed to connect E-conomic. Please check your credentials.'
-        )
-      }
-    } catch (err: any) {
-      console.error('Economic connection failed:', err)
-      const errorMessage =
-        err.response?.data?.message ||
-        err.message ||
-        'Failed to connect E-conomic. Please check your credentials.'
-      setError(errorMessage)
-    } finally {
-      setIsConnecting(false)
-    }
+  const handleEconomicOAuthSuccess = () => {
+    loadIntegrations() // Refresh the integrations list
   }
 
   const handleStripeConnect = async () => {
@@ -540,94 +500,16 @@ export function IntegrationsPage() {
                       {platform.available &&
                         !platform.comingSoon &&
                         platform.name === 'E-conomic' && (
-                          <Dialog
-                            open={isEconomicDialogOpen}
-                            onOpenChange={setIsEconomicDialogOpen}
+                          <Button
+                            className='w-full'
+                            onClick={() => setIsEconomicDialogOpen(true)}
                           >
-                            <DialogTrigger asChild>
-                              <Button className='w-full'>
-                                <Plus className='mr-2 h-4 w-4' />
-                                {existingIntegration?.status === 'disconnected'
-                                  ? 'Reconnect'
-                                  : 'Connect'}{' '}
-                                E-conomic
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Connect E-conomic</DialogTitle>
-                                <DialogDescription>
-                                  Enter your E-conomic API credentials to
-                                  connect your account.
-                                </DialogDescription>
-                              </DialogHeader>
-                              <div className='space-y-4'>
-                                <div>
-                                  <Label htmlFor='app-secret-token'>
-                                    App Secret Token
-                                  </Label>
-                                  <Input
-                                    id='app-secret-token'
-                                    type='password'
-                                    value={economicCredentials.app_secret_token}
-                                    onChange={(e) =>
-                                      setEconomicCredentials({
-                                        ...economicCredentials,
-                                        app_secret_token: e.target.value,
-                                      })
-                                    }
-                                    placeholder='Enter your app secret token'
-                                  />
-                                </div>
-                                <div>
-                                  <Label htmlFor='agreement-grant-token'>
-                                    Agreement Grant Token
-                                  </Label>
-                                  <Input
-                                    id='agreement-grant-token'
-                                    type='password'
-                                    value={
-                                      economicCredentials.agreement_grant_token
-                                    }
-                                    onChange={(e) =>
-                                      setEconomicCredentials({
-                                        ...economicCredentials,
-                                        agreement_grant_token: e.target.value,
-                                      })
-                                    }
-                                    placeholder='Enter your agreement grant token'
-                                  />
-                                </div>
-                                <div className='flex justify-end space-x-2'>
-                                  <Button
-                                    variant='outline'
-                                    onClick={() =>
-                                      setIsEconomicDialogOpen(false)
-                                    }
-                                  >
-                                    Cancel
-                                  </Button>
-                                  <Button
-                                    onClick={handleEconomicConnect}
-                                    disabled={
-                                      isConnecting ||
-                                      !economicCredentials.app_secret_token ||
-                                      !economicCredentials.agreement_grant_token
-                                    }
-                                  >
-                                    {isConnecting ? (
-                                      <>
-                                        <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                                        Connecting...
-                                      </>
-                                    ) : (
-                                      'Connect'
-                                    )}
-                                  </Button>
-                                </div>
-                              </div>
-                            </DialogContent>
-                          </Dialog>
+                            <Plus className='mr-2 h-4 w-4' />
+                            {existingIntegration?.status === 'disconnected'
+                              ? 'Reconnect'
+                              : 'Connect'}{' '}
+                            E-conomic
+                          </Button>
                         )}
 
                       {platform.available &&
@@ -825,6 +707,13 @@ export function IntegrationsPage() {
           })}
         </div>
       </div>
+
+      {/* E-conomic OAuth Dialog */}
+      <EconomicOAuthDialog
+        isOpen={isEconomicDialogOpen}
+        onClose={() => setIsEconomicDialogOpen(false)}
+        onSuccess={handleEconomicOAuthSuccess}
+      />
     </div>
   )
 }
