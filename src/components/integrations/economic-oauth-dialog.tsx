@@ -74,16 +74,10 @@ export function EconomicOAuthDialog({
         setGrantToken('')
         setError('')
       } else {
-        let errorMessage = response.data.message || 'Failed to connect E-conomic. Please try again.'
-        
-        // Provide more helpful error messages for common E-conomic errors
-        if (errorMessage.includes('Token does not correspond to a valid grant')) {
-          errorMessage = 'The grant token is invalid, expired, or already used. Please generate a new token from E-conomic and try again.'
-        } else if (errorMessage.includes('401')) {
-          errorMessage = 'Authentication failed. Please check your grant token and try again.'
-        }
-        
-        setError(errorMessage)
+        setError(
+          response.data.message ||
+            'Failed to connect E-conomic. Please try again.'
+        )
       }
     } catch (err: any) {
       console.error('E-conomic OAuth failed:', err)
@@ -156,7 +150,7 @@ export function EconomicOAuthDialog({
               <h4 className='font-medium'>Step 2: Copy the grant token</h4>
               <p className='text-sm text-muted-foreground'>
                 After authorizing, E-conomic will display a 26-character grant
-                token. Copy this token immediately as it expires quickly and can only be used once.
+                token. Copy this token and return to this dialog.
               </p>
             </div>
 
@@ -187,7 +181,7 @@ export function EconomicOAuthDialog({
                 className='font-mono'
               />
               <p className='text-xs text-muted-foreground'>
-                The token should be exactly 26 characters long. If you get an error, the token may have expired - generate a new one.
+                The token should be exactly 26 characters long
               </p>
             </div>
 
