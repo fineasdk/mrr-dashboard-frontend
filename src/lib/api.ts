@@ -1,8 +1,7 @@
 import axios from 'axios'
+import { config } from './config'
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
-  'https://sea-lion-app-kpc8g.ondigitalocean.app/api'
+const API_BASE_URL = config.apiUrl
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -33,12 +32,56 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Log error details in development
+    if (config.isDevelopment || config.features.debugMode) {
+      console.error('API Error:', {
+        url: error.config?.url,
+        method: error.config?.method,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message,
+      })
+    }
+
+    // Handle specific HTTP status codes
     if (error.response?.status === 401) {
       // Token expired or invalid
       localStorage.removeItem('auth_token')
-      // Redirect to login page
-      window.location.href = '/login'
+
+      // Only redirect if not already on login page
+      if (
+        typeof window !== 'undefined' &&
+        !window.location.pathname.includes('/login')
+      ) {
+        window.location.href = '/login'
+      }
+    } else if (error.response?.status === 403) {
+      // Forbidden - user doesn't have permission
+      console.warn('Access forbidden:', error.response?.data?.message)
+    } else if (error.response?.status === 404) {
+      // Not found
+      console.warn('Resource not found:', error.config?.url)
+    } else if (error.response?.status >= 500) {
+      // Server error
+      console.error(
+        'Server error:',
+        error.response?.status,
+        error.response?.data
+      )
+
+      // In production, you might want to show a user-friendly message
+      if (config.isProduction) {
+        // Could dispatch a global error notification here
+      }
+    } else if (error.code === 'ECONNABORTED') {
+      // Timeout error
+      console.error('Request timeout:', error.config?.url)
+    } else if (!error.response) {
+      // Network error
+      console.error('Network error:', error.message)
     }
+
     return Promise.reject(error)
   }
 )
@@ -145,4 +188,64 @@ export const shopifyApi = {
   testConnection: () => api.post('/shopify/test-connection'),
 
   sync: () => api.post('/shopify/sync'),
+
+  // Shop-specific token management
+  listShops: () => api.get('/shopify/shops'),
+
+  storeShopToken: (shopDomain: string, data: { access_token: string }) =>
+    api.post(`/shopify/shops/${shopDomain}/token`, data),
+
+  getShopToken: (shopDomain: string) =>
+    api.get(`/shopify/shops/${shopDomain}/token`),
+
+  removeShopToken: (shopDomain: string) =>
+    api.delete(`/shopify/shops/${shopDomain}/token`),
+
+  getShopCustomers: (shopDomain: string) =>
+    api.get(`/shopify/shops/${shopDomain}/customers`),
+}
+
+// E-conomic API
+export const economicApi = {
+  overrideSubscription: (
+    invoiceId: string,
+    data: {
+      is_subscription: boolean
+      reason: string
+    }
+  ) => api.post(`/invoices/${invoiceId}/subscription-override`, data),
+}
+
+// Currency API
+export const currencyApi = {
+  getRates: (params?: { from?: string; to?: string; date?: string }) =>
+    api.get('/currency/rates', { params }),
+
+  updateRates: () => api.post('/currency/update-rates'),
+}
+
+// Webhook Events API (for debugging)
+export const webhookApi = {
+  getEvents: (params?: {
+    platform?: string
+    status?: string
+    limit?: number
+  }) => api.get('/webhook-events', { params }),
+
+  retryEvent: (eventId: string) => api.post(`/webhook-events/${eventId}/retry`),
+}
+
+// MRR Analytics API
+export const mrrApi = {
+  getChanges: (params?: {
+    start_date?: string
+    end_date?: string
+    change_type?: string
+  }) => api.get('/mrr/changes', { params }),
+
+  getExpansion: (params?: { start_date?: string; end_date?: string }) =>
+    api.get('/mrr/expansion', { params }),
+
+  getContraction: (params?: { start_date?: string; end_date?: string }) =>
+    api.get('/mrr/contraction', { params }),
 }

@@ -130,7 +130,7 @@ export function EconomicOAuthDialog({
         {step === 'instructions' && (
           <div className='space-y-4'>
             <div className='space-y-2'>
-              <h4 className='font-medium'>Step 1: Authorize with E-conomic</h4>
+              <h4 className='font-medium'>Option 1: Automatic Authorization</h4>
               <p className='text-sm text-muted-foreground'>
                 Click the button below to open E-conomic in a new tab and
                 authorize our application to access your data.
@@ -147,10 +147,10 @@ export function EconomicOAuthDialog({
             </Button>
 
             <div className='space-y-2'>
-              <h4 className='font-medium'>Step 2: Copy the grant token</h4>
+              <h4 className='font-medium'>Option 2: Manual Token Entry</h4>
               <p className='text-sm text-muted-foreground'>
-                After authorizing, E-conomic will display a grant
-                token. Copy this token and return to this dialog.
+                If you already have a grant token from E-conomic, you can skip
+                the authorization step and enter it directly.
               </p>
             </div>
 
@@ -158,9 +158,7 @@ export function EconomicOAuthDialog({
               <Button variant='outline' onClick={handleClose}>
                 Cancel
               </Button>
-              <Button onClick={() => setStep('token')} disabled={!oauthUrl}>
-                I have the token
-              </Button>
+              <Button onClick={() => setStep('token')}>I have the token</Button>
             </div>
           </div>
         )}
@@ -192,7 +190,10 @@ export function EconomicOAuthDialog({
               <Button
                 onClick={handleCompleteOAuth}
                 disabled={
-                  isConnecting || !grantToken || grantToken.length < 26 || grantToken.length > 50
+                  isConnecting ||
+                  !grantToken ||
+                  grantToken.length < 26 ||
+                  grantToken.length > 50
                 }
               >
                 {isConnecting ? (

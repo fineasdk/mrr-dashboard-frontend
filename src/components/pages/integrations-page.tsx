@@ -565,7 +565,7 @@ export function IntegrationsPage() {
                                 Stripe
                               </Button>
                             </DialogTrigger>
-                            <DialogContent className="!bg-white">
+                            <DialogContent className='!bg-white'>
                               <DialogHeader>
                                 <DialogTitle>Connect Stripe</DialogTitle>
                                 <DialogDescription>
@@ -645,30 +645,74 @@ export function IntegrationsPage() {
                   {existingIntegration &&
                     existingIntegration.status !== 'disconnected' && (
                       <div className='space-y-2'>
-                        <Button
-                          variant='outline'
-                          size='sm'
-                          className='w-full'
-                          onClick={() => handleSyncNow(existingIntegration.id)}
-                          disabled={
-                            isSyncing[existingIntegration.id] ||
-                            existingIntegration.status === 'syncing'
-                          }
-                        >
-                          {isSyncing[existingIntegration.id] ||
-                          existingIntegration.status === 'syncing' ? (
-                            <>
-                              <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                              Syncing...
-                            </>
-                          ) : (
-                            <>
-                              <RefreshCw className='mr-2 h-4 w-4' />
-                              Sync Now
-                            </>
-                          )}
-                        </Button>
+                        {/* Special handling for Shopify - show Manage button */}
+                        {platform.name === 'Shopify' ? (
+                          <Button
+                            className='w-full'
+                            onClick={() =>
+                              (window.location.href = '/integrations/shopify')
+                            }
+                          >
+                            <Settings className='mr-2 h-4 w-4' />
+                            Manage Shopify
+                          </Button>
+                        ) : (
+                          <Button
+                            variant='outline'
+                            size='sm'
+                            className='w-full'
+                            onClick={() =>
+                              handleSyncNow(existingIntegration.id)
+                            }
+                            disabled={
+                              isSyncing[existingIntegration.id] ||
+                              existingIntegration.status === 'syncing'
+                            }
+                          >
+                            {isSyncing[existingIntegration.id] ||
+                            existingIntegration.status === 'syncing' ? (
+                              <>
+                                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                                Syncing...
+                              </>
+                            ) : (
+                              <>
+                                <RefreshCw className='mr-2 h-4 w-4' />
+                                Sync Now
+                              </>
+                            )}
+                          </Button>
+                        )}
+
                         <div className='flex flex-col space-y-2 mt-3'>
+                          {/* Show Sync button for Shopify in the secondary area */}
+                          {platform.name === 'Shopify' && (
+                            <Button
+                              variant='outline'
+                              size='sm'
+                              className='w-full'
+                              onClick={() =>
+                                handleSyncNow(existingIntegration.id)
+                              }
+                              disabled={
+                                isSyncing[existingIntegration.id] ||
+                                existingIntegration.status === 'syncing'
+                              }
+                            >
+                              {isSyncing[existingIntegration.id] ||
+                              existingIntegration.status === 'syncing' ? (
+                                <>
+                                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                                  Syncing...
+                                </>
+                              ) : (
+                                <>
+                                  <RefreshCw className='mr-2 h-4 w-4' />
+                                  Sync Now
+                                </>
+                              )}
+                            </Button>
+                          )}
                           <Button
                             variant='ghost'
                             size='sm'
@@ -779,7 +823,7 @@ export function IntegrationsPage() {
           })
         }
       >
-        <AlertDialogContent className="!bg-white">
+        <AlertDialogContent className='!bg-white'>
           <AlertDialogHeader>
             <AlertDialogTitle>
               {disconnectDialog.action === 'remove'
