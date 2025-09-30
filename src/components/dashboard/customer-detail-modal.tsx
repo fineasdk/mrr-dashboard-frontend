@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -99,14 +100,14 @@ export function CustomerDetailModal({ customer, open, onClose, onSave, mode = 'v
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto !bg-white">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold text-gray-900">
+          <DialogTitle>
             {mode === 'edit' ? 'Edit Customer' : 'Customer Details'}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="p-6 space-y-6">
           {/* Basic Information */}
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -220,16 +221,16 @@ export function CustomerDetailModal({ customer, open, onClose, onSave, mode = 'v
           )}
         </div> */}
 
-        <div className="flex justify-end space-x-3 pt-6 border-t">
+        <DialogFooter>
           <Button variant="outline" onClick={onClose}>
             {mode === 'edit' ? 'Cancel' : 'Close'}
           </Button>
           {mode === 'edit' && (
-            <Button onClick={handleSave}>
+            <Button onClick={handleSave} className="btn-primary">
               Save Changes
             </Button>
           )}
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

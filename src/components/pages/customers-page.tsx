@@ -348,28 +348,31 @@ export function CustomersPage() {
   ).sort()
 
   return (
-    <div className='p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6'>
-      {/* Header */}
-      <div className='flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 gap-4'>
-        <div>
-          <h1 className='text-xl sm:text-2xl md:text-3xl font-bold text-foreground'>
-            Customers
-          </h1>
-          <p className='text-muted-foreground text-sm sm:text-base'>
-            Manage your customer base across all platforms
-          </p>
+    <div className='min-h-screen bg-gray-50'>
+      <div className='layout-container section-padding space-y-6 sm:space-y-8'>
+        {/* Enhanced Header */}
+        <div className='animate-fade-in'>
+          <div className='flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 gap-4'>
+            <div className='space-y-2'>
+              <h1 className='text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900'>
+                Customers
+              </h1>
+              <p className='text-gray-600 text-sm sm:text-base lg:text-lg'>
+                Manage your customer base across all platforms
+              </p>
+            </div>
+            <div className='flex flex-col sm:flex-row items-stretch sm:items-center gap-3'>
+              <CurrencySelector
+                currentCurrency={selectedCurrency}
+                onCurrencyChange={setSelectedCurrency}
+              />
+              <Button size='sm' onClick={loadCustomers} className='btn-secondary'>
+                <RefreshCw className='mr-2 h-4 w-4' />
+                Refresh
+              </Button>
+            </div>
+          </div>
         </div>
-        <div className='flex flex-col sm:flex-row items-stretch sm:items-center gap-3'>
-          <CurrencySelector
-            currentCurrency={selectedCurrency}
-            onCurrencyChange={setSelectedCurrency}
-          />
-          <Button size='sm' onClick={loadCustomers}>
-            <RefreshCw className='mr-2 h-4 w-4' />
-            Refresh
-          </Button>
-        </div>
-      </div>
 
       {/* Error Alert */}
       {error && (
@@ -465,65 +468,74 @@ export function CustomersPage() {
         </Card>
       )}
 
-      {/* Customer Statistics */}
-      <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'>
-        <Card>
-          <CardContent className='p-4 sm:p-6'>
-            <div className='flex items-center space-x-3'>
-              <Users2 className='h-5 w-5 text-blue-600' />
-              <div>
-                <p className='text-sm text-muted-foreground'>Total Customers</p>
-                <p className='text-xl font-bold'>{filteredCustomers.length}</p>
+        {/* Enhanced Customer Statistics */}
+        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 animate-slide-up'>
+          <div className='card-elevated p-6 animate-scale-in'>
+            <div className='flex items-center justify-between mb-4'>
+              <div className='p-3 rounded-md bg-gray-600 shadow-sm'>
+                <Users2 className='h-6 w-6 text-white' />
               </div>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className='p-4 sm:p-6'>
-            <div className='flex items-center space-x-3'>
-              <div className='h-3 w-3 bg-green-500 rounded-full'></div>
-              <div>
-                <p className='text-sm text-muted-foreground'>Active</p>
-                <p className='text-xl font-bold'>
-                  {
-                    filteredCustomers.filter((c) => c.status === 'active')
-                      .length
-                  }
-                </p>
+            <div className='space-y-2'>
+              <p className='text-sm font-medium text-slate-600'>Total Customers</p>
+              <p className='text-2xl sm:text-3xl font-bold text-slate-900'>{filteredCustomers.length}</p>
+              <p className='text-xs font-medium text-slate-500'>Across all platforms</p>
+            </div>
+          </div>
+
+          <div className='card-elevated p-6 animate-scale-in delay-100'>
+            <div className='flex items-center justify-between mb-4'>
+              <div className='p-3 rounded-md bg-gray-600 shadow-sm'>
+                <div className='h-6 w-6 bg-white rounded-full flex items-center justify-center'>
+                  <div className='h-3 w-3 bg-green-500 rounded-full'></div>
+                </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className='p-4 sm:p-6'>
-            <div className='flex items-center space-x-3'>
-              <div className='h-3 w-3 bg-red-500 rounded-full'></div>
-              <div>
-                <p className='text-sm text-muted-foreground'>High Risk</p>
-                <p className='text-xl font-bold'>
-                  {
-                    filteredCustomers.filter((c) => c.churnRisk === 'high')
-                      .length
-                  }
-                </p>
+            <div className='space-y-2'>
+              <p className='text-sm font-medium text-slate-600'>Active</p>
+              <p className='text-2xl sm:text-3xl font-bold text-slate-900'>
+                {filteredCustomers.filter((c) => c.status === 'active').length}
+              </p>
+              <p className='text-xs font-medium text-gray-500'>
+                {((filteredCustomers.filter((c) => c.status === 'active').length / Math.max(1, filteredCustomers.length)) * 100).toFixed(1)}% of total
+              </p>
+            </div>
+          </div>
+
+          <div className='card-elevated p-6 animate-scale-in delay-200'>
+            <div className='flex items-center justify-between mb-4'>
+              <div className='p-3 rounded-md bg-gray-600 shadow-sm'>
+                <div className='h-6 w-6 bg-white rounded-full flex items-center justify-center'>
+                  <div className='h-3 w-3 bg-red-500 rounded-full'></div>
+                </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className='p-4 sm:p-6'>
-            <div className='flex items-center space-x-3'>
-              <div className='h-3 w-3 bg-gray-400 rounded-full'></div>
-              <div>
-                <p className='text-sm text-muted-foreground'>Excluded</p>
-                <p className='text-xl font-bold'>
-                  {filteredCustomers.filter((c) => c.isExcluded).length}
-                </p>
+            <div className='space-y-2'>
+              <p className='text-sm font-medium text-slate-600'>High Risk</p>
+              <p className='text-2xl sm:text-3xl font-bold text-slate-900'>
+                {filteredCustomers.filter((c) => c.churnRisk === 'high').length}
+              </p>
+              <p className='text-xs font-medium text-gray-500'>Churn risk customers</p>
+            </div>
+          </div>
+
+          <div className='card-elevated p-6 animate-scale-in delay-300'>
+            <div className='flex items-center justify-between mb-4'>
+              <div className='p-3 rounded-md bg-gray-600 shadow-sm'>
+                <div className='h-6 w-6 bg-white rounded-full flex items-center justify-center'>
+                  <div className='h-3 w-3 bg-gray-500 rounded-full'></div>
+                </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+            <div className='space-y-2'>
+              <p className='text-sm font-medium text-slate-600'>Excluded</p>
+              <p className='text-2xl sm:text-3xl font-bold text-slate-900'>
+                {filteredCustomers.filter((c) => c.isExcluded).length}
+              </p>
+              <p className='text-xs font-medium text-slate-500'>From MRR calculations</p>
+            </div>
+          </div>
+        </div>
 
       {/* Loading State */}
       {loading && (
@@ -803,6 +815,7 @@ export function CustomersPage() {
           }
         }}
       />
+      </div>
     </div>
   )
 }

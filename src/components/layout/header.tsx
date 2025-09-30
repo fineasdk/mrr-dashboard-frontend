@@ -10,6 +10,7 @@ import {
   Sun,
   Moon,
   Command,
+  BarChart3,
 } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
@@ -73,17 +74,17 @@ export function Header({ onLogout }: HeaderProps) {
   }
 
   return (
-    <header className='header h-16 px-6 flex items-center justify-between'>
-      {/* Search Section */}
+    <header className='sticky top-0 z-50 bg-white/95 backdrop-blur-lg border-b border-slate-200/80 h-16 px-6 flex items-center justify-between shadow-sm'>
+      {/* Enhanced Brand Section */}
       <div className='flex items-center flex-1 max-w-xl'>
-        <div className='hidden md:block p-6'>
+        <div className='hidden md:block'>
           <div className='flex items-center gap-3'>
-            {/* <div className="p-2 bg-indigo-600 rounded-lg">
-            <BarChart3 className="h-5 w-5 text-white" />
-          </div> */}
+            {/* <div className="p-2 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl shadow-lg">
+              <BarChart3 className="h-5 w-5 text-white" />
+            </div> */}
             <div>
-              <h1 className='font-semibold text-slate-900'>FINEAS</h1>
-              <p className='text-xs text-slate-500'>MRR Dashboard</p>
+              <h1 className='font-bold text-slate-900 text-lg'>FINEAS</h1>
+              <p className='text-xs text-slate-500 font-medium'>MRR Dashboard</p>
             </div>
           </div>
         </div>
@@ -96,14 +97,14 @@ export function Header({ onLogout }: HeaderProps) {
           <DropdownMenuTrigger asChild>
             <Button
               variant='ghost'
-              className='btn-ghost flex items-center gap-3 px-3 py-2'
+              className='flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-100 transition-all duration-200'
             >
-              <div className='h-8 w-8 bg-indigo-600 rounded-full flex items-center justify-center'>
+              <div className='h-9 w-9 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-full flex items-center justify-center shadow-lg ring-2 ring-white'>
                 <User className='h-4 w-4 text-white' />
               </div>
               {user && (
                 <div className='text-left hidden sm:block'>
-                  <p className='text-sm font-medium text-slate-900'>
+                  <p className='text-sm font-semibold text-slate-900'>
                     {user.name}
                   </p>
                   <p className='text-xs text-slate-500'>{user.email}</p>
@@ -113,14 +114,14 @@ export function Header({ onLogout }: HeaderProps) {
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align='end'
-            className='dropdown-content w-56 bg-white'
+            className='w-56 bg-white/95 backdrop-blur-lg border border-slate-200 shadow-xl rounded-xl p-2'
           >
             <DropdownMenuItem
               onClick={handleLogout}
-              className='dropdown-item text-red-600 hover:bg-red-50'
+              className='flex items-center gap-3 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200 cursor-pointer'
             >
-              <LogOut className='mr-2 h-4 w-4' />
-              Sign out
+              <LogOut className='h-4 w-4' />
+              <span className='font-medium'>Sign out</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

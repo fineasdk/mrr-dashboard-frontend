@@ -15,6 +15,7 @@ import {
   AlertCircle,
   Plus,
   Link2,
+  ArrowUpRight,
 } from 'lucide-react'
 import {
   BarChart,
@@ -422,25 +423,27 @@ export function AnalyticsPage() {
 
                 <div className='space-y-3'>
                   <Button
-                    className='w-full'
+                    className='w-full btn-primary py-4'
                     onClick={() => {
-                      // Navigate to integrations page - this would need proper routing
-                      window.location.hash = 'integrations'
+                      // Navigate to integrations page
+                      if (typeof window !== 'undefined') {
+                        window.location.href = '/integrations'
+                      }
                     }}
                   >
                     <Plus className='mr-2 h-4 w-4' />
                     Connect Your First Integration
                   </Button>
 
-                  <div className='grid grid-cols-2 gap-3 mt-4'>
-                    <div className='p-3 border rounded-lg text-center'>
-                      <span className='text-2xl mb-2 block'>💳</span>
-                      <p className='text-sm font-medium'>Stripe</p>
+                  <div className='grid grid-cols-2 gap-4 mt-6'>
+                    <div className='card-elevated p-4 text-center interactive'>
+                      <div className='text-3xl mb-3'>💳</div>
+                      <p className='font-semibold text-gray-900 mb-1'>Stripe</p>
                       <p className='text-xs text-gray-500'>Payment data</p>
                     </div>
-                    <div className='p-3 border rounded-lg text-center'>
-                      <span className='text-2xl mb-2 block'>🔗</span>
-                      <p className='text-sm font-medium'>E-conomic</p>
+                    <div className='card-elevated p-4 text-center interactive'>
+                      <div className='text-3xl mb-3'>🔗</div>
+                      <p className='font-semibold text-gray-900 mb-1'>E-conomic</p>
                       <p className='text-xs text-gray-500'>Accounting data</p>
                     </div>
                   </div>
@@ -558,97 +561,95 @@ export function AnalyticsPage() {
                 </CardContent>
               </Card>
 
-              {/* Key Metrics */}
-              <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6'>
-                <Card>
-                  <CardContent className='p-4 sm:p-6'>
-                    <div className='flex items-center justify-between'>
-                      <div>
-                        <p className='text-sm font-medium text-muted-foreground'>
-                          Total MRR
-                        </p>
-                        <p className='text-2xl sm:text-3xl font-bold'>
-                          {safeFormatCurrency(analyticsData?.total_mrr)}
-                        </p>
-                        <p className='text-xs text-muted-foreground mt-1'>
-                          {analyticsData?.mrr_growth
-                            ? `+${analyticsData.mrr_growth}% from last period`
-                            : 'Current total from integrations'}
-                        </p>
-                      </div>
-                      <div className='p-3 bg-blue-100 rounded-full'>
-                        <DollarSign className='h-6 w-6 text-blue-600' />
-                      </div>
+              {/* Enhanced Key Metrics */}
+              <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 animate-slide-up'>
+                <div className='card-elevated p-6'>
+                  <div className='flex items-center justify-between mb-4'>
+                    <div className='p-3 rounded-md bg-gray-600 shadow-sm'>
+                      <DollarSign className='h-6 w-6 text-white' />
                     </div>
-                  </CardContent>
-                </Card>
+                    {analyticsData?.mrr_growth && analyticsData.mrr_growth > 0 && (
+                      <div className='flex items-center text-sm font-medium text-gray-600'>
+                        <ArrowUpRight className='w-4 h-4' />
+                      </div>
+                    )}
+                  </div>
+                  <div className='space-y-2'>
+                    <p className='text-sm font-medium text-slate-600'>Total MRR</p>
+                    <p className='text-2xl sm:text-3xl font-bold text-slate-900'>
+                      {safeFormatCurrency(analyticsData?.total_mrr)}
+                    </p>
+                    <p className='text-xs font-medium text-slate-500'>
+                      {analyticsData?.mrr_growth
+                        ? `+${analyticsData.mrr_growth.toFixed(1)}% from last period`
+                        : 'Current total from integrations'}
+                    </p>
+                  </div>
+                </div>
 
-                <Card>
-                  <CardContent className='p-4 sm:p-6'>
-                    <div className='flex items-center justify-between'>
-                      <div>
-                        <p className='text-sm font-medium text-muted-foreground'>
-                          Total Customers
-                        </p>
-                        <p className='text-2xl sm:text-3xl font-bold'>
-                          {safeToLocaleString(
-                            analyticsData?.customer_trend &&
-                              analyticsData.customer_trend.length > 0
-                              ? analyticsData.customer_trend[
+                <div className='card-elevated p-6'>
+                  <div className='flex items-center justify-between mb-4'>
+                    <div className='p-3 rounded-md bg-gray-600 shadow-sm'>
+                      <Users className='h-6 w-6 text-white' />
+                    </div>
+                    {analyticsData?.customer_growth && analyticsData.customer_growth > 0 && (
+                      <div className='flex items-center text-sm font-medium text-gray-600'>
+                        <ArrowUpRight className='w-4 h-4' />
+                      </div>
+                    )}
+                  </div>
+                  <div className='space-y-2'>
+                    <p className='text-sm font-medium text-slate-600'>Total Customers</p>
+                    <p className='text-2xl sm:text-3xl font-bold text-slate-900'>
+                      {safeToLocaleString(
+                        analyticsData?.customer_trend &&
+                          analyticsData.customer_trend.length > 0
+                          ? analyticsData.customer_trend[
+                              analyticsData.customer_trend.length - 1
+                            ]?.customers || 0
+                          : integrations.reduce(
+                              (sum, int) => sum + (int.customer_count || 0),
+                              0
+                            )
+                      )}
+                    </p>
+                    <p className='text-xs font-medium text-slate-500'>
+                      {analyticsData?.customer_growth
+                        ? `+${analyticsData.customer_growth.toFixed(1)}% growth`
+                        : 'Across all platforms'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className='card-elevated p-6'>
+                  <div className='flex items-center justify-between mb-4'>
+                    <div className='p-3 rounded-md bg-gray-600 shadow-sm'>
+                      <TrendingUp className='h-6 w-6 text-white' />
+                    </div>
+                  </div>
+                  <div className='space-y-2'>
+                    <p className='text-sm font-medium text-slate-600'>Avg per Customer</p>
+                    <p className='text-2xl sm:text-3xl font-bold text-slate-900'>
+                      {safeFormatCurrency(
+                        analyticsData &&
+                          analyticsData.total_mrr &&
+                          analyticsData.customer_trend &&
+                          analyticsData.customer_trend.length > 0
+                          ? analyticsData.total_mrr /
+                              Math.max(
+                                1,
+                                analyticsData.customer_trend[
                                   analyticsData.customer_trend.length - 1
-                                ]?.customers || 0
-                              : integrations.reduce(
-                                  (sum, int) => sum + (int.customer_count || 0),
-                                  0
-                                )
-                          )}
-                        </p>
-                        <p className='text-xs text-muted-foreground mt-1'>
-                          {analyticsData?.customer_growth
-                            ? `+${analyticsData.customer_growth}% growth`
-                            : 'Across all platforms'}
-                        </p>
-                      </div>
-                      <div className='p-3 bg-green-100 rounded-full'>
-                        <Users className='h-6 w-6 text-green-600' />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className='p-4 sm:p-6'>
-                    <div className='flex items-center justify-between'>
-                      <div>
-                        <p className='text-sm font-medium text-muted-foreground'>
-                          Avg per Customer
-                        </p>
-                        <p className='text-2xl sm:text-3xl font-bold'>
-                          {safeFormatCurrency(
-                            analyticsData &&
-                              analyticsData.total_mrr &&
-                              analyticsData.customer_trend &&
-                              analyticsData.customer_trend.length > 0
-                              ? analyticsData.total_mrr /
-                                  Math.max(
-                                    1,
-                                    analyticsData.customer_trend[
-                                      analyticsData.customer_trend.length - 1
-                                    ]?.customers || 1
-                                  )
-                              : 0
-                          )}
-                        </p>
-                        <p className='text-xs text-muted-foreground mt-1'>
-                          Monthly average
-                        </p>
-                      </div>
-                      <div className='p-3 bg-purple-100 rounded-full'>
-                        <TrendingUp className='h-6 w-6 text-purple-600' />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                                ]?.customers || 1
+                              )
+                          : 0
+                      )}
+                    </p>
+                    <p className='text-xs font-medium text-slate-500'>
+                      Monthly average revenue per customer
+                    </p>
+                  </div>
+                </div>
               </div>
 
               {/* Charts Grid */}

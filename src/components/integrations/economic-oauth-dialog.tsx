@@ -8,6 +8,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '../ui/dialog'
 import { Alert, AlertDescription } from '../ui/alert'
 import { Loader2, ExternalLink, AlertCircle } from 'lucide-react'
@@ -108,7 +109,7 @@ export function EconomicOAuthDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className='sm:max-w-md !bg-white'>
+      <DialogContent className='sm:max-w-md'>
         <DialogHeader>
           <DialogTitle>Connect E-conomic</DialogTitle>
           <DialogDescription>
@@ -119,54 +120,60 @@ export function EconomicOAuthDialog({
         </DialogHeader>
 
         {error && (
-          <Alert className='border-red-200 bg-red-50'>
-            <AlertCircle className='h-4 w-4 text-red-600' />
-            <AlertDescription className='text-red-700'>
-              {error}
-            </AlertDescription>
-          </Alert>
+          <div className='p-6 pt-0'>
+            <Alert className='border-red-200 bg-red-50'>
+              <AlertCircle className='h-4 w-4 text-red-600' />
+              <AlertDescription className='text-red-700'>
+                {error}
+              </AlertDescription>
+            </Alert>
+          </div>
         )}
 
         {step === 'instructions' && (
-          <div className='space-y-4'>
-            <div className='space-y-2'>
-              <h4 className='font-medium'>Option 1: Automatic Authorization</h4>
-              <p className='text-sm text-muted-foreground'>
+          <div className='p-6 space-y-6'>
+            <div className='space-y-3'>
+              <h4 className='font-semibold text-gray-900'>Option 1: Automatic Authorization</h4>
+              <p className='text-sm text-gray-600'>
                 Click the button below to open E-conomic in a new tab and
                 authorize our application to access your data.
               </p>
+              <Button
+                onClick={handleStartOAuth}
+                className='w-full btn-primary'
+                disabled={isConnecting}
+              >
+                <ExternalLink className='mr-2 h-4 w-4' />
+                Open E-conomic Authorization
+              </Button>
             </div>
 
-            <Button
-              onClick={handleStartOAuth}
-              className='w-full'
-              disabled={isConnecting}
-            >
-              <ExternalLink className='mr-2 h-4 w-4' />
-              Open E-conomic Authorization
-            </Button>
+            <div className='relative'>
+              <div className='absolute inset-0 flex items-center'>
+                <span className='w-full border-t border-gray-200' />
+              </div>
+              <div className='relative flex justify-center text-xs uppercase'>
+                <span className='bg-white px-2 text-gray-500'>Or</span>
+              </div>
+            </div>
 
-            <div className='space-y-2'>
-              <h4 className='font-medium'>Option 2: Manual Token Entry</h4>
-              <p className='text-sm text-muted-foreground'>
+            <div className='space-y-3'>
+              <h4 className='font-semibold text-gray-900'>Option 2: Manual Token Entry</h4>
+              <p className='text-sm text-gray-600'>
                 If you already have a grant token from E-conomic, you can skip
                 the authorization step and enter it directly.
               </p>
-            </div>
-
-            <div className='flex justify-end space-x-2'>
-              <Button variant='outline' onClick={handleClose}>
-                Cancel
+              <Button variant='outline' onClick={() => setStep('token')} className='w-full'>
+                I have the token
               </Button>
-              <Button onClick={() => setStep('token')}>I have the token</Button>
             </div>
           </div>
         )}
 
         {step === 'token' && (
-          <div className='space-y-4'>
-            <div className='space-y-2'>
-              <Label htmlFor='grant-token'>
+          <div className='p-6 space-y-6'>
+            <div className='space-y-3'>
+              <Label htmlFor='grant-token' className='text-sm font-medium text-gray-700'>
                 Grant Token <span className='text-red-500'>*</span>
               </Label>
               <Input
@@ -178,12 +185,16 @@ export function EconomicOAuthDialog({
                 maxLength={50}
                 className='font-mono'
               />
-              <p className='text-xs text-muted-foreground'>
+              <p className='text-xs text-gray-500'>
                 The token should be between 26-50 characters long
               </p>
             </div>
+          </div>
+        )}
 
-            <div className='flex justify-end space-x-2'>
+        <DialogFooter>
+          {step === 'token' ? (
+            <>
               <Button variant='outline' onClick={handleRetry}>
                 Back
               </Button>
@@ -195,6 +206,7 @@ export function EconomicOAuthDialog({
                   grantToken.length < 26 ||
                   grantToken.length > 50
                 }
+                className='btn-primary'
               >
                 {isConnecting ? (
                   <>
@@ -205,9 +217,13 @@ export function EconomicOAuthDialog({
                   'Connect E-conomic'
                 )}
               </Button>
-            </div>
-          </div>
-        )}
+            </>
+          ) : (
+            <Button variant='outline' onClick={handleClose}>
+              Cancel
+            </Button>
+          )}
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )
