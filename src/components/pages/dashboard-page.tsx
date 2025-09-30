@@ -202,6 +202,10 @@ export function DashboardPage() {
       arpc: metrics?.arpc
     })
 
+    // Debug: Check if we have valid numbers
+    console.log('📈 MRR Value type:', typeof totalMrrValue, 'Is valid number:', !isNaN(totalMrrValue) && totalMrrValue > 0)
+    console.log('📈 Formatted MRR:', formatCurrency(totalMrrValue, selectedCurrency))
+
     return [
       {
         title: 'Total MRR',
