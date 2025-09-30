@@ -201,17 +201,31 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
   const getMetricsData = () => {
     console.log('📈 Getting metrics data, current metrics:', metrics)
     console.log('📈 Selected currency:', selectedCurrency)
+    console.log('📈 Integrations data:', integrations)
 
-    // Use raw values and format them with the selected currency
-    const totalMrrValue = metrics?.total_mrr?.value || 0
+    // Primary: Use API metrics if available
+    const apiMrrValue = metrics?.total_mrr?.value || 0
+    const apiCustomersValue = metrics?.total_customers?.value || 0
     const arrValue = metrics?.arr?.value || 0
 
-    console.log('📈 Raw MRR value:', totalMrrValue, 'Raw ARR value:', arrValue)
-    console.log('📈 Metrics object structure:', {
-      total_mrr: metrics?.total_mrr,
-      total_customers: metrics?.total_customers,
-      arr: metrics?.arr,
-      arpc: metrics?.arpc
+    // Fallback: Calculate from integrations data (same as integrations page)
+    const fallbackMrrValue = integrations.reduce(
+      (sum, integration) => sum + (integration.revenue || 0),
+      0
+    )
+    const fallbackCustomersValue = integrations.reduce(
+      (sum, integration) => sum + (integration.customer_count || 0),
+      0
+    )
+
+    // Use API data if available, otherwise fall back to integration calculation
+    const totalMrrValue = apiMrrValue > 0 ? apiMrrValue : fallbackMrrValue
+    const totalCustomersValue = apiCustomersValue > 0 ? apiCustomersValue : fallbackCustomersValue
+
+    console.log('📈 Metrics comparison:', {
+      api: { mrr: apiMrrValue, customers: apiCustomersValue },
+      fallback: { mrr: fallbackMrrValue, customers: fallbackCustomersValue },
+      final: { mrr: totalMrrValue, customers: totalCustomersValue }
     })
 
     return [
@@ -227,7 +241,7 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
       },
       {
         title: 'Total Customers',
-        value: (metrics?.total_customers?.value || 0).toLocaleString(),
+        value: totalCustomersValue.toLocaleString(),
         change: `${
           metrics?.total_customers?.change_percentage || 0
         }% from last month`,
@@ -248,7 +262,7 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
       },
       {
         title: 'ARR',
-        value: formatCurrency(arrValue, selectedCurrency),
+        value: formatCurrency(arrValue > 0 ? arrValue : totalMrrValue * 12, selectedCurrency),
         change: 'Annual Recurring Revenue',
         trend: 'neutral' as const,
         icon: DollarSign,

@@ -577,7 +577,13 @@ export function AnalyticsPage() {
                   <div className='space-y-2'>
                     <p className='text-sm font-medium text-slate-600'>Total MRR</p>
                     <p className='text-2xl sm:text-3xl font-bold text-slate-900'>
-                      {safeFormatCurrency(analyticsData?.total_mrr)}
+                      {safeFormatCurrency(
+                        analyticsData?.total_mrr ||
+                        integrations.reduce(
+                          (sum, int) => sum + (int.revenue || 0),
+                          0
+                        )
+                      )}
                     </p>
                     <p className='text-xs font-medium text-slate-500'>
                       {analyticsData?.mrr_growth
