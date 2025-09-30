@@ -31,6 +31,7 @@ import {
 import { Currency } from '../../lib/types'
 import { dashboardApi, integrationsApi } from '../../lib/api'
 import { formatCurrency } from '../../lib/mock-data'
+import { config } from '../../lib/config'
 
 const metricIcons = [TrendingUp, Users, CreditCard, Activity]
 
@@ -97,13 +98,19 @@ export function DashboardPage() {
 
     try {
       console.log('🔍 Loading dashboard data...')
+      console.log('🔍 API Base URL:', config.apiUrl)
+      console.log('🔍 Selected Currency:', selectedCurrency)
+      console.log('🔍 Auth Token:', token ? token.substring(0, 20) + '...' : 'No token')
+      
       const [metricsResponse, integrationsResponse] = await Promise.all([
         dashboardApi.getMetrics({ currency: selectedCurrency }),
         integrationsApi.getAll({ currency: selectedCurrency }),
       ])
 
-      console.log('📊 Metrics response:', metricsResponse.data)
-      console.log('🔗 Integrations response:', integrationsResponse.data)
+      console.log('📊 Metrics response status:', metricsResponse.status)
+      console.log('📊 Metrics response data:', metricsResponse.data)
+      console.log('🔗 Integrations response status:', integrationsResponse.status)
+      console.log('🔗 Integrations response data:', integrationsResponse.data)
 
       if (metricsResponse.data.success) {
         const data = metricsResponse.data.data
@@ -201,10 +208,6 @@ export function DashboardPage() {
       arr: metrics?.arr,
       arpc: metrics?.arpc
     })
-
-    // Debug: Check if we have valid numbers
-    console.log('📈 MRR Value type:', typeof totalMrrValue, 'Is valid number:', !isNaN(totalMrrValue) && totalMrrValue > 0)
-    console.log('📈 Formatted MRR:', formatCurrency(totalMrrValue, selectedCurrency))
 
     return [
       {

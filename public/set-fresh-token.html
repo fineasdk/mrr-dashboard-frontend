@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Set Fresh Auth Token</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .success { color: green; }
+        .error { color: red; }
+        button { padding: 10px 20px; margin: 5px; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🔑 Set Fresh Auth Token</h1>
+    <p>This will set a fresh authentication token for testing the dashboard.</p>
+    
+    <button onclick="setToken()">Set Fresh Token</button>
+    <button onclick="testAPI()">Test API</button>
+    <button onclick="clearToken()">Clear Token</button>
+    
+    <div id="result"></div>
+
+    <script>
+        const FRESH_TOKEN = '22|jGLsqzwVm2InrPnyZoVxyFJGcr2mnhNEe6IidBGva608fbc2';
+        const API_BASE = 'http://localhost:8000/api';
+
+        function setToken() {
+            localStorage.setItem('auth_token', FRESH_TOKEN);
+            document.getElementById('result').innerHTML = '<p class="success">✅ Fresh token set!</p>';
+        }
+
+        function clearToken() {
+            localStorage.removeItem('auth_token');
+            document.getElementById('result').innerHTML = '<p class="success">✅ Token cleared!</p>';
+        }
+
+        async function testAPI() {
+            const token = localStorage.getItem('auth_token');
+            if (!token) {
+                document.getElementById('result').innerHTML = '<p class="error">❌ No token set!</p>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/dashboard/metrics?currency=DKK`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (data.success && data.data.metrics.total_mrr.value > 0) {
+                    document.getElementById('result').innerHTML = `
+                        <p class="success">✅ API Test Successful!</p>
+                        <div>
+                            <strong>📊 Dashboard Metrics:</strong><br>
+                            • Total MRR: ${data.data.metrics.total_mrr.formatted}<br>
+                            • Total Customers: ${data.data.metrics.total_customers.value}<br>
+                            • ARR: ${data.data.metrics.arr.formatted}<br>
+                            • ARPC: ${data.data.metrics.arpc.formatted}
+                        </div>
+                        <details>
+                            <summary>View Raw Response</summary>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    `;
+                } else {
+                    document.getElementById('result').innerHTML = `
+                        <p class="error">❌ API returned unexpected data</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('result').innerHTML = `
+                    <p class="error">❌ API Error: ${error.message}</p>
+                `;
+            }
+        }
+
+        // Check current token status on load
+        window.onload = function() {
+            const token = localStorage.getItem('auth_token');
+            if (token) {
+                document.getElementById('result').innerHTML = `<p>Current token: ${token.substring(0, 20)}...</p>`;
+            } else {
+                document.getElementById('result').innerHTML = '<p>No token set</p>';
+            }
+        };
+    </script>
+</body>
+</html>
