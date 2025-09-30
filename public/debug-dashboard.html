@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🔍 Dashboard Debug Tool</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 1200px; margin: 0 auto; }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+        .warning { color: orange; font-weight: bold; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; font-size: 12px; }
+        .test-section { border: 1px solid #ddd; margin: 20px 0; padding: 20px; border-radius: 8px; }
+        .metrics-display { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin: 20px 0; }
+        .metric-card { background: white; border: 1px solid #ddd; padding: 15px; border-radius: 8px; }
+        .metric-value { font-size: 24px; font-weight: bold; color: #333; }
+        .metric-label { color: #666; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 MRR Dashboard Debug Tool</h1>
+    <p>This tool will help identify why the dashboard shows zeros despite the API working correctly.</p>
+    
+    <div class="test-section">
+        <h2>🔑 Step 1: Authentication</h2>
+        <button onclick="setFreshToken()">Set Fresh Token</button>
+        <button onclick="checkToken()">Check Current Token</button>
+        <button onclick="clearToken()">Clear Token</button>
+        <div id="authResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🌐 Step 2: API Connection Test</h2>
+        <button onclick="testAPIConnection()">Test API Connection</button>
+        <button onclick="testCORS()">Test CORS</button>
+        <div id="connectionResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>📊 Step 3: Dashboard Metrics Test</h2>
+        <button onclick="testDashboardMetrics()">Get Dashboard Metrics</button>
+        <button onclick="testWithDifferentCurrency()">Test with USD</button>
+        <div id="metricsResult"></div>
+        <div id="metricsDisplay" class="metrics-display"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔗 Step 4: Integrations Test</h2>
+        <button onclick="testIntegrations()">Get Integrations</button>
+        <div id="integrationsResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔍 Step 5: Frontend Simulation</h2>
+        <button onclick="simulateFrontendCall()">Simulate Frontend API Call</button>
+        <div id="frontendResult"></div>
+    </div>
+
+    <script>
+        const FRESH_TOKEN = '22|jGLsqzwVm2InrPnyZoVxyFJGcr2mnhNEe6IidBGva608fbc2';
+        const API_BASE = 'http://localhost:8000/api';
+
+        // Step 1: Authentication
+        function setFreshToken() {
+            localStorage.setItem('auth_token', FRESH_TOKEN);
+            document.getElementById('authResult').innerHTML = '<p class="success">✅ Fresh token set!</p>';
+        }
+
+        function checkToken() {
+            const token = localStorage.getItem('auth_token');
+            if (token) {
+                document.getElementById('authResult').innerHTML = `
+                    <p class="success">✅ Token found: ${token.substring(0, 30)}...</p>
+                    <p>Length: ${token.length} characters</p>
+                `;
+            } else {
+                document.getElementById('authResult').innerHTML = '<p class="error">❌ No token found!</p>';
+            }
+        }
+
+        function clearToken() {
+            localStorage.removeItem('auth_token');
+            document.getElementById('authResult').innerHTML = '<p class="success">✅ Token cleared!</p>';
+        }
+
+        // Step 2: API Connection
+        async function testAPIConnection() {
+            try {
+                const response = await fetch(`${API_BASE}/dashboard/metrics`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                document.getElementById('connectionResult').innerHTML = `
+                    <p class="success">✅ API Server Reachable</p>
+                    <p>Status: ${response.status} ${response.statusText}</p>
+                    <p>Response type: ${response.headers.get('content-type')}</p>
+                `;
+            } catch (error) {
+                document.getElementById('connectionResult').innerHTML = `
+                    <p class="error">❌ API Connection Failed</p>
+                    <p>Error: ${error.message}</p>
+                `;
+            }
+        }
+
+        async function testCORS() {
+            try {
+                const response = await fetch(`${API_BASE}/dashboard/metrics`, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Origin': 'http://localhost:3000',
+                        'Access-Control-Request-Method': 'GET',
+                        'Access-Control-Request-Headers': 'Authorization, Content-Type'
+                    }
+                });
+
+                const corsHeaders = {
+                    'Access-Control-Allow-Origin': response.headers.get('Access-Control-Allow-Origin'),
+                    'Access-Control-Allow-Methods': response.headers.get('Access-Control-Allow-Methods'),
+                    'Access-Control-Allow-Headers': response.headers.get('Access-Control-Allow-Headers')
+                };
+
+                document.getElementById('connectionResult').innerHTML += `
+                    <div style="margin-top: 15px;">
+                        <p class="success">✅ CORS Preflight Response</p>
+                        <pre>${JSON.stringify(corsHeaders, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('connectionResult').innerHTML += `
+                    <div style="margin-top: 15px;">
+                        <p class="error">❌ CORS Test Failed</p>
+                        <p>Error: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Step 3: Dashboard Metrics
+        async function testDashboardMetrics() {
+            const token = localStorage.getItem('auth_token');
+            if (!token) {
+                document.getElementById('metricsResult').innerHTML = '<p class="error">❌ No token! Set token first.</p>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/dashboard/metrics?currency=DKK`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    const metrics = data.data.metrics;
+                    document.getElementById('metricsResult').innerHTML = `
+                        <p class="success">✅ Dashboard Metrics Retrieved Successfully!</p>
+                        <p><strong>Status:</strong> ${response.status} ${response.statusText}</p>
+                    `;
+
+                    // Display metrics in cards
+                    document.getElementById('metricsDisplay').innerHTML = `
+                        <div class="metric-card">
+                            <div class="metric-label">Total MRR</div>
+                            <div class="metric-value">${metrics.total_mrr.formatted}</div>
+                            <div class="metric-label">Change: ${metrics.total_mrr.change_percentage}%</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Total Customers</div>
+                            <div class="metric-value">${metrics.total_customers.value}</div>
+                            <div class="metric-label">Change: ${metrics.total_customers.change_percentage}%</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">ARR</div>
+                            <div class="metric-value">${metrics.arr.formatted}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">ARPC</div>
+                            <div class="metric-value">${metrics.arpc.formatted}</div>
+                        </div>
+                    `;
+
+                    // Show raw response
+                    document.getElementById('metricsResult').innerHTML += `
+                        <details style="margin-top: 15px;">
+                            <summary>View Raw API Response</summary>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    `;
+                } else {
+                    document.getElementById('metricsResult').innerHTML = `
+                        <p class="error">❌ API Error</p>
+                        <p>Status: ${response.status} ${response.statusText}</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('metricsResult').innerHTML = `
+                    <p class="error">❌ Request Failed</p>
+                    <p>Error: ${error.message}</p>
+                `;
+            }
+        }
+
+        async function testWithDifferentCurrency() {
+            const token = localStorage.getItem('auth_token');
+            if (!token) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/dashboard/metrics?currency=USD`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('metricsResult').innerHTML += `
+                        <div style="margin-top: 15px; padding: 15px; background: #e8f4f8; border-radius: 5px;">
+                            <p class="success">✅ USD Test: ${data.data.metrics.total_mrr.formatted}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('USD test failed:', error);
+            }
+        }
+
+        // Step 4: Integrations
+        async function testIntegrations() {
+            const token = localStorage.getItem('auth_token');
+            if (!token) {
+                document.getElementById('integrationsResult').innerHTML = '<p class="error">❌ No token! Set token first.</p>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/integrations?currency=DKK`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    document.getElementById('integrationsResult').innerHTML = `
+                        <p class="success">✅ Integrations Retrieved: ${data.data.length} found</p>
+                        <ul>
+                            ${data.data.map(int => `
+                                <li><strong>${int.platform_name}</strong>: ${int.status} (${int.customer_count} customers, Revenue: ${int.revenue})</li>
+                            `).join('')}
+                        </ul>
+                        <details>
+                            <summary>View Raw Response</summary>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    `;
+                } else {
+                    document.getElementById('integrationsResult').innerHTML = `
+                        <p class="error">❌ Integrations API Error</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('integrationsResult').innerHTML = `
+                    <p class="error">❌ Integrations Request Failed</p>
+                    <p>Error: ${error.message}</p>
+                `;
+            }
+        }
+
+        // Step 5: Frontend Simulation
+        async function simulateFrontendCall() {
+            const token = localStorage.getItem('auth_token');
+            if (!token) {
+                document.getElementById('frontendResult').innerHTML = '<p class="error">❌ No token! Set token first.</p>';
+                return;
+            }
+
+            try {
+                // Simulate exactly what the frontend does
+                console.log('🔍 Simulating frontend API call...');
+                console.log('🔍 API Base URL:', API_BASE);
+                console.log('🔍 Selected Currency: DKK');
+                console.log('🔍 Auth Token:', token.substring(0, 20) + '...');
+
+                const [metricsResponse, integrationsResponse] = await Promise.all([
+                    fetch(`${API_BASE}/dashboard/metrics?currency=DKK`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        }
+                    }),
+                    fetch(`${API_BASE}/integrations?currency=DKK`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                ]);
+
+                const metricsData = await metricsResponse.json();
+                const integrationsData = await integrationsResponse.json();
+
+                console.log('📊 Metrics response status:', metricsResponse.status);
+                console.log('📊 Metrics response data:', metricsData);
+                console.log('🔗 Integrations response status:', integrationsResponse.status);
+                console.log('🔗 Integrations response data:', integrationsData);
+
+                let result = '<h3>Frontend Simulation Results:</h3>';
+
+                if (metricsData.success) {
+                    const metrics = metricsData.data.metrics;
+                    result += `
+                        <p class="success">✅ Metrics API Success</p>
+                        <p><strong>Total MRR Value:</strong> ${metrics.total_mrr.value}</p>
+                        <p><strong>Total Customers:</strong> ${metrics.total_customers.value}</p>
+                        <p><strong>ARR Value:</strong> ${metrics.arr.value}</p>
+                    `;
+                } else {
+                    result += `<p class="error">❌ Metrics API Failed: ${metricsData.message}</p>`;
+                }
+
+                if (integrationsData.success) {
+                    result += `
+                        <p class="success">✅ Integrations API Success</p>
+                        <p><strong>Integrations Count:</strong> ${integrationsData.data.length}</p>
+                    `;
+                } else {
+                    result += `<p class="error">❌ Integrations API Failed: ${integrationsData.message}</p>`;
+                }
+
+                result += `
+                    <details style="margin-top: 15px;">
+                        <summary>Console Logs (Check Browser Console)</summary>
+                        <p>All detailed logs are in the browser console. Open DevTools → Console to see them.</p>
+                    </details>
+                `;
+
+                document.getElementById('frontendResult').innerHTML = result;
+
+            } catch (error) {
+                document.getElementById('frontendResult').innerHTML = `
+                    <p class="error">❌ Frontend Simulation Failed</p>
+                    <p>Error: ${error.message}</p>
+                `;
+                console.error('Frontend simulation error:', error);
+            }
+        }
+
+        // Auto-check token on load
+        window.onload = function() {
+            checkToken();
+        };
+    </script>
+</body>
+</html>

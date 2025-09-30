@@ -471,7 +471,8 @@ export function DashboardPage() {
 
           {!isLoading && (
             <>
-              {/* Key Metrics - Responsive grid */}
+              {/* Key Metrics - Responsive grid - COMMENTED OUT DUE TO SHOWING ZEROS */}
+              {/* 
               <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6'>
                 {metricsData.map((metric, index) => {
                   const Icon = metric.icon
@@ -517,6 +518,19 @@ export function DashboardPage() {
                     </div>
                   )
                 })}
+              </div>
+              */}
+
+              {/* Temporary Debug Info */}
+              <div className='bg-yellow-50 border border-yellow-200 rounded-lg p-4'>
+                <h3 className='text-lg font-semibold text-yellow-800 mb-2'>🔍 Debug Info</h3>
+                <p className='text-yellow-700'>
+                  Metrics section temporarily hidden due to showing zeros. 
+                  API is working correctly (returning 21,051.30 DKK MRR), but frontend data parsing needs debugging.
+                </p>
+                <p className='text-yellow-700 mt-2'>
+                  <strong>Use debug tool:</strong> <a href="/debug-dashboard.html" className='underline'>Debug Dashboard Tool</a>
+                </p>
               </div>
 
               {/* Platform Breakdown */}
