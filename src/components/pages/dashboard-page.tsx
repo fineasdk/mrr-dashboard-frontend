@@ -124,6 +124,22 @@ export function DashboardPage() {
         )
       }
 
+      // Also use integration data from dashboard API if available
+      if (metricsResponse.data.success && metricsResponse.data.data.integration_status) {
+        console.log('✅ Using dashboard integration status:', metricsResponse.data.data.integration_status)
+        // Convert integration_status object to array format expected by the UI
+        const dashboardIntegrations = Object.values(metricsResponse.data.data.integration_status).map((integration: any) => ({
+          id: integration.platform === 'economic' ? 1 : integration.platform === 'stripe' ? 2 : 3,
+          platform: integration.platform,
+          platform_name: integration.platform === 'economic' ? 'E-conomic' : integration.platform === 'stripe' ? 'Stripe' : 'Shopify',
+          status: integration.status === 'active' ? 'active' : integration.status,
+          last_sync_at: integration.last_sync,
+          customer_count: integration.customer_count,
+          revenue: integration.revenue,
+        }))
+        setIntegrations(dashboardIntegrations)
+      }
+
       // Only show error if no integrations are connected
       if (
         !integrationsResponse.data.success ||
@@ -179,6 +195,12 @@ export function DashboardPage() {
     const arrValue = metrics?.arr?.value || 0
 
     console.log('📈 Raw MRR value:', totalMrrValue, 'Raw ARR value:', arrValue)
+    console.log('📈 Metrics object structure:', {
+      total_mrr: metrics?.total_mrr,
+      total_customers: metrics?.total_customers,
+      arr: metrics?.arr,
+      arpc: metrics?.arpc
+    })
 
     return [
       {
