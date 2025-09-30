@@ -74,7 +74,7 @@ export default function StripeIntegrationPage() {
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Stripe Connected Successfully!</h1>
             <p className="text-gray-600 mb-4">
-              Your Stripe account has been connected and we're now syncing your subscription data.
+              Your Stripe account has been connected and we&apos;re now syncing your subscription data.
             </p>
             <Badge className="bg-green-100 text-green-800">
               Initial sync in progress...
@@ -210,7 +210,7 @@ export default function StripeIntegrationPage() {
                 <div>
                   <p className="font-medium">Copy Secret Key</p>
                   <p className="text-sm text-gray-600">
-                    Copy your "Secret key" (not the Publishable key)
+                    Copy your &quot;Secret key&quot; (not the Publishable key)
                   </p>
                 </div>
               </div>
@@ -222,7 +222,7 @@ export default function StripeIntegrationPage() {
                 <div>
                   <p className="font-medium">Paste and Connect</p>
                   <p className="text-sm text-gray-600">
-                    Paste the key above and click "Connect Stripe Account"
+                    Paste the key above and click &quot;Connect Stripe Account&quot;
                   </p>
                 </div>
               </div>

@@ -54,7 +54,7 @@ const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({
             Something went wrong
           </CardTitle>
           <CardDescription className='text-gray-600'>
-            We're sorry, but something unexpected happened. Our team has been
+            We&apos;re sorry, but something unexpected happened. Our team has been
             notified.
           </CardDescription>
         </CardHeader>

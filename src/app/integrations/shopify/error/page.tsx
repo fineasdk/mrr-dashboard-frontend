@@ -106,7 +106,7 @@ export default function ShopifyErrorPage() {
           </div>
           <h1 className="text-3xl font-bold text-gray-900">{getErrorTitle()}</h1>
           <p className="text-gray-600">
-            We couldn't connect your Shopify store to the MRR Dashboard.
+            We couldn&apos;t connect your Shopify store to the MRR Dashboard.
           </p>
         </div>
 
@@ -219,7 +219,7 @@ export default function ShopifyErrorPage() {
             <div className="space-y-2">
               <p className="font-medium text-sm">Alternative Approach</p>
               <p className="text-sm">
-                If you continue having issues with OAuth, you can also connect using Shopify's 
+                If you continue having issues with OAuth, you can also connect using Shopify&apos;s 
                 private app credentials. This method provides the same functionality with a 
                 different authentication approach.
               </p>

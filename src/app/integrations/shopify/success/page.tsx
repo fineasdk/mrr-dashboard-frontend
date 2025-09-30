@@ -52,7 +52,7 @@ export default function ShopifySuccessPage() {
       clearInterval(stepTimer);
       clearTimeout(redirectTimer);
     };
-  }, [router]);
+  }, [router, steps.length]);
 
   const connectingDomain = typeof window !== 'undefined' 
     ? localStorage.getItem('shopify_connecting_domain') 
@@ -97,7 +97,7 @@ export default function ShopifySuccessPage() {
               Setting Up Your Integration
             </CardTitle>
             <CardDescription>
-              We're now syncing your Shopify data. This process usually takes a few minutes.
+              We&apos;re now syncing your Shopify data. This process usually takes a few minutes.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -154,7 +154,7 @@ export default function ShopifySuccessPage() {
         {/* Next Steps */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">What's Next?</CardTitle>
+            <CardTitle className="text-lg">What&apos;s Next?</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -163,7 +163,7 @@ export default function ShopifySuccessPage() {
                 <div>
                   <p className="font-medium text-sm">Real-time Sync</p>
                   <p className="text-sm text-gray-600">
-                    We've set up webhooks to automatically sync new orders and customers
+                    We&apos;ve set up webhooks to automatically sync new orders and customers
                   </p>
                 </div>
               </div>
@@ -212,7 +212,7 @@ export default function ShopifySuccessPage() {
         {/* Auto-redirect Notice */}
         <div className="text-center">
           <p className="text-sm text-gray-500">
-            You'll be automatically redirected to your dashboard in a few seconds.
+            You&apos;ll be automatically redirected to your dashboard in a few seconds.
           </p>
         </div>
       </div>

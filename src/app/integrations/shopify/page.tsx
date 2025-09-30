@@ -222,7 +222,7 @@ export default function ShopifyIntegrationPage() {
           <CardHeader>
             <CardTitle className='flex items-center gap-2 text-lg'>
               <CheckCircle className='w-5 h-5 text-green-600' />
-              What you'll get
+              What you&apos;ll get
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -425,7 +425,7 @@ export default function ShopifyIntegrationPage() {
                 <div className='text-sm'>
                   <p className='font-medium'>Test Connection</p>
                   <p className='text-gray-600'>
-                    We'll verify your Partner API access
+                    We&apos;ll verify your Partner API access
                   </p>
                 </div>
               </div>
@@ -436,7 +436,7 @@ export default function ShopifyIntegrationPage() {
                 <div className='text-sm'>
                   <p className='font-medium'>Data Synchronization</p>
                   <p className='text-gray-600'>
-                    We'll sync your Partner revenue and app installation data
+                    We&apos;ll sync your Partner revenue and app installation data
                   </p>
                 </div>
               </div>

@@ -34,7 +34,7 @@ interface PlatformChartProps {
 
 export function PlatformChart({ data, currency = 'DKK' }: PlatformChartProps) {
   const formatCurrency = (value: number) => {
-    return formatCurrencyService(value, currency, { showDecimals: false })
+    return formatCurrencyService(value, currency)
   }
 
   // Calculate total revenue

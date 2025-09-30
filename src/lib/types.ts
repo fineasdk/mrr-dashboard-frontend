@@ -40,7 +40,9 @@ export interface Invoice {
 
 export interface MRRData {
   month: string;
+  date?: string; // Support both month and date properties
   mrr: number;
+  value?: number; // Support both mrr and value properties
   growth: number;
   newRevenue: number;
   churn: number;

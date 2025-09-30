@@ -35,15 +35,15 @@ interface MRRChartProps {
 
 export function MRRChart({ data, currency = 'DKK' }: MRRChartProps) {
   const formatCurrency = (value: number) => {
-    return formatCurrencyService(value, currency, { showDecimals: false })
+    return formatCurrencyService(value, currency)
   }
 
   // Transform data to ensure proper format
   const chartData = data.map((item) => ({
     ...item,
-    month: item.month || item.date, // Support both month and date properties
-    mrr: item.mrr || item.value, // Support both mrr and value properties
-    displayMonth: formatMonthLabel(item.month || item.date), // Format for display
+    month: item.month || item.date || '', // Support both month and date properties
+    mrr: item.mrr || item.value || 0, // Support both mrr and value properties
+    displayMonth: formatMonthLabel(item.month || item.date || ''), // Format for display
   }))
 
   function formatMonthLabel(dateStr: string): string {
@@ -106,7 +106,7 @@ export function MRRChart({ data, currency = 'DKK' }: MRRChartProps) {
               tick={{ fontSize: 12 }}
               tickFormatter={formatCurrency}
               domain={
-                yAxisMin !== undefined ? [yAxisMin, yAxisMax] : ['auto', 'auto']
+                yAxisMin !== undefined && yAxisMax !== undefined ? [yAxisMin, yAxisMax] : ['auto', 'auto']
               }
             />
             <Tooltip
