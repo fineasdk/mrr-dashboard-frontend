@@ -4,7 +4,7 @@ const nextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: 'http://127.0.0.1:8000/api/:path*',
+        destination: `${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/api/:path*`,
       },
     ]
   },
@@ -27,6 +27,16 @@ const nextConfig = {
         ],
       },
     ]
+  },
+  // Production optimizations
+  reactStrictMode: true,
+  poweredByHeader: false,
+  compress: true,
+  
+  // Image optimization for production
+  images: {
+    domains: [],
+    formats: ['image/webp', 'image/avif'],
   },
 }
 
