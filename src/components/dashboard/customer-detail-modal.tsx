@@ -21,10 +21,12 @@ import {
   TableHeader,
   TableRow,
 } from '../ui/table';
-import { AlertTriangle, Eye, Calendar, User, CreditCard, Building2, Mail, MapPin, Phone, DollarSign, TrendingUp, Activity, Clock } from 'lucide-react';
+import { AlertTriangle, Eye, Calendar, User, CreditCard, Building2, Mail, MapPin, Phone, DollarSign, TrendingUp, Activity, Clock, Loader2 } from 'lucide-react';
 import { Customer, Invoice, AuditLogEntry } from '../../lib/types';
 import { formatCurrency, convertCurrency } from '../../lib/currency-service';
-import { mockInvoices, mockAuditLog } from '../../lib/mock-data';
+import { customersApi } from '../../lib/api';
+
+import { Currency } from '../../lib/types';
 
 interface CustomerDetailModalProps {
   customer: Customer | null;
@@ -32,6 +34,7 @@ interface CustomerDetailModalProps {
   onClose: () => void;
   onSave: (customer: Customer) => void;
   mode?: 'view' | 'edit';
+  selectedCurrency?: Currency;
 }
 
 const platformIcons = {
@@ -67,21 +70,38 @@ const churnRiskColors = {
   high: 'bg-red-50 text-red-700 border-red-200',
 };
 
-export function CustomerDetailModal({ customer, open, onClose, onSave, mode = 'view' }: CustomerDetailModalProps) {
+export function CustomerDetailModal({ customer, open, onClose, onSave, mode = 'view', selectedCurrency = 'DKK' }: CustomerDetailModalProps) {
   const [isExcluded, setIsExcluded] = React.useState(customer?.isExcluded || false);
   const [exclusionReason, setExclusionReason] = React.useState(customer?.exclusionReason || '');
+  const [customerInvoices, setCustomerInvoices] = React.useState<any[]>([]);
+  const [loadingInvoices, setLoadingInvoices] = React.useState(false);
   
   React.useEffect(() => {
     if (customer) {
       setIsExcluded(customer.isExcluded || false);
       setExclusionReason(customer.exclusionReason || '');
+      
+      // Fetch detailed customer data including invoices
+      const fetchCustomerDetails = async () => {
+        try {
+          setLoadingInvoices(true);
+          const response = await customersApi.getOne(customer.id);
+          if (response.data.success && response.data.data.invoices) {
+            setCustomerInvoices(response.data.data.invoices);
+          }
+        } catch (error) {
+          console.error('Failed to fetch customer invoices:', error);
+          setCustomerInvoices([]);
+        } finally {
+          setLoadingInvoices(false);
+        }
+      };
+      
+      fetchCustomerDetails();
     }
   }, [customer]);
   
   if (!customer) return null;
-
-  const customerInvoices = mockInvoices.filter(inv => inv.customerId === customer.id);
-  const customerAuditLog = mockAuditLog.filter(log => log.resourceId === customer.id);
   
   const handleSave = () => {
     const updatedCustomer = {
@@ -137,15 +157,42 @@ export function CustomerDetailModal({ customer, open, onClose, onSave, mode = 'v
           <div className="grid grid-cols-3 gap-4">
             <div>
               <Label className="text-sm text-gray-600">Current MRR</Label>
-              <p className="text-xl font-bold text-gray-900">{formatCurrency(customer.mrr, customer.currency)}</p>
+              <div className="flex flex-col">
+                <p className="text-xl font-bold text-gray-900">
+                  {formatCurrency(convertCurrency(customer.mrr, customer.currency, selectedCurrency), selectedCurrency)}
+                </p>
+                {customer.currency !== selectedCurrency && (
+                  <span className="text-xs text-gray-500">
+                    ({formatCurrency(customer.mrr, customer.currency)})
+                  </span>
+                )}
+              </div>
             </div>
             <div>
               <Label className="text-sm text-gray-600">Original MRR</Label>
-              <p className="text-xl font-bold text-gray-900">{formatCurrency(customer.originalMrr, customer.currency)}</p>
+              <div className="flex flex-col">
+                <p className="text-xl font-bold text-gray-900">
+                  {formatCurrency(convertCurrency(customer.originalMrr, customer.currency, selectedCurrency), selectedCurrency)}
+                </p>
+                {customer.currency !== selectedCurrency && (
+                  <span className="text-xs text-gray-500">
+                    ({formatCurrency(customer.originalMrr, customer.currency)})
+                  </span>
+                )}
+              </div>
             </div>
             <div>
               <Label className="text-sm text-gray-600">Lifetime Value</Label>
-              <p className="text-xl font-bold text-gray-900">{formatCurrency(customer.clv, customer.currency)}</p>
+              <div className="flex flex-col">
+                <p className="text-xl font-bold text-gray-900">
+                  {formatCurrency(convertCurrency(customer.clv, customer.currency, selectedCurrency), selectedCurrency)}
+                </p>
+                {customer.currency !== selectedCurrency && (
+                  <span className="text-xs text-gray-500">
+                    ({formatCurrency(customer.clv, customer.currency)})
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -189,37 +236,71 @@ export function CustomerDetailModal({ customer, open, onClose, onSave, mode = 'v
         )}
 
         {/* Invoice History */}
-        {/* <div className="space-y-4">
+        <div className="space-y-4">
           <h3 className="text-lg font-medium">Invoice History</h3>
-          {customerInvoices.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Type</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {customerInvoices.map((invoice) => (
-                  <TableRow key={invoice.id}>
-                    <TableCell>{new Date(invoice.date).toLocaleDateString()}</TableCell>
-                    <TableCell>{formatCurrency(invoice.amount, invoice.currency)}</TableCell>
-                    <TableCell>
-                      <Badge variant={invoice.status === 'paid' ? 'secondary' : 'destructive'}>
-                        {invoice.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="capitalize">{invoice.type}</TableCell>
+          {loadingInvoices ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+              <span className="ml-2 text-gray-500">Loading invoices...</span>
+            </div>
+          ) : customerInvoices.length > 0 ? (
+            <div className="border rounded-lg overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-50">
+                    <TableHead>Date</TableHead>
+                    <TableHead>Invoice #</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Type</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {customerInvoices.map((invoice) => {
+                    // Convert invoice amount to selected currency
+                    const convertedAmount = convertCurrency(
+                      invoice.amount,
+                      invoice.currency,
+                      selectedCurrency
+                    );
+                    const isConverted = invoice.currency !== selectedCurrency;
+                    
+                    return (
+                      <TableRow key={invoice.id}>
+                        <TableCell>{new Date(invoice.issued_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</TableCell>
+                        <TableCell className="font-mono text-sm">{invoice.invoice_number || '-'}</TableCell>
+                        <TableCell className="font-semibold">
+                          <div className="flex flex-col">
+                            <span>{formatCurrency(convertedAmount, selectedCurrency)}</span>
+                            {isConverted && (
+                              <span className="text-xs text-gray-500">
+                                ({formatCurrency(invoice.amount, invoice.currency)})
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            className={
+                              invoice.status === 'paid' ? 'bg-green-100 text-green-800 border-green-200' : 
+                              invoice.status === 'pending' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
+                              'bg-red-100 text-red-800 border-red-200'
+                            }
+                          >
+                            {invoice.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="capitalize">{invoice.type}</TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
           ) : (
-            <p className="text-gray-500 text-center py-8">No invoices found</p>
+            <p className="text-gray-500 text-center py-8 border rounded-lg bg-gray-50">No invoices found for this customer</p>
           )}
-        </div> */}
+        </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>

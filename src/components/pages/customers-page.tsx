@@ -113,6 +113,7 @@ export function CustomersPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [platformFilter, setPlatformFilter] = useState<string>('all')
+  const [billingFrequencyFilter, setBillingFrequencyFilter] = useState<string>('all')
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>('DKK')
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(50) // Increased from 10 to 50 to show more customers per page
@@ -247,8 +248,10 @@ export function CustomersPage() {
       statusFilter === 'all' || customer.status === statusFilter
     const matchesPlatform =
       platformFilter === 'all' || customer.platform === platformFilter
+    const matchesBillingFrequency =
+      billingFrequencyFilter === 'all' || customer.billingFrequency === billingFrequencyFilter
 
-    return matchesSearch && matchesStatus && matchesPlatform
+    return matchesSearch && matchesStatus && matchesPlatform && matchesBillingFrequency
   })
 
   // Pagination
@@ -345,6 +348,11 @@ export function CustomersPage() {
   // Get available platforms from actual integrations instead of hardcoded list
   const availablePlatforms = Array.from(
     new Set(integrations.map((i) => i.platform))
+  ).sort()
+  
+  // Get unique billing frequencies from customers
+  const availableBillingFrequencies = Array.from(
+    new Set(customers.map((c) => c.billingFrequency).filter(Boolean))
   ).sort()
 
   return (
@@ -545,12 +553,160 @@ export function CustomersPage() {
         </div>
       )}
 
+      {/* Filters & Search */}
+      {!loading && customers.length > 0 && (
+        <Card>
+          <CardContent className='pt-6'>
+            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'>
+              {/* Search */}
+              <div className='relative'>
+                <Search className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400' />
+                <Input
+                  placeholder='Search customers...'
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className='pl-10'
+                />
+              </div>
+
+              {/* Status Filter */}
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder='All Statuses' />
+                </SelectTrigger>
+                <SelectContent className='bg-white'>
+                  <SelectItem value='all'>All Statuses</SelectItem>
+                  <SelectItem value='active'>Active</SelectItem>
+                  <SelectItem value='paused'>Paused</SelectItem>
+                  <SelectItem value='inactive'>Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Platform Filter */}
+              <Select value={platformFilter} onValueChange={setPlatformFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder='All Platforms' />
+                </SelectTrigger>
+                <SelectContent className='bg-white'>
+                  <SelectItem value='all'>All Platforms</SelectItem>
+                  {availablePlatforms.map((platform) => (
+                    <SelectItem key={platform} value={platform}>
+                      {getPlatformDisplayName(platform)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Billing Frequency Filter */}
+              <Select
+                value={billingFrequencyFilter}
+                onValueChange={setBillingFrequencyFilter}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder='All Frequencies' />
+                </SelectTrigger>
+                <SelectContent className='bg-white'>
+                  <SelectItem value='all'>All Frequencies</SelectItem>
+                  <SelectItem value='monthly'>Monthly</SelectItem>
+                  <SelectItem value='quarterly'>Quarterly</SelectItem>
+                  <SelectItem value='yearly'>Yearly</SelectItem>
+                  <SelectItem value='weekly'>Weekly</SelectItem>
+                  <SelectItem value='daily'>Daily</SelectItem>
+                  <SelectItem value='custom'>Custom</SelectItem>
+                  {availableBillingFrequencies
+                    .filter(
+                      (freq) =>
+                        !['monthly', 'quarterly', 'yearly', 'weekly', 'daily', 'custom'].includes(
+                          freq
+                        )
+                    )
+                    .map((freq) => (
+                      <SelectItem key={freq} value={freq}>
+                        {freq.charAt(0).toUpperCase() + freq.slice(1)}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Active Filters Display */}
+            {(searchTerm || statusFilter !== 'all' || platformFilter !== 'all' || billingFrequencyFilter !== 'all') && (
+              <div className='flex flex-wrap items-center gap-2 mt-4'>
+                <span className='text-sm text-muted-foreground'>Active filters:</span>
+                {searchTerm && (
+                  <Badge variant='secondary' className='gap-1'>
+                    Search: {searchTerm}
+                    <button
+                      onClick={() => setSearchTerm('')}
+                      className='ml-1 hover:text-red-600'
+                    >
+                      ×
+                    </button>
+                  </Badge>
+                )}
+                {statusFilter !== 'all' && (
+                  <Badge variant='secondary' className='gap-1'>
+                    Status: {statusFilter}
+                    <button
+                      onClick={() => setStatusFilter('all')}
+                      className='ml-1 hover:text-red-600'
+                    >
+                      ×
+                    </button>
+                  </Badge>
+                )}
+                {platformFilter !== 'all' && (
+                  <Badge variant='secondary' className='gap-1'>
+                    Platform: {getPlatformDisplayName(platformFilter)}
+                    <button
+                      onClick={() => setPlatformFilter('all')}
+                      className='ml-1 hover:text-red-600'
+                    >
+                      ×
+                    </button>
+                  </Badge>
+                )}
+                {billingFrequencyFilter !== 'all' && (
+                  <Badge variant='secondary' className='gap-1'>
+                    Frequency: {billingFrequencyFilter}
+                    <button
+                      onClick={() => setBillingFrequencyFilter('all')}
+                      className='ml-1 hover:text-red-600'
+                    >
+                      ×
+                    </button>
+                  </Badge>
+                )}
+                <Button
+                  variant='ghost'
+                  size='sm'
+                  onClick={() => {
+                    setSearchTerm('')
+                    setStatusFilter('all')
+                    setPlatformFilter('all')
+                    setBillingFrequencyFilter('all')
+                  }}
+                  className='h-6 px-2 text-xs'
+                >
+                  Clear all
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Customer Table */}
       {!loading && (
         <Card>
           <CardHeader className='pb-4'>
             <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
-              <CardTitle>Customer List</CardTitle>
+              <CardTitle>
+                Customer List
+                <span className='ml-2 text-sm font-normal text-muted-foreground'>
+                  ({filteredCustomers.length} {filteredCustomers.length === 1 ? 'customer' : 'customers'})
+                </span>
+              </CardTitle>
               {selectedCustomers.length > 0 && (
                 <div className='flex items-center space-x-2'>
                   <span className='text-sm text-muted-foreground'>
@@ -769,6 +925,7 @@ export function CustomersPage() {
         customer={selectedCustomer}
         open={isModalOpen}
         mode={modalMode}
+        selectedCurrency={selectedCurrency}
         onClose={() => {
           setIsModalOpen(false)
           setSelectedCustomer(null)
