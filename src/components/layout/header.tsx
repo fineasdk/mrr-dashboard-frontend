@@ -83,7 +83,7 @@ export function Header({ onLogout }: HeaderProps) {
               <BarChart3 className="h-5 w-5 text-white" />
             </div> */}
             <div>
-              <h1 className='font-bold text-slate-900 text-lg'>FINEAS</h1>
+              <h1 className='font-bold text-slate-800 text-3xl'>FINEAS</h1>
               <p className='text-xs text-slate-500 font-medium'>MRR Dashboard</p>
             </div>
           </div>

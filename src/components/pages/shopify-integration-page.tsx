@@ -70,6 +70,14 @@ export function ShopifyIntegrationPage({ onNavigateBack }: ShopifyIntegrationPag
         if (shopifyIntegration) {
           setExistingIntegration(shopifyIntegration)
 
+          // Pre-populate form with existing credentials if available
+          if (shopifyIntegration.credentials) {
+            setFormData({
+              partner_access_token: shopifyIntegration.credentials.partner_access_token || '',
+              organization_id: shopifyIntegration.credentials.organization_id || '',
+            })
+          }
+
           // If integration has error, show the error message
           if (shopifyIntegration.status === 'error') {
             setConnectionError(
@@ -107,18 +115,37 @@ export function ShopifyIntegrationPage({ onNavigateBack }: ShopifyIntegrationPag
     }
 
     try {
+      // Always use the Shopify Partner endpoint for both create and update
+      // The backend handles both cases with updateOrCreate
       const response = await api.post('/shopify/connect-partner', formData)
 
       if (response.data.success) {
         console.log(
-          'Shopify Partner integration created successfully:',
+          existingIntegration 
+            ? 'Shopify Partner integration updated successfully:'
+            : 'Shopify Partner integration created successfully:',
           response.data
         )
+
+        // Get the integration ID for sync
+        const integrationId = response.data.data?.integration_id
+
+        // Trigger sync after successful connection/update
+        if (integrationId) {
+          try {
+            await integrationsApi.sync(integrationId.toString())
+            console.log('Sync triggered successfully')
+          } catch (syncError) {
+            console.warn('Failed to trigger sync:', syncError)
+            // Don't fail the whole operation if sync fails
+          }
+        }
+
         onNavigateBack()
       } else {
         throw new Error(
           response.data.message ||
-            'Failed to create Shopify Partner integration'
+            `Failed to ${existingIntegration ? 'update' : 'create'} Shopify Partner integration`
         )
       }
     } catch (error: any) {
@@ -127,7 +154,7 @@ export function ShopifyIntegrationPage({ onNavigateBack }: ShopifyIntegrationPag
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
-        'Failed to connect to Shopify Partners'
+        `Failed to ${existingIntegration ? 'update' : 'connect to'} Shopify Partners`
       setConnectionError(errorMessage)
 
       if (error.response?.status === 409) {
@@ -319,7 +346,11 @@ export function ShopifyIntegrationPage({ onNavigateBack }: ShopifyIntegrationPag
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-slate-900">Partner API Connection</h3>
-                <p className="text-sm text-slate-600">Enter your Shopify Partner API credentials</p>
+                <p className="text-sm text-slate-600">
+                  {existingIntegration 
+                    ? 'Update your Shopify Partner API credentials' 
+                    : 'Enter your Shopify Partner API credentials'}
+                </p>
               </div>
             </div>
           </div>
@@ -339,7 +370,7 @@ export function ShopifyIntegrationPage({ onNavigateBack }: ShopifyIntegrationPag
                       partner_access_token: e.target.value,
                     })
                   }
-                  placeholder="shpat_..."
+                  placeholder={existingIntegration ? "Enter new access token..." : "shpat_..."}
                   disabled={isConnecting}
                   type="password"
                   className="font-mono rounded-lg"
@@ -362,7 +393,7 @@ export function ShopifyIntegrationPage({ onNavigateBack }: ShopifyIntegrationPag
                       organization_id: e.target.value,
                     })
                   }
-                  placeholder="1234567"
+                  placeholder={existingIntegration ? "Enter new organization ID..." : "1234567"}
                   disabled={isConnecting}
                   className="font-mono rounded-lg"
                 />
@@ -388,18 +419,18 @@ export function ShopifyIntegrationPage({ onNavigateBack }: ShopifyIntegrationPag
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     {existingIntegration
-                      ? 'Updating Integration...'
-                      : 'Creating Integration...'}
+                      ? 'Updating & Syncing...'
+                      : 'Creating & Syncing...'}
                   </>
                 ) : (
                   <>
                     <ShoppingBag className="mr-2 h-4 w-4" />
                     {existingIntegration &&
                     existingIntegration.status === 'error'
-                      ? 'Fix Connection'
+                      ? 'Fix & Sync Connection'
                       : existingIntegration
-                      ? 'Update Partner Integration'
-                      : 'Create Partner Integration'}
+                      ? 'Update & Sync Integration'
+                      : 'Create & Sync Integration'}
                   </>
                 )}
               </Button>
