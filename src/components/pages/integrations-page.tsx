@@ -218,10 +218,33 @@ export function IntegrationsPage({ onNavigateToShopify }: IntegrationsPageProps 
     try {
       const response = await integrationsApi.sync(integrationId.toString())
       if (response.data.success) {
+        // Show success message
+        const integration = integrations.find(i => i.id === integrationId)
+        const platformName = integration?.platform_name || 'Integration'
+        setError('') // Clear any errors
+        
+        // Create a temporary success message
+        const successDiv = document.createElement('div')
+        successDiv.className = 'fixed top-4 right-4 z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2 animate-in fade-in slide-in-from-top-2'
+        successDiv.innerHTML = `
+          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          <span><strong>${platformName}</strong> sync started! Data will update in a few moments.</span>
+        `
+        document.body.appendChild(successDiv)
+        
+        // Remove after 4 seconds
+        setTimeout(() => {
+          successDiv.style.opacity = '0'
+          successDiv.style.transition = 'opacity 0.3s'
+          setTimeout(() => successDiv.remove(), 300)
+        }, 4000)
+        
         // Wait a moment for the sync to start, then refresh
         setTimeout(() => {
           loadIntegrations()
-        }, 1000)
+        }, 2000)
       } else {
         setError(response.data.message || 'Sync failed. Please try again.')
       }
