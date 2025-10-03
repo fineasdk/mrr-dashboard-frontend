@@ -562,7 +562,7 @@ export function AnalyticsPage() {
               </Card>
 
               {/* Enhanced Key Metrics */}
-              <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 animate-slide-up'>
+              {/* <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 animate-slide-up'>
                 <div className='card-elevated p-6'>
                   <div className='flex items-center justify-between mb-4'>
                     <div className='p-3 rounded-md bg-gray-600 shadow-sm'>
@@ -656,7 +656,7 @@ export function AnalyticsPage() {
                     </p>
                   </div>
                 </div>
-              </div>
+              </div> */}
 
               {/* Charts Grid */}
               <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
