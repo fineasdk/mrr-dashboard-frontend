@@ -115,9 +115,23 @@ export function ShopifyIntegrationPage({ onNavigateBack }: ShopifyIntegrationPag
     }
 
     try {
+      let response
+
+      if (existingIntegration) {
+        // For existing integration, we need to clear old data completely
+        // Delete the old integration to remove all associated data
+        try {
+          await integrationsApi.delete(existingIntegration.id.toString())
+          console.log('Old integration deleted successfully')
+        } catch (deleteError) {
+          console.warn('Failed to delete old integration:', deleteError)
+          // Continue anyway - the new connection will overwrite
+        }
+      }
+
       // Always use the Shopify Partner endpoint for both create and update
       // The backend handles both cases with updateOrCreate
-      const response = await api.post('/shopify/connect-partner', formData)
+      response = await api.post('/shopify/connect-partner', formData)
 
       if (response.data.success) {
         console.log(
