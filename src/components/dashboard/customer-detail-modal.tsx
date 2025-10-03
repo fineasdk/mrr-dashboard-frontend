@@ -272,11 +272,11 @@ export function CustomerDetailModal({ customer, open, onClose, onSave, mode = 'v
                         <TableCell className="font-semibold">
                           <div className="flex flex-col">
                             <span>{formatCurrency(convertedAmount, selectedCurrency)}</span>
-                            {isConverted && (
+                            {/* {isConverted && (
                               <span className="text-xs text-gray-500">
                                 ({formatCurrency(invoice.amount, invoice.currency)})
                               </span>
-                            )}
+                            )} */}
                           </div>
                         </TableCell>
                         <TableCell>
