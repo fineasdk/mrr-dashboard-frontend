@@ -318,7 +318,7 @@ export function CustomerDetailModal({ customer, open, onClose, onSave, mode = 'v
                     <TableHead>Amount</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Type</TableHead>
-                    <TableHead>Billing Frequency</TableHead>
+                    {/* <TableHead>Billing Frequency</TableHead> */}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -357,7 +357,7 @@ export function CustomerDetailModal({ customer, open, onClose, onSave, mode = 'v
                           </Badge>
                         </TableCell>
                         <TableCell className="capitalize">{invoice.type}</TableCell>
-                        <TableCell>
+                        {/* <TableCell>
                           <Select
                             value={(invoice as any).manual_billing_frequency || 'auto'}
                             onValueChange={(value) => handleBillingFrequencyChange(invoice.id, value)}
@@ -373,7 +373,7 @@ export function CustomerDetailModal({ customer, open, onClose, onSave, mode = 'v
                               <SelectItem value="yearly">Yearly</SelectItem>
                             </SelectContent>
                           </Select>
-                        </TableCell>
+                        </TableCell> */}
                       </TableRow>
                     );
                   })}
