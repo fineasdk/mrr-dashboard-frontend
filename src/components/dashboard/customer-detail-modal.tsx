@@ -87,12 +87,20 @@ export function CustomerDetailModal({ customer, open, onClose, onSave, mode = 'v
   const handleBillingFrequencyChange = async (invoiceId: number, frequency: string) => {
     if (frequency === 'auto') {
       // TODO: Call API to clear manual billing frequency
+      console.log('Auto-detect selected - clearing manual frequency');
       return;
     }
 
+    console.log('Updating billing frequency:', { invoiceId, frequency });
     setUpdatingInvoiceId(invoiceId);
+    
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/invoices/${invoiceId}/billing-frequency`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+      const url = `${apiUrl}/api/invoices/${invoiceId}/billing-frequency`;
+      
+      console.log('API URL:', url);
+      
+      const response = await fetch(url, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -104,6 +112,10 @@ export function CustomerDetailModal({ customer, open, onClose, onSave, mode = 'v
         }),
       });
 
+      console.log('Response status:', response.status);
+      const data = await response.json();
+      console.log('Response data:', data);
+
       if (response.ok) {
         // Update local state
         setCustomerInvoices(prev => prev.map(inv => 
@@ -111,11 +123,14 @@ export function CustomerDetailModal({ customer, open, onClose, onSave, mode = 'v
             ? { ...inv, manual_billing_frequency: frequency }
             : inv
         ));
+        alert(`Billing frequency updated to ${frequency}`);
       } else {
-        console.error('Failed to update billing frequency');
+        console.error('Failed to update billing frequency:', data);
+        alert(`Failed to update: ${data.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error updating billing frequency:', error);
+      alert('Network error - check console');
     } finally {
       setUpdatingInvoiceId(null);
     }
@@ -341,11 +356,12 @@ export function CustomerDetailModal({ customer, open, onClose, onSave, mode = 'v
                           <Select
                             value={(invoice as any).manual_billing_frequency || 'auto'}
                             onValueChange={(value) => handleBillingFrequencyChange(invoice.id, value)}
+                            disabled={updatingInvoiceId === invoice.id}
                           >
-                            <SelectTrigger className="w-[130px]">
+                            <SelectTrigger className="w-[130px] !bg-white">
                               <SelectValue placeholder="Auto-detect" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="!bg-white">
                               <SelectItem value="auto">Auto-detect</SelectItem>
                               <SelectItem value="monthly">Monthly</SelectItem>
                               <SelectItem value="quarterly">Quarterly</SelectItem>
