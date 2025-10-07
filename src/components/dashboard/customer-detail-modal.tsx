@@ -100,11 +100,16 @@ export function CustomerDetailModal({ customer, open, onClose, onSave, mode = 'v
       
       console.log('API URL:', url);
       
+      const token = localStorage.getItem('auth_token');
+      console.log('Token check:', token ? 'Token found' : 'No token');
+      
       const response = await fetch(url, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
         },
         body: JSON.stringify({
           billing_frequency: frequency,
