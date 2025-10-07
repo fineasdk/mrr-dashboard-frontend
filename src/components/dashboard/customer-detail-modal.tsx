@@ -95,8 +95,8 @@ export function CustomerDetailModal({ customer, open, onClose, onSave, mode = 'v
     setUpdatingInvoiceId(invoiceId);
     
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
-      const url = `${apiUrl}/api/invoices/${invoiceId}/billing-frequency`;
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api';
+      const url = `${apiUrl}/invoices/${invoiceId}/billing-frequency`;
       
       console.log('API URL:', url);
       
