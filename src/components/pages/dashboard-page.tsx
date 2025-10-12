@@ -20,6 +20,7 @@ import {
 import { MRRChart } from '../dashboard/mrr-chart'
 import { PlatformChart } from '../dashboard/platform-chart'
 import { CurrencySelector } from '../dashboard/currency-selector'
+import { MonthlyRevenueTable } from '../dashboard/monthly-revenue-table'
 import { Button } from '../ui/button'
 import { Alert, AlertDescription } from '../ui/alert'
 import { Badge } from '../ui/badge'
@@ -691,6 +692,13 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
                   )}
                 </div>
               </div>
+
+              {/* Monthly Revenue Breakdown Table for Bookkeeping */}
+              {hasIntegrations && (
+                <div className='animate-slide-up delay-400'>
+                  <MonthlyRevenueTable currency={selectedCurrency} />
+                </div>
+              )}
             </>
           )}
         </div>
