@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { formatCurrency } from '@/lib/mock-data'
+import { Currency } from '@/lib/types'
 
 interface MonthlyRevenue {
   month: string
@@ -46,7 +47,7 @@ interface PlatformData {
 }
 
 interface MonthlyRevenueTableProps {
-  currency?: string
+  currency?: Currency
   defaultPlatform?: string
 }
 
@@ -64,7 +65,8 @@ export function MonthlyRevenueTable({
 
   useEffect(() => {
     loadMonthlyRevenue()
-  }, [currency])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currency, selectedPlatform])
 
   const loadMonthlyRevenue = async () => {
     setLoading(true)
