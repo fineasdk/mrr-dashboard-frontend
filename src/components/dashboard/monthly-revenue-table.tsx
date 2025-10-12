@@ -166,10 +166,10 @@ export function MonthlyRevenueTable({
     )
   }
 
-  // Sort monthly breakdown by date (newest first)
-  const sortedMonths = [...platformData.monthly_breakdown].sort(
-    (a, b) => b.month.localeCompare(a.month)
-  )
+  // Sort monthly breakdown by date (newest first) and filter out months with no revenue
+  const sortedMonths = [...platformData.monthly_breakdown]
+    .filter((month) => month.revenue > 0 || month.invoice_count > 0) // Only show months with data
+    .sort((a, b) => b.month.localeCompare(a.month))
 
   return (
     <Card>
@@ -222,11 +222,17 @@ export function MonthlyRevenueTable({
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-green-900">
-                Total Revenue (24 months)
+                Total Revenue ({sortedMonths.length} months with data)
               </p>
               <p className="text-2xl font-bold text-green-700 mt-1">
                 {formatCurrency(platformData.total_revenue, currency)}
               </p>
+              {sortedMonths.length > 0 && (
+                <p className="text-xs text-green-600 mt-1">
+                  {sortedMonths[sortedMonths.length - 1].month_name} to{' '}
+                  {sortedMonths[0].month_name}
+                </p>
+              )}
             </div>
             <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
               <DollarSign className="w-6 h-6 text-white" />
@@ -234,25 +240,55 @@ export function MonthlyRevenueTable({
           </div>
         </div>
 
+        {/* Info Message */}
+        {sortedMonths.length > 0 && (
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800">
+              ℹ️ Showing only months with revenue data. Empty months are hidden
+              for clarity.
+            </p>
+          </div>
+        )}
+
+        {/* No Data Message */}
+        {sortedMonths.length === 0 && (
+          <div className="mb-6 p-8 bg-slate-50 border border-slate-200 rounded-lg text-center">
+            <div className="w-16 h-16 bg-slate-200 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Calendar className="w-8 h-8 text-slate-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-slate-700 mb-2">
+              No Revenue Data Available
+            </h3>
+            <p className="text-sm text-slate-600 mb-4">
+              No transactions found for this platform in the last 24 months.
+            </p>
+            <p className="text-xs text-slate-500">
+              This is normal if the integration was recently connected. New data
+              will appear as transactions are synced.
+            </p>
+          </div>
+        )}
+
         {/* Monthly Breakdown Table */}
-        <div className="border rounded-lg overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-slate-50">
-                <TableHead className="w-12"></TableHead>
-                <TableHead className="font-semibold">Month</TableHead>
-                <TableHead className="font-semibold text-right">
-                  Revenue
-                </TableHead>
-                <TableHead className="font-semibold text-center">
-                  Invoices
-                </TableHead>
-                <TableHead className="font-semibold text-center">
-                  Status
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+        {sortedMonths.length > 0 && (
+          <div className="border rounded-lg overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-slate-50">
+                  <TableHead className="w-12"></TableHead>
+                  <TableHead className="font-semibold">Month</TableHead>
+                  <TableHead className="font-semibold text-right">
+                    Revenue
+                  </TableHead>
+                  <TableHead className="font-semibold text-center">
+                    Invoices
+                  </TableHead>
+                  <TableHead className="font-semibold text-center">
+                    Status
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
               {sortedMonths.map((month) => {
                 const isExpanded = expandedMonths.has(month.month)
                 return (
@@ -366,9 +402,10 @@ export function MonthlyRevenueTable({
                   </>
                 )
               })}
-            </TableBody>
-          </Table>
-        </div>
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </CardContent>
     </Card>
   )
