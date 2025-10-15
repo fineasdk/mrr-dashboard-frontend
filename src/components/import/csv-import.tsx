@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
 import { Upload, FileSpreadsheet, CheckCircle2, XCircle, AlertCircle, ExternalLink, Info } from "lucide-react"
-import api from "@/lib/api"
+import { api } from "@/lib/api"
 
 interface ImportInstructions {
   title: string
@@ -236,9 +236,9 @@ export function CsvImport() {
                 className="hidden"
                 id="csv-file-input"
               />
-              <label htmlFor="csv-file-input">
-                <Button variant="outline" as Span>
-                  Select CSV File
+              <label htmlFor="csv-file-input" className="cursor-pointer">
+                <Button type="button" variant="outline" asChild>
+                  <span>Select CSV File</span>
                 </Button>
               </label>
             </div>
@@ -354,7 +354,4 @@ export function CsvImport() {
     </div>
   )
 }
-
-// Helper component for Button as label
-const Span = ({ children, ...props }: any) => <span {...props}>{children}</span>
 

@@ -12,6 +12,7 @@ import { IntegrationsPage } from '@/components/pages/integrations-page';
 import { ProfilePage } from '@/components/pages/profile-page';
 import { ShopifyIntegrationPage } from '@/components/pages/shopify-integration-page';
 import { SettingsPage } from '@/components/pages/settings-page';
+import { Button } from '@/components/ui/button';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState('dashboard');
