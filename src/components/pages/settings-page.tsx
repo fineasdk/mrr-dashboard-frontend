@@ -31,7 +31,7 @@ export function SettingsPage() {
       </div>
 
       <Tabs defaultValue="import" className="space-y-6">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
+        {/* <TabsList className="grid w-full max-w-md grid-cols-2">
           <TabsTrigger value="import" className="gap-2">
             <FileSpreadsheet className="h-4 w-4" />
             <span className="hidden sm:inline">Import Data</span>
@@ -42,7 +42,7 @@ export function SettingsPage() {
             <span className="hidden sm:inline">Preferences</span>
             <span className="sm:hidden">Settings</span>
           </TabsTrigger>
-        </TabsList>
+        </TabsList> */}
 
         <TabsContent value="import">
           <CsvImport />

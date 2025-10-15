@@ -12,12 +12,16 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import {
   ChevronDown,
   ChevronRight,
   Download,
   Calendar,
   DollarSign,
+  Search,
+  TrendingUp,
+  FileText,
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { formatCurrency } from '@/lib/mock-data'
@@ -62,6 +66,12 @@ export function MonthlyRevenueTable({
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(
     defaultPlatform || 'shopify'
   )
+  
+  // Pagination and search states for expanded invoice details
+  const [invoiceSearchTerms, setInvoiceSearchTerms] = useState<Record<string, string>>({})
+  const [invoiceLimits, setInvoiceLimits] = useState<Record<string, number>>({})
+  const INITIAL_INVOICE_LIMIT = 10
+  const LOAD_MORE_AMOUNT = 20
 
   useEffect(() => {
     loadMonthlyRevenue()
@@ -97,10 +107,51 @@ export function MonthlyRevenueTable({
     const newExpanded = new Set(expandedMonths)
     if (newExpanded.has(monthKey)) {
       newExpanded.delete(monthKey)
+      // Reset search and limit when collapsing
+      const newSearchTerms = { ...invoiceSearchTerms }
+      delete newSearchTerms[monthKey]
+      setInvoiceSearchTerms(newSearchTerms)
+      
+      const newLimits = { ...invoiceLimits }
+      delete newLimits[monthKey]
+      setInvoiceLimits(newLimits)
     } else {
       newExpanded.add(monthKey)
+      // Initialize limit when expanding
+      if (!invoiceLimits[monthKey]) {
+        setInvoiceLimits(prev => ({ ...prev, [monthKey]: INITIAL_INVOICE_LIMIT }))
+      }
     }
     setExpandedMonths(newExpanded)
+  }
+  
+  const loadMoreInvoices = (monthKey: string) => {
+    setInvoiceLimits(prev => ({
+      ...prev,
+      [monthKey]: (prev[monthKey] || INITIAL_INVOICE_LIMIT) + LOAD_MORE_AMOUNT
+    }))
+  }
+  
+  const updateInvoiceSearch = (monthKey: string, searchTerm: string) => {
+    setInvoiceSearchTerms(prev => ({ ...prev, [monthKey]: searchTerm }))
+  }
+  
+  const getFilteredInvoices = (monthKey: string, invoices: MonthlyRevenue['invoices']) => {
+    const searchTerm = invoiceSearchTerms[monthKey]?.toLowerCase() || ''
+    const limit = invoiceLimits[monthKey] || INITIAL_INVOICE_LIMIT
+    
+    const filtered = searchTerm
+      ? invoices.filter(inv => 
+          inv.customer_name?.toLowerCase().includes(searchTerm) ||
+          inv.invoice_number?.toLowerCase().includes(searchTerm)
+        )
+      : invoices
+    
+    return {
+      invoices: filtered.slice(0, limit),
+      total: filtered.length,
+      hasMore: filtered.length > limit
+    }
   }
 
   const exportToCSV = () => {
@@ -242,11 +293,16 @@ export function MonthlyRevenueTable({
 
         {/* Info Message */}
         {sortedMonths.length > 0 && (
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-800">
-              ℹ️ Showing only months with revenue data. Empty months are hidden
-              for clarity. (Your Shopify data is showing from the integration date forward. Need historical revenue data (e.g., August 2024)? Use the CSV import feature from settings)  
-            </p>
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2">
+            <FileText className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm text-blue-800">
+                Showing {sortedMonths.length} months with revenue data. Click any month to view detailed invoices. 
+                <span className="text-xs block mt-1 text-blue-600">
+                  💡 Tip: Use the search box to find specific customers or invoice numbers.
+                </span>
+              </p>
+            </div>
           </div>
         )}
 
@@ -330,64 +386,145 @@ export function MonthlyRevenueTable({
                     </TableRow>
 
                     {/* Expanded Invoice Details */}
-                    {isExpanded && month.invoices.length > 0 && (
-                      <TableRow>
-                        <TableCell colSpan={5} className="bg-slate-50 p-0">
-                          <div className="p-4">
-                            <h4 className="text-sm font-semibold mb-3 text-slate-700">
-                              Invoice Details ({month.invoices.length})
-                            </h4>
-                            <div className="space-y-2">
-                              {month.invoices.map((invoice, idx) => (
-                                <div
-                                  key={idx}
-                                  className="flex items-center justify-between p-3 bg-white rounded-md border border-slate-200 text-sm"
-                                >
-                                  <div className="flex-1">
-                                    <p className="font-medium text-slate-900">
-                                      {invoice.customer_name}
-                                    </p>
-                                    <p className="text-xs text-slate-500">
-                                      {invoice.invoice_number} •{' '}
-                                      {invoice.issued_at}
-                                    </p>
-                                  </div>
-                                  <div className="flex items-center gap-3">
-                                    <Badge
-                                      variant={
-                                        invoice.type === 'subscription'
-                                          ? 'default'
-                                          : 'secondary'
-                                      }
-                                      className="text-xs"
-                                    >
-                                      {invoice.type}
-                                    </Badge>
-                                    <Badge
-                                      variant={
-                                        invoice.status === 'paid'
-                                          ? 'default'
-                                          : 'secondary'
-                                      }
-                                      className={
-                                        invoice.status === 'paid'
-                                          ? 'bg-green-500 hover:bg-green-600'
-                                          : ''
-                                      }
-                                    >
-                                      {invoice.status}
-                                    </Badge>
-                                    <span className="font-semibold text-slate-900 min-w-[100px] text-right">
-                                      {formatCurrency(invoice.amount, currency)}
+                    {isExpanded && month.invoices.length > 0 && (() => {
+                      const { invoices: filteredInvoices, total, hasMore } = getFilteredInvoices(month.month, month.invoices)
+                      const avgInvoice = month.revenue / month.invoice_count
+                      const searchTerm = invoiceSearchTerms[month.month] || ''
+                      
+                      return (
+                        <TableRow>
+                          <TableCell colSpan={5} className="bg-slate-50 p-0">
+                            <div className="p-4">
+                              {/* Header with Stats */}
+                              <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-4">
+                                  <h4 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                                    <FileText className="w-4 h-4" />
+                                    Invoice Details
+                                  </h4>
+                                  <div className="flex gap-3 text-xs text-slate-600">
+                                    <span className="flex items-center gap-1">
+                                      <TrendingUp className="w-3 h-3" />
+                                      Avg: {formatCurrency(avgInvoice, currency)}
+                                    </span>
+                                    <span>•</span>
+                                    <span>
+                                      {total} {total === 1 ? 'invoice' : 'invoices'}
+                                      {searchTerm && ` (filtered)`}
                                     </span>
                                   </div>
                                 </div>
-                              ))}
+                              </div>
+                              
+                              {/* Search Box */}
+                              <div className="mb-3">
+                                <div className="relative">
+                                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                  <Input
+                                    type="text"
+                                    placeholder="Search by customer name or invoice number..."
+                                    value={searchTerm}
+                                    onChange={(e) => updateInvoiceSearch(month.month, e.target.value)}
+                                    className="pl-10 h-9 text-sm"
+                                  />
+                                </div>
+                              </div>
+                              
+                              {/* Invoice List */}
+                              {filteredInvoices.length > 0 ? (
+                                <div className="space-y-2">
+                                  {filteredInvoices.map((invoice, idx) => (
+                                    <div
+                                      key={idx}
+                                      className="flex items-center justify-between p-3 bg-white rounded-md border border-slate-200 text-sm hover:border-violet-200 hover:shadow-sm transition-all"
+                                    >
+                                      <div className="flex-1 min-w-0">
+                                        <p className="font-medium text-slate-900 truncate">
+                                          {invoice.customer_name || 'Unknown Customer'}
+                                        </p>
+                                        <p className="text-xs text-slate-500">
+                                          {invoice.invoice_number || 'N/A'} •{' '}
+                                          {invoice.issued_at || 'No date'}
+                                        </p>
+                                      </div>
+                                      <div className="flex items-center gap-3 flex-shrink-0">
+                                        <Badge
+                                          variant={
+                                            invoice.type === 'subscription'
+                                              ? 'default'
+                                              : 'secondary'
+                                          }
+                                          className="text-xs"
+                                        >
+                                          {invoice.type}
+                                        </Badge>
+                                        <Badge
+                                          variant={
+                                            invoice.status === 'paid'
+                                              ? 'default'
+                                              : 'secondary'
+                                          }
+                                          className={
+                                            invoice.status === 'paid'
+                                              ? 'bg-green-500 hover:bg-green-600'
+                                              : ''
+                                          }
+                                        >
+                                          {invoice.status}
+                                        </Badge>
+                                        <span className="font-semibold text-slate-900 min-w-[100px] text-right">
+                                          {formatCurrency(invoice.amount, currency)}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                  
+                                  {/* Load More Button */}
+                                  {hasMore && (
+                                    <div className="pt-2 text-center">
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => loadMoreInvoices(month.month)}
+                                        className="text-xs"
+                                      >
+                                        Load More ({total - filteredInvoices.length} remaining)
+                                      </Button>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Results Count */}
+                                  {filteredInvoices.length > 0 && (
+                                    <div className="pt-2 text-center text-xs text-slate-500">
+                                      Showing {filteredInvoices.length} of {total}
+                                      {searchTerm && ` matching "${searchTerm}"`}
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="py-8 text-center text-sm text-slate-500">
+                                  {searchTerm ? (
+                                    <>
+                                      No invoices found matching &quot;{searchTerm}&quot;
+                                      <Button
+                                        variant="link"
+                                        size="sm"
+                                        onClick={() => updateInvoiceSearch(month.month, '')}
+                                        className="ml-2 text-xs"
+                                      >
+                                        Clear search
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    'No invoices available'
+                                  )}
+                                </div>
+                              )}
                             </div>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )}
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })()}
 
                     {isExpanded && month.invoices.length === 0 && (
                       <TableRow>
