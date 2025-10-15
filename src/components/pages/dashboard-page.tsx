@@ -15,6 +15,7 @@ import {
   Settings,
   Plus,
   DollarSign,
+  Info,
 } from 'lucide-react'
 // import { MetricCard } from '../dashboard/metric-card';
 import { MRRChart } from '../dashboard/mrr-chart'
@@ -396,6 +397,41 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
                     Log In
                   </Button>
                 )}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Shopify Historical Data Import Notice */}
+          {!isLoading && integrations.some(i => i.platform === 'shopify' && i.status === 'active') && (
+            <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950">
+              <Info className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-blue-900 dark:text-blue-100">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <p className="font-semibold mb-1">📅 Shopify Partner Data Notice</p>
+                    <p className="text-sm">
+                      Your Shopify data is showing from the integration date forward. 
+                      Need historical revenue data (e.g., August 2024)?{' '}
+                      <button
+                        onClick={() => window.history.pushState(null, '', '/settings')}
+                        className="font-semibold underline hover:text-blue-700"
+                      >
+                        Import from CSV
+                      </button>
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="bg-white hover:bg-blue-100 border-blue-300"
+                    onClick={() => {
+                      window.history.pushState(null, '', '/settings');
+                      window.location.reload();
+                    }}
+                  >
+                    Import Now
+                  </Button>
+                </div>
               </AlertDescription>
             </Alert>
           )}

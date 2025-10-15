@@ -19,8 +19,8 @@ const navigation = [
   { name: 'Customers', id: 'customers', icon: Users },
   { name: 'Analytics', id: 'analytics', icon: TrendingUp },
   { name: 'Integrations', id: 'integrations', icon: Link2 },
+  { name: 'Settings', id: 'settings', icon: Settings },
   { name: 'Profile', id: 'profile', icon: User },
-  // { name: 'Settings', id: 'settings', icon: Settings },
 ];
 
 export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
