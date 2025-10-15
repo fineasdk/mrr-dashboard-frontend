@@ -245,7 +245,7 @@ export function MonthlyRevenueTable({
           <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-sm text-blue-800">
               ℹ️ Showing only months with revenue data. Empty months are hidden
-              for clarity.
+              for clarity. (Your Shopify data is showing from the integration date forward. Need historical revenue data (e.g., August 2024)? Use the CSV import feature from settings)  
             </p>
           </div>
         )}
