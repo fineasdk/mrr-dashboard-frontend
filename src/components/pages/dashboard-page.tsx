@@ -241,14 +241,26 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
     
     // Helper function to format change text
     const formatChangeText = (changePercentage: number | null, absoluteChange: number | null, isCustomer: boolean = false) => {
+      // Case 1: No data to calculate percentage
       if (changePercentage === null || changePercentage === undefined) {
         return 'No previous data'
       }
       
+      // Case 2: Truly no change (both percentage and absolute are 0)
       if (changePercentage === 0 && (!absoluteChange || absoluteChange === 0)) {
         return 'No change from last month'
       }
       
+      // Case 3: EDGE CASE - Percentage is 0% but there IS a change
+      // This happens when previous month was 0 (can't calculate %, but there is growth)
+      if (changePercentage === 0 && absoluteChange && absoluteChange !== 0) {
+        const changeText = isCustomer 
+          ? `${Math.abs(absoluteChange)} ${Math.abs(absoluteChange) === 1 ? 'customer' : 'customers'}`
+          : formatCurrency(Math.abs(absoluteChange), selectedCurrency)
+        return `New data (+${changeText})`
+      }
+      
+      // Case 4: Normal percentage with absolute change
       const percentageText = changePercentage > 0 ? `+${changePercentage.toFixed(1)}%` : `${changePercentage.toFixed(1)}%`
       
       if (absoluteChange && absoluteChange !== 0) {
@@ -266,14 +278,22 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
         title: 'Total MRR',
         value: formatCurrency(totalMrrValue, selectedCurrency),
         change: formatChangeText(mrrChangePercentage, mrrChange, false),
-        trend: mrrChangePercentage === null ? 'neutral' as const : (mrrChangePercentage >= 0 ? 'up' : 'down'),
+        trend: mrrChangePercentage === null 
+          ? 'neutral' as const 
+          : (mrrChangePercentage === 0 && mrrChange && mrrChange > 0)
+            ? 'up' // New data with positive change
+            : (mrrChangePercentage >= 0 ? 'up' : 'down'),
         icon: TrendingUp,
       },
       {
         title: 'Total Customers',
         value: totalCustomersValue.toLocaleString(),
         change: formatChangeText(customersChangePercentage, customersChange, true),
-        trend: customersChangePercentage === null ? 'neutral' as const : (customersChangePercentage >= 0 ? 'up' : 'down'),
+        trend: customersChangePercentage === null 
+          ? 'neutral' as const
+          : (customersChangePercentage === 0 && customersChange && customersChange > 0)
+            ? 'up' // New data with positive change
+            : (customersChangePercentage >= 0 ? 'up' : 'down'),
         icon: Users,
       },
       {
