@@ -48,11 +48,13 @@ const platformConfig = {
 interface Metrics {
   total_mrr: {
     value: number
+    change: number
     change_percentage: number
     formatted: string
   }
   total_customers: {
     value: number
+    change: number
     change_percentage: number
   }
   arr: {
@@ -209,6 +211,12 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
     const apiMrrValue = metrics?.total_mrr?.value || 0
     const apiCustomersValue = metrics?.total_customers?.value || 0
     const arrValue = metrics?.arr?.value || 0
+    
+    // Get change percentages and actual changes
+    const mrrChangePercentage = metrics?.total_mrr?.change_percentage ?? null
+    const mrrChange = metrics?.total_mrr?.change ?? null
+    const customersChangePercentage = metrics?.total_customers?.change_percentage ?? null
+    const customersChange = metrics?.total_customers?.change ?? null
 
     // Fallback: Calculate from integrations data (same as integrations page)
     const fallbackMrrValue = integrations.reduce(
@@ -227,30 +235,45 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
     console.log('📈 Metrics comparison:', {
       api: { mrr: apiMrrValue, customers: apiCustomersValue },
       fallback: { mrr: fallbackMrrValue, customers: fallbackCustomersValue },
-      final: { mrr: totalMrrValue, customers: totalCustomersValue }
+      final: { mrr: totalMrrValue, customers: totalCustomersValue },
+      changes: { mrrChangePercentage, mrrChange, customersChangePercentage, customersChange }
     })
+    
+    // Helper function to format change text
+    const formatChangeText = (changePercentage: number | null, absoluteChange: number | null, isCustomer: boolean = false) => {
+      if (changePercentage === null || changePercentage === undefined) {
+        return 'No previous data'
+      }
+      
+      if (changePercentage === 0 && (!absoluteChange || absoluteChange === 0)) {
+        return 'No change from last month'
+      }
+      
+      const percentageText = changePercentage > 0 ? `+${changePercentage.toFixed(1)}%` : `${changePercentage.toFixed(1)}%`
+      
+      if (absoluteChange && absoluteChange !== 0) {
+        const changeText = isCustomer 
+          ? `${Math.abs(absoluteChange)} ${Math.abs(absoluteChange) === 1 ? 'customer' : 'customers'}`
+          : formatCurrency(Math.abs(absoluteChange), selectedCurrency)
+        return `${percentageText} (${changePercentage >= 0 ? '+' : '-'}${changeText})`
+      }
+      
+      return `${percentageText} from last month`
+    }
 
     return [
       {
         title: 'Total MRR',
         value: formatCurrency(totalMrrValue, selectedCurrency),
-        change: `${
-          metrics?.total_mrr?.change_percentage || 0
-        }% from last month`,
-        trend:
-          (metrics?.total_mrr?.change_percentage || 0) >= 0 ? 'up' : 'down',
+        change: formatChangeText(mrrChangePercentage, mrrChange, false),
+        trend: mrrChangePercentage === null ? 'neutral' as const : (mrrChangePercentage >= 0 ? 'up' : 'down'),
         icon: TrendingUp,
       },
       {
         title: 'Total Customers',
         value: totalCustomersValue.toLocaleString(),
-        change: `${
-          metrics?.total_customers?.change_percentage || 0
-        }% from last month`,
-        trend:
-          (metrics?.total_customers?.change_percentage || 0) >= 0
-            ? 'up'
-            : 'down',
+        change: formatChangeText(customersChangePercentage, customersChange, true),
+        trend: customersChangePercentage === null ? 'neutral' as const : (customersChangePercentage >= 0 ? 'up' : 'down'),
         icon: Users,
       },
       {
