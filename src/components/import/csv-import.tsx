@@ -223,6 +223,18 @@ export function CsvImport() {
           <CardTitle className="text-lg">Upload CSV File</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <Alert className="border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-900/40 dark:bg-blue-950 dark:text-blue-100">
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              <p className="text-sm font-medium mb-1">
+                Backfill earlier Shopify Partner payouts
+              </p>
+              <p className="text-sm">
+                The Shopify Partner API only returns data after the day you connected your integration. Upload CSV exports covering earlier payout dates &mdash; for example, the first weeks of a month &mdash; to restore any missing revenue in your dashboard.
+              </p>
+            </AlertDescription>
+          </Alert>
+
           {!selectedFile && !result && (
             <div className="border-2 border-dashed rounded-lg p-8 text-center">
               <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
