@@ -462,9 +462,7 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
                     Connect Your Platforms
                   </h3>
                   <p className='text-gray-600 text-lg mb-8 leading-relaxed'>
-                    Connect your Stripe or E-conomic accounts to start tracking
-                    your real MRR data. No more mock data - see your actual
-                    business metrics.
+                    Connect your integrations—Shopify Partners, E-conomic, Stripe, or any future platform we support—to pull live revenue and customer data straight into your dashboard.
                   </p>
                 </div>
 

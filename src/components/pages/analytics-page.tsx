@@ -415,9 +415,7 @@ export function AnalyticsPage() {
                     No Analytics Data
                   </h3>
                   <p className='text-gray-600 mb-6'>
-                    Connect your Stripe or E-conomic accounts to see detailed
-                    analytics and revenue insights. No mock data - only your
-                    real business metrics.
+                    Connect your integrations to unlock live analytics and revenue insights powered by your actual business data.
                   </p>
                 </div>
 
