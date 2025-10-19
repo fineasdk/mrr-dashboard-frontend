@@ -16,32 +16,41 @@ import { Button } from '@/components/ui/button';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState('dashboard');
+  const [serverError, setServerError] = useState<string | null>(null);
 
   // Handle URL-based routing
   useEffect(() => {
     const handleRouteChange = () => {
       const path = window.location.pathname;
-      if (path === '/integrations') {
-        setCurrentPage('integrations');
-      } else if (path === '/profile') {
-        setCurrentPage('profile');
-      } else if (path === '/integrations/shopify') {
-        setCurrentPage('shopify-integration');
-      } else if (path === '/customers') {
-        setCurrentPage('customers');
-      } else if (path === '/analytics') {
-        setCurrentPage('analytics');
-      } else if (path === '/settings') {
-        setCurrentPage('settings');
-      } else if (path === '/' || path === '/dashboard') {
-        setCurrentPage('dashboard');
+      switch (path) {
+        case '/integrations':
+          setCurrentPage('integrations');
+          break;
+        case '/profile':
+          setCurrentPage('profile');
+          break;
+        case '/integrations/shopify':
+          setCurrentPage('shopify-integration');
+          break;
+        case '/customers':
+          setCurrentPage('customers');
+          break;
+        case '/analytics':
+          setCurrentPage('analytics');
+          break;
+        case '/settings':
+          setCurrentPage('settings');
+          break;
+        case '/':
+        case '/dashboard':
+        default:
+          setCurrentPage('dashboard');
+          break;
       }
     };
 
-    // Set initial page based on URL
     handleRouteChange();
 
-    // Listen for browser back/forward navigation
     window.addEventListener('popstate', handleRouteChange);
     
     return () => {
@@ -54,14 +63,53 @@ export default function App() {
   const router = useRouter();
 
   useEffect(() => {
-    // Check if user is authenticated
-    const token = localStorage.getItem('auth_token');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-    setIsAuthenticated(true);
-    setLoading(false);
+    const controller = new AbortController();
+
+    const validateSession = async () => {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        router.push('/login');
+        return;
+      }
+
+      const rawUser = localStorage.getItem('user');
+      if (rawUser) {
+        setIsAuthenticated(true);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Session validation failed with status ${response.status}`);
+        }
+
+        const data = await response.json();
+        localStorage.setItem('user', JSON.stringify(data));
+        setIsAuthenticated(true);
+      } catch (err) {
+        console.error('Failed to validate session', err);
+        setServerError('Your session could not be restored. Please log in again.');
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user');
+        router.push('/login');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    validateSession();
+
+    return () => {
+      controller.abort();
+    };
   }, [router]);
 
   const handleLogout = () => {
