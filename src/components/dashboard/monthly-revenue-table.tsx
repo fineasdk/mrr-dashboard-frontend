@@ -41,6 +41,12 @@ interface MonthlyRevenue {
     status: string
     issued_at: string
   }>
+  currency_breakdown?: Record<string, {
+    original_total: number
+    converted_total: number
+    exchange_rate: number | null
+    invoice_count: number
+  }>
 }
 
 interface PlatformData {
@@ -347,6 +353,10 @@ export function MonthlyRevenueTable({
               <TableBody>
               {sortedMonths.map((month) => {
                 const isExpanded = expandedMonths.has(month.month)
+                const computedRevenue = month.currency_breakdown
+                  ? Object.values(month.currency_breakdown).reduce((sum, entry) => sum + entry.converted_total, 0)
+                  : month.revenue
+
                 return (
                   <>
                     <TableRow
@@ -367,7 +377,7 @@ export function MonthlyRevenueTable({
                         {month.month_name}
                       </TableCell>
                       <TableCell className="text-right font-semibold text-green-700">
-                        {formatCurrency(month.revenue, currency)}
+                        {formatCurrency(computedRevenue, currency)}
                       </TableCell>
                       <TableCell className="text-center">
                         <Badge variant="secondary">
@@ -388,8 +398,9 @@ export function MonthlyRevenueTable({
                     {/* Expanded Invoice Details */}
                     {isExpanded && month.invoices.length > 0 && (() => {
                       const { invoices: filteredInvoices, total, hasMore } = getFilteredInvoices(month.month, month.invoices)
-                      const avgInvoice = month.revenue / month.invoice_count
+                      const avgInvoice = month.invoice_count > 0 ? computedRevenue / month.invoice_count : 0
                       const searchTerm = invoiceSearchTerms[month.month] || ''
+                      const currencyBreakdownEntries = month.currency_breakdown ? Object.entries(month.currency_breakdown) : []
                       
                       return (
                         <TableRow>
@@ -416,6 +427,37 @@ export function MonthlyRevenueTable({
                                 </div>
                               </div>
                               
+                              {/* Currency Breakdown */}
+                              {currencyBreakdownEntries.length > 0 && (
+                                <div className="mb-4 p-3 bg-slate-100 border border-slate-200 rounded-lg">
+                                  <h5 className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-2">Currency breakdown</h5>
+                                  <div className="grid gap-2 sm:grid-cols-2">
+                                    {currencyBreakdownEntries.map(([code, breakdown]) => (
+                                      <div key={code} className="rounded-md bg-white border border-slate-200 p-3 text-xs">
+                                        <div className="flex justify-between items-center">
+                                          <span className="font-semibold text-slate-900">{code}</span>
+                                          {typeof breakdown.exchange_rate === 'number' && (
+                                            <span className="text-slate-500">1 {code} = {formatCurrency(breakdown.exchange_rate, currency as Currency)}</span>
+                                          )}
+                                        </div>
+                                        <div className="mt-2 flex justify-between">
+                                          <span className="text-slate-500">Original</span>
+                                          <span className="font-medium">{formatCurrency(breakdown.original_total, code as Currency)}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span className="text-slate-500">Converted</span>
+                                          <span className="font-medium">{formatCurrency(breakdown.converted_total, currency)}</span>
+                                        </div>
+                                        <div className="flex justify-between text-slate-500">
+                                          <span>Invoices</span>
+                                          <span>{breakdown.invoice_count}</span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
                               {/* Search Box */}
                               <div className="mb-3">
                                 <div className="relative">
