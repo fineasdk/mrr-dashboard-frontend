@@ -203,6 +203,9 @@ export const shopifyApi = {
 
   getShopCustomers: (shopDomain: string) =>
     api.get(`/shopify/shops/${shopDomain}/customers`),
+
+  rebuildMonth: (data: { month: string; integration_id?: string }) =>
+    api.post('/shopify/rebuild-month', data),
 }
 
 // E-conomic API

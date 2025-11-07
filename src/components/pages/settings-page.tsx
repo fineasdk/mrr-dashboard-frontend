@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue 
 } from '../ui/select'
+import { ShopifyMonthRebuild } from '../shopify/shopify-month-rebuild'
 
 export function SettingsPage() {
   const [primaryCurrency, setPrimaryCurrency] = useState('DKK')
@@ -45,7 +46,10 @@ export function SettingsPage() {
         </TabsList> */}
 
         <TabsContent value="import">
-          <CsvImport />
+          <div className="space-y-6">
+            <CsvImport />
+            <ShopifyMonthRebuild />
+          </div>
         </TabsContent>
 
         <TabsContent value="preferences">
@@ -116,6 +120,7 @@ export function SettingsPage() {
     </div>
   )
 }
+
 
 
 
