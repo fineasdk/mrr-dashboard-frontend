@@ -245,7 +245,7 @@ export function MonthlyInvoiceDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl overflow-hidden rounded-3xl border border-slate-200 bg-white p-0 shadow-xl">
+      <DialogContent className="w-[95vw] max-w-7xl overflow-hidden rounded-3xl border border-slate-200 bg-white p-0 shadow-xl">
         <div className="flex max-h-[80vh] flex-col">
           <div className="h-1 w-full bg-gradient-to-r from-indigo-500 via-violet-500 to-emerald-500" />
           <DialogHeader className="border-b border-slate-200 bg-white px-6 py-5">
