@@ -23,6 +23,13 @@ import { dashboardApi } from '@/lib/api'
 import { formatCurrency } from '@/lib/currency-service'
 import { Currency } from '@/lib/types'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   ChevronLeft,
   ChevronRight,
   Download,
@@ -88,10 +95,11 @@ export function MonthlyInvoiceDialog({
   monthName,
   currency,
 }: MonthlyInvoiceDialogProps) {
+  const pageSizeOptions = [50, 100, 250, 500] as const
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [page, setPage] = useState(1)
-  const [perPage] = useState(50)
+  const [perPage, setPerPage] = useState<number>(pageSizeOptions[0])
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [data, setData] = useState<InvoiceResponse | null>(null)
@@ -172,6 +180,14 @@ export function MonthlyInvoiceDialog({
     }
   }
 
+  const handlePageSizeChange = (value: string) => {
+    const parsed = Number(value)
+    if (!Number.isNaN(parsed) && parsed > 0) {
+      setPage(1)
+      setPerPage(parsed)
+    }
+  }
+
   const handleExport = () => {
     if (!data || data.invoices.length === 0) return
 
@@ -229,56 +245,64 @@ export function MonthlyInvoiceDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl">
-        <DialogHeader>
-          <DialogTitle className="flex flex-col gap-1">
-            <span>Invoices for {platformLabel}</span>
-            <span className="text-base font-normal text-muted-foreground">
+      <DialogContent className="max-w-6xl overflow-hidden border border-slate-200 bg-white p-0 shadow-2xl">
+        <DialogHeader className="bg-gradient-to-r from-indigo-600 via-violet-600 to-emerald-600 px-6 py-5 text-white">
+          <DialogTitle className="flex flex-col gap-1 text-white">
+            <span className="text-lg font-semibold uppercase tracking-wide text-white/80">{platformLabel}</span>
+            <span className="text-3xl font-bold leading-tight">
               {monthLabel || 'All invoices'}
             </span>
           </DialogTitle>
-          <DialogDescription>
-            Review every invoice that makes up the monthly revenue. Use search,
-            pagination, and export for reconciliation.
+          <DialogDescription className="text-sm text-white/85">
+            Every invoice, currency, and refund contributing to this month&rsquo;s revenue. Use search, pagination, or export for deeper reconciliation.
           </DialogDescription>
         </DialogHeader>
 
         {!platform || !month ? (
-          <div className="py-10 text-center text-sm text-muted-foreground">
+          <div className="bg-slate-50 px-6 py-10 text-center text-sm text-muted-foreground">
             Missing context to load invoices.
           </div>
         ) : error ? (
-          <div className="py-10 text-center text-sm text-red-600">{error}</div>
+          <div className="bg-slate-50 px-6 py-10 text-center text-sm text-red-600">{error}</div>
         ) : loading && !data ? (
-          <div className="py-10 text-center text-sm text-muted-foreground">
+          <div className="bg-slate-50 px-6 py-10 text-center text-sm text-muted-foreground">
             <Loader2 className="mx-auto h-6 w-6 animate-spin" />
             <p className="mt-3">Loading invoices…</p>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-6 bg-slate-50 px-6 py-6">
             {/* Summary */}
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                <p className="text-xs font-semibold uppercase text-slate-500">
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="rounded-2xl border border-white/60 bg-white/90 p-5 shadow-sm backdrop-blur">
+                <p className="flex items-center justify-between text-xs font-semibold uppercase text-slate-500">
                   Total invoices
+                  <Badge variant="secondary" className="rounded-full bg-slate-100 text-slate-600">
+                    {data?.meta.total_pages ?? 1} pages
+                  </Badge>
                 </p>
-                <p className="mt-2 text-2xl font-bold text-slate-900">
+                <p className="mt-3 text-3xl font-bold text-slate-900">
                   {totalInvoices.toLocaleString()}
                 </p>
+                <p className="text-xs text-slate-500">
+                  Browse everything with search, pagination, and export.
+                </p>
               </div>
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-                <p className="text-xs font-semibold uppercase text-emerald-600">
+              <div className="rounded-2xl border border-emerald-200/60 bg-gradient-to-br from-emerald-50 to-white p-5 shadow-sm">
+                <p className="text-xs font-semibold uppercase text-emerald-700">
                   Converted revenue
                 </p>
-                <p className="mt-2 text-2xl font-bold text-emerald-700">
+                <p className="mt-3 text-3xl font-bold text-emerald-700">
                   {totalConverted}
                 </p>
-              </div>
-              <div className="rounded-lg border border-slate-200 bg-white p-4">
-                <p className="text-xs font-semibold uppercase text-slate-500">
-                  Page
+                <p className="text-xs text-emerald-700/70">
+                  Includes refunds and multi-currency conversions.
                 </p>
-                <p className="mt-2 text-2xl font-bold text-slate-900">
+              </div>
+              <div className="rounded-2xl border border-white/60 bg-white p-5 shadow-sm">
+                <p className="text-xs font-semibold uppercase text-slate-500">
+                  Currently viewing
+                </p>
+                <p className="mt-3 text-3xl font-bold text-slate-900">
                   {data?.meta.page ?? 1} / {data?.meta.total_pages ?? 1}
                 </p>
                 <p className="text-xs text-slate-500">
@@ -289,15 +313,15 @@ export function MonthlyInvoiceDialog({
 
             {/* Currency breakdown */}
             {currencyBreakdown.length > 0 && (
-              <div className="rounded-lg border border-slate-200 bg-white p-4">
-                <h4 className="text-sm font-semibold text-slate-800">
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-700">
                   Currency breakdown
                 </h4>
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {currencyBreakdown.map(([code, breakdown]) => (
                     <div
                       key={code}
-                      className="rounded-md border border-slate-200 bg-slate-50 p-3 text-sm"
+                      className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 text-sm shadow-sm"
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-semibold text-slate-900">
@@ -332,42 +356,65 @@ export function MonthlyInvoiceDialog({
             )}
 
             {/* Controls */}
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="relative w-full sm:max-w-xs">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <Input
-                  placeholder="Search by customer or invoice number"
-                  value={search}
-                  onChange={(event) => {
-                    setPage(1)
-                    setSearch(event.target.value)
-                  }}
-                  className="pl-9"
-                />
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center">
+                <div className="relative w-full sm:w-72">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Input
+                    placeholder="Search by customer or invoice number"
+                    value={search}
+                    onChange={(event) => {
+                      setPage(1)
+                      setSearch(event.target.value)
+                    }}
+                    className="h-11 rounded-full border-slate-200 pl-9 shadow-sm"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                    Rows per page
+                  </span>
+                  <Select value={String(perPage)} onValueChange={handlePageSizeChange}>
+                    <SelectTrigger className="w-28 rounded-full border-slate-200 shadow-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {pageSizeOptions.map((size) => (
+                        <SelectItem key={size} value={String(size)}>
+                          {size}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleExport}
-                disabled={!data || data.invoices.length === 0}
-              >
-                <Download className="mr-2 h-4 w-4" /> Export CSV
-              </Button>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExport}
+                  className="h-11 rounded-full border-slate-200 px-5 shadow-sm"
+                  disabled={!data || data.invoices.length === 0}
+                >
+                  <Download className="mr-2 h-4 w-4" /> Export CSV
+                </Button>
+              </div>
             </div>
 
             {/* Table */}
-            <div className="rounded-lg border border-slate-200 bg-white">
-              <div className="max-h-[420px] overflow-y-auto">
+            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="max-h-[460px] overflow-y-auto">
                 <Table>
-                  <TableHeader className="bg-slate-50">
-                    <TableRow>
-                      <TableHead>Invoice</TableHead>
-                      <TableHead>Customer</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Issued</TableHead>
-                      <TableHead>Occurred</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
+                  <TableHeader>
+                    <TableRow className="bg-slate-100">
+                      <TableHead className="sticky top-0 z-10 bg-slate-100">Invoice</TableHead>
+                      <TableHead className="sticky top-0 z-10 bg-slate-100">Customer</TableHead>
+                      <TableHead className="sticky top-0 z-10 bg-slate-100">Status</TableHead>
+                      <TableHead className="sticky top-0 z-10 bg-slate-100">Issued</TableHead>
+                      <TableHead className="sticky top-0 z-10 bg-slate-100">Occurred</TableHead>
+                      <TableHead className="sticky top-0 z-10 bg-slate-100 text-right">Amount</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -379,7 +426,10 @@ export function MonthlyInvoiceDialog({
                       </TableRow>
                     ) : data && data.invoices.length > 0 ? (
                       data.invoices.map((invoice, index) => (
-                        <TableRow key={`${invoice.invoice_number}-${index}`}>
+                        <TableRow
+                          key={`${invoice.invoice_number}-${index}`}
+                          className="hover:bg-slate-50/80"
+                        >
                           <TableCell>
                             <div className="text-sm font-medium text-slate-900">
                               {invoice.invoice_number ?? 'N/A'}
@@ -397,14 +447,14 @@ export function MonthlyInvoiceDialog({
                           <TableCell>
                             <div className="flex flex-col gap-1">
                               {invoice.type && (
-                                <Badge variant="secondary" className="w-fit text-xs capitalize">
+                                <Badge variant="secondary" className="w-fit rounded-full bg-slate-200/70 text-xs capitalize text-slate-600">
                                   {invoice.type}
                                 </Badge>
                               )}
                               {invoice.status && (
                                 <Badge
                                   variant={invoice.status === 'paid' ? 'default' : 'secondary'}
-                                  className={`w-fit text-xs capitalize ${invoice.status === 'paid' ? 'bg-emerald-600 hover:bg-emerald-700' : ''}`}
+                                  className={`w-fit rounded-full text-xs capitalize ${invoice.status === 'paid' ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-slate-200/60 text-slate-600'}`}
                                 >
                                   {invoice.status}
                                 </Badge>
@@ -435,11 +485,11 @@ export function MonthlyInvoiceDialog({
             </div>
 
             {/* Pagination */}
-            {data && data.meta.total_pages > 1 && (
-              <div className="flex items-center justify-between text-sm text-slate-600">
+            {data && (
+              <div className="flex flex-col gap-3 text-sm text-slate-600 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                   Showing {startIndex}-{endIndex} of {data.meta.total} invoices
-                  {debouncedSearch && ` for "${debouncedSearch}"`}
+                  {debouncedSearch && ` for "${debouncedSearch}"`}. Use the pager to review every record.
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
@@ -447,6 +497,7 @@ export function MonthlyInvoiceDialog({
                     variant="outline"
                     size="sm"
                     onClick={() => handlePageChange('prev')}
+                    className="rounded-full px-4"
                     disabled={page === 1 || loading}
                   >
                     <ChevronLeft className="mr-1 h-4 w-4" /> Previous
@@ -456,6 +507,7 @@ export function MonthlyInvoiceDialog({
                     variant="outline"
                     size="sm"
                     onClick={() => handlePageChange('next')}
+                    className="rounded-full px-4"
                     disabled={page === data.meta.total_pages || loading}
                   >
                     Next <ChevronRight className="ml-1 h-4 w-4" />
