@@ -33,7 +33,7 @@ import {
   Pie,
   Cell,
 } from 'recharts'
-import { formatCurrency } from '../../lib/mock-data'
+import { formatCurrency } from '../../lib/currency-service'
 import { dashboardApi, integrationsApi } from '../../lib/api'
 import { CurrencySelector } from '../dashboard/currency-selector'
 import { Currency } from '../../lib/types'

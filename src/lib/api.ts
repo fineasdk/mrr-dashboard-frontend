@@ -97,6 +97,26 @@ export const dashboardApi = {
     granularity?: string
     currency?: string
   }) => api.get('/dashboard/analytics', { params }),
+
+  getMonthlyInvoices: (params: {
+    platform: string
+    month: string
+    currency?: string
+    page?: number
+    per_page?: number
+    search?: string
+  }) =>
+    api.get(
+      `/dashboard/monthly-revenue/${params.platform}/${params.month}/invoices`,
+      {
+        params: {
+          currency: params.currency,
+          page: params.page,
+          per_page: params.per_page,
+          search: params.search,
+        },
+      }
+    ),
 }
 
 // Auth API

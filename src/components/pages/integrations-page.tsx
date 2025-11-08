@@ -129,6 +129,17 @@ interface Integration {
   customer_count: number
   revenue: number
   last_sync_at: string | null
+  currency?: string
+  original_currency?: string
+  original_revenue?: number
+  primary_currency?: string
+  using_fallback?: boolean
+  currency_breakdown?: Record<string, {
+    original_total: number
+    converted_total: number
+    exchange_rate: number | null
+    invoice_count?: number
+  }>
 }
 
 interface StripeCredentials {
@@ -490,6 +501,15 @@ export function IntegrationsPage({ onNavigateToShopify }: IntegrationsPageProps 
                     .includes(platform.name.toLowerCase())
               )
 
+              const lastSyncLabel = existingIntegration?.last_sync_at
+                ? (() => {
+                    const parsed = Date.parse(existingIntegration.last_sync_at)
+                    return Number.isNaN(parsed)
+                      ? existingIntegration.last_sync_at
+                      : new Date(parsed).toLocaleString()
+                  })()
+                : null
+
               return (
                 <div key={platform.key} className={`card-elevated relative overflow-hidden animate-scale-in delay-${index * 100}`}>
                   <div className='p-6 pb-4'>
@@ -552,16 +572,39 @@ export function IntegrationsPage({ onNavigateToShopify }: IntegrationsPageProps 
                             )}
                           </span>
                         </div>
-                        {existingIntegration.last_sync_at && (
+                        {existingIntegration.using_fallback && (
+                          <p className='text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1'>
+                            Estimated from recent invoices while subscription data finalizes.
+                          </p>
+                        )}
+                        {existingIntegration.currency_breakdown && (
+                          <div className='mt-3 space-y-1 rounded-md border border-slate-200 bg-slate-50 p-3 text-xs'>
+                            {Object.entries(existingIntegration.currency_breakdown).map(([code, breakdown]) => {
+                              const supportedCurrencies = ['DKK', 'EUR', 'USD'] as Currency[]
+                              const displayCurrency = supportedCurrencies.includes(code as Currency)
+                                ? (code as Currency)
+                                : selectedCurrency
+
+                              return (
+                                <div key={code} className='flex items-center justify-between text-slate-600'>
+                                  <span className='font-semibold text-slate-700'>{code}</span>
+                                  <span className='text-right'>
+                                    {formatCurrency(breakdown.converted_total, selectedCurrency)}
+                                    <span className='ml-2 text-slate-500'>
+                                      ({formatCurrency(breakdown.original_total, displayCurrency)})
+                                    </span>
+                                  </span>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )}
+                        {lastSyncLabel && (
                           <div className='flex justify-between items-center'>
                             <span className='text-sm font-medium'>
                               Last Sync:
                             </span>
-                            <span className='text-sm text-gray-600'>
-                              {new Date(
-                                existingIntegration.last_sync_at
-                              ).toLocaleDateString()}
-                            </span>
+                            <span className='text-sm text-gray-600'>{lastSyncLabel}</span>
                           </div>
                         )}
                       </div>

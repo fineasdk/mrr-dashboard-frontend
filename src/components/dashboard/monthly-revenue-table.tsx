@@ -24,8 +24,9 @@ import {
   FileText,
 } from 'lucide-react'
 import { api } from '@/lib/api'
-import { formatCurrency } from '@/lib/mock-data'
+import { formatCurrency } from '@/lib/currency-service'
 import { Currency } from '@/lib/types'
+import { MonthlyInvoiceDialog } from './monthly-invoice-dialog'
 
 interface MonthlyRevenue {
   month: string
@@ -47,6 +48,10 @@ interface MonthlyRevenue {
     exchange_rate: number | null
     invoice_count: number
   }>
+  invoice_sampled?: number
+  invoice_sample_limit?: number
+  has_more_invoices?: boolean
+  invoices_endpoint?: string
 }
 
 interface PlatformData {
@@ -76,6 +81,13 @@ export function MonthlyRevenueTable({
   // Pagination and search states for expanded invoice details
   const [invoiceSearchTerms, setInvoiceSearchTerms] = useState<Record<string, string>>({})
   const [invoiceLimits, setInvoiceLimits] = useState<Record<string, number>>({})
+  const [fullInvoiceView, setFullInvoiceView] = useState<{
+    open: boolean
+    platform?: string
+    platformName?: string
+    month?: string
+    monthName?: string
+  }>({ open: false })
   const INITIAL_INVOICE_LIMIT = 10
   const LOAD_MORE_AMOUNT = 20
 
@@ -136,6 +148,22 @@ export function MonthlyRevenueTable({
       ...prev,
       [monthKey]: (prev[monthKey] || INITIAL_INVOICE_LIMIT) + LOAD_MORE_AMOUNT
     }))
+  }
+
+  const openFullInvoiceDialog = (month: MonthlyRevenue) => {
+    if (!selectedPlatform || !platformData) return
+
+    setFullInvoiceView({
+      open: true,
+      platform: selectedPlatform,
+      platformName: platformData.platform_name,
+      month: month.month,
+      monthName: month.month_name,
+    })
+  }
+
+  const closeFullInvoiceDialog = () => {
+    setFullInvoiceView({ open: false })
   }
   
   const updateInvoiceSearch = (monthKey: string, searchTerm: string) => {
@@ -401,6 +429,8 @@ export function MonthlyRevenueTable({
                       const avgInvoice = month.invoice_count > 0 ? computedRevenue / month.invoice_count : 0
                       const searchTerm = invoiceSearchTerms[month.month] || ''
                       const currencyBreakdownEntries = month.currency_breakdown ? Object.entries(month.currency_breakdown) : []
+                      const previewCount = Math.min(month.invoice_sampled ?? month.invoices.length, month.invoice_count)
+                      const hasMoreInvoices = Boolean(month.has_more_invoices)
                       
                       return (
                         <TableRow>
@@ -413,15 +443,16 @@ export function MonthlyRevenueTable({
                                     <FileText className="w-4 h-4" />
                                     Invoice Details
                                   </h4>
-                                  <div className="flex gap-3 text-xs text-slate-600">
+                                  <div className="flex gap-3 text-xs text-slate-600 flex-wrap">
                                     <span className="flex items-center gap-1">
                                       <TrendingUp className="w-3 h-3" />
                                       Avg: {formatCurrency(avgInvoice, currency)}
                                     </span>
                                     <span>•</span>
                                     <span>
-                                      {total} {total === 1 ? 'invoice' : 'invoices'}
-                                      {searchTerm && ` (filtered)`}
+                                      Previewing {previewCount} of {month.invoice_count} invoices
+                                      {hasMoreInvoices ? ' (full list available)' : ''}
+                                      {searchTerm && ` • Filter: "${searchTerm}"`}
                                     </span>
                                   </div>
                                 </div>
@@ -542,6 +573,21 @@ export function MonthlyRevenueTable({
                                       {searchTerm && ` matching "${searchTerm}"`}
                                     </div>
                                   )}
+
+                                  {hasMoreInvoices && (
+                                    <div className="pt-4 text-center">
+                                      <Button
+                                        variant="default"
+                                        size="sm"
+                                        onClick={() => openFullInvoiceDialog(month)}
+                                      >
+                                        View all invoices
+                                      </Button>
+                                      <p className="mt-2 text-xs text-slate-500">
+                                        Opens the full invoice explorer with search, pagination, and export.
+                                      </p>
+                                    </div>
+                                  )}
                                 </div>
                               ) : (
                                 <div className="py-8 text-center text-sm text-slate-500">
@@ -586,6 +632,23 @@ export function MonthlyRevenueTable({
           </div>
         )}
       </CardContent>
+      {fullInvoiceView.open &&
+        fullInvoiceView.platform &&
+        fullInvoiceView.month && (
+          <MonthlyInvoiceDialog
+            open={fullInvoiceView.open}
+            onOpenChange={(isOpen) => {
+              if (!isOpen) {
+                closeFullInvoiceDialog()
+              }
+            }}
+            platform={fullInvoiceView.platform}
+            platformName={fullInvoiceView.platformName}
+            month={fullInvoiceView.month}
+            monthName={fullInvoiceView.monthName}
+            currency={currency}
+          />
+        )}
     </Card>
   )
 }
