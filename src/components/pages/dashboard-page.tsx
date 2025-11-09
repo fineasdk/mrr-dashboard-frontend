@@ -259,23 +259,31 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
     const customersChangePercentage = metrics?.total_customers?.change_percentage ?? null
     const customersChange = metrics?.total_customers?.change ?? null
 
-    // Fallback: Calculate from integrations data (same as integrations page)
-    const fallbackMrrValue = integrations.reduce(
-      (sum, integration) => sum + (integration.revenue || 0),
-      0
-    )
-    const fallbackCustomersValue = integrations.reduce(
+    // Fallback: Calculate from integrations data using precise currency breakdowns
+    const integrationMrrValue = integrations.reduce((sum, integration) => {
+      if (integration.currency_breakdown) {
+        const convertedTotal = Object.values(integration.currency_breakdown).reduce(
+          (currencySum, entry) => currencySum + (entry?.converted_total ?? 0),
+          0
+        )
+        return sum + convertedTotal
+      }
+      return sum + (integration.revenue || 0)
+    }, 0)
+
+    const integrationCustomerCount = integrations.reduce(
       (sum, integration) => sum + (integration.customer_count || 0),
       0
     )
 
-    // Use API data if available, otherwise fall back to integration calculation
-    const totalMrrValue = apiMrrValue > 0 ? apiMrrValue : fallbackMrrValue
-    const totalCustomersValue = apiCustomersValue > 0 ? apiCustomersValue : fallbackCustomersValue
+    // Use API data when present, otherwise rely on integration aggregation
+    const totalMrrValue = apiMrrValue && apiMrrValue > 0 ? apiMrrValue : integrationMrrValue
+    const totalCustomersValue =
+      apiCustomersValue && apiCustomersValue > 0 ? apiCustomersValue : integrationCustomerCount
 
     console.log('📈 Metrics comparison:', {
       api: { mrr: apiMrrValue, customers: apiCustomersValue },
-      fallback: { mrr: fallbackMrrValue, customers: fallbackCustomersValue },
+      integrationDerived: { mrr: integrationMrrValue, customers: integrationCustomerCount },
       final: { mrr: totalMrrValue, customers: totalCustomersValue },
       changes: { mrrChangePercentage, mrrChange, customersChangePercentage, customersChange }
     })
