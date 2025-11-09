@@ -366,22 +366,36 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
 
   const metricsData = getMetricsData()
 
+  const resolveIntegrationRevenue = (integration: Integration): number => {
+    if (integration.currency_breakdown) {
+      return Object.values(integration.currency_breakdown).reduce(
+        (sum, entry) => sum + (entry?.converted_total ?? 0),
+        0
+      )
+    }
+    return integration.revenue || 0
+  }
+
+  const totalIntegrationRevenue = integrations.reduce(
+    (sum, integration) => sum + resolveIntegrationRevenue(integration),
+    0
+  )
+
   // Get platform breakdown from integrations
   const platformBreakdown = integrations.map((integration) => {
     const config = platformConfig[
       integration.platform as keyof typeof platformConfig
     ] || { name: integration.platform_name, icon: '🔗', color: 'gray' }
-    const totalRevenue = integrations.reduce(
-      (sum, int) => sum + (int.revenue || 0),
-      0
-    )
+    const integrationRevenue = resolveIntegrationRevenue(integration)
     const percentage =
-      totalRevenue > 0 ? ((integration.revenue || 0) / totalRevenue) * 100 : 0
+      totalIntegrationRevenue > 0
+        ? (integrationRevenue / totalIntegrationRevenue) * 100
+        : 0
 
     return {
       platform: config.name,
       icon: config.icon,
-      revenue: integration.revenue || 0,
+      revenue: integrationRevenue,
       customers: integration.customer_count || 0,
       percentage: Math.round(percentage * 10) / 10,
       color: config.color,
@@ -643,6 +657,60 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
                 </div>
               )}
 
+              {/* Enhanced MRR Trend Chart */}
+              <div className='card-elevated animate-slide-up delay-200'>
+                <div className='p-6 border-b border-slate-100'>
+                  <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
+                    <div className='flex items-center gap-3'>
+                      <div className='w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center'>
+                        <TrendingUp className='w-5 h-5 text-white' />
+                      </div>
+                      <div>
+                        <h3 className='text-lg font-semibold text-slate-900'>MRR Trend</h3>
+                        <p className='text-sm text-slate-500'>Monthly recurring revenue over time</p>
+                      </div>
+                    </div>
+                    <div className='flex items-center space-x-2'>
+                      <Button variant='outline' size='sm' className='btn-secondary'>
+                        <Download className='mr-2 h-4 w-4' />
+                        Export
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                <div className='p-6'>
+                  {mrrTrend && mrrTrend.length > 0 ? (
+                    <MRRChart
+                      data={mrrTrend.map((item) => ({
+                        month: item.date,
+                        date: item.date,
+                        mrr: item.value,
+                        value: item.value,
+                        growth: 0,
+                        newRevenue: 0,
+                        churn: 0,
+                        netNew: 0,
+                        customers: 0,
+                        currency: selectedCurrency,
+                      }))}
+                      currency={selectedCurrency}
+                    />
+                  ) : (
+                    <div className='text-center py-12 animate-fade-in'>
+                      <div className='w-16 h-16 bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl flex items-center justify-center mx-auto mb-4'>
+                        <TrendingUp className='w-8 h-8 text-slate-400' />
+                      </div>
+                      <p className='text-slate-600 font-medium mb-2'>
+                        No MRR data available
+                      </p>
+                      <p className='text-sm text-slate-500'>
+                        Connect integrations and sync data to see your MRR trend
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
     
 
               {/* Enhanced Platform Breakdown */}
@@ -730,60 +798,6 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
                   </div>
                 </div>
               )}
-
-              {/* Enhanced MRR Trend Chart */}
-              <div className='card-elevated animate-slide-up delay-300'>
-                <div className='p-6 border-b border-slate-100'>
-                  <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
-                    <div className='flex items-center gap-3'>
-                      <div className='w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center'>
-                        <TrendingUp className='w-5 h-5 text-white' />
-                      </div>
-                      <div>
-                        <h3 className='text-lg font-semibold text-slate-900'>MRR Trend</h3>
-                        <p className='text-sm text-slate-500'>Monthly recurring revenue over time</p>
-                      </div>
-                    </div>
-                    <div className='flex items-center space-x-2'>
-                      <Button variant='outline' size='sm' className='btn-secondary'>
-                        <Download className='mr-2 h-4 w-4' />
-                        Export
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-                <div className='p-6'>
-                  {mrrTrend && mrrTrend.length > 0 ? (
-                    <MRRChart
-                      data={mrrTrend.map((item) => ({
-                        month: item.date,
-                        date: item.date,
-                        mrr: item.value,
-                        value: item.value,
-                        growth: 0,
-                        newRevenue: 0,
-                        churn: 0,
-                        netNew: 0,
-                        customers: 0,
-                        currency: selectedCurrency,
-                      }))}
-                      currency={selectedCurrency}
-                    />
-                  ) : (
-                    <div className='text-center py-12 animate-fade-in'>
-                      <div className='w-16 h-16 bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl flex items-center justify-center mx-auto mb-4'>
-                        <TrendingUp className='w-8 h-8 text-slate-400' />
-                      </div>
-                      <p className='text-slate-600 font-medium mb-2'>
-                        No MRR data available
-                      </p>
-                      <p className='text-sm text-slate-500'>
-                        Connect integrations and sync data to see your MRR trend
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
 
               {/* Monthly Revenue Breakdown Table for Bookkeeping */}
               {hasIntegrations && (
