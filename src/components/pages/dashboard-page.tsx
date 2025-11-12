@@ -25,6 +25,7 @@ import { MonthlyRevenueTable } from '../dashboard/monthly-revenue-table'
 import { Button } from '../ui/button'
 import { Alert, AlertDescription } from '../ui/alert'
 import { Badge } from '../ui/badge'
+import { Switch } from '../ui/switch'
 import { Currency } from '../../lib/types'
 import { dashboardApi, integrationsApi } from '../../lib/api'
 import { formatCurrency } from '../../lib/currency-service'
@@ -37,6 +38,14 @@ const platformConfig = {
   economic: { name: 'E-conomic', icon: '🔗', color: 'blue' },
   shopify: { name: 'Shopify', icon: '🛒', color: 'green' },
   stripe: { name: 'Stripe', icon: '💳', color: 'purple' },
+}
+
+const parseIncludeUsage = (value: unknown): boolean => {
+  if (typeof value === 'string') {
+    return ['1', 'true', 'yes', 'on'].includes(value.toLowerCase())
+  }
+
+  return Boolean(value)
 }
 
 interface Metrics {
@@ -89,6 +98,7 @@ interface DashboardPageProps {
 
 export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps = {}) {
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>('DKK')
+  const [includeUsage, setIncludeUsage] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [metrics, setMetrics] = useState<Metrics | null>(null)
@@ -117,7 +127,10 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
       console.log('🔍 Auth Token:', token ? token.substring(0, 20) + '...' : 'No token')
       
       const [metricsResponse, integrationsResponse] = await Promise.all([
-        dashboardApi.getMetrics({ currency: selectedCurrency }),
+        dashboardApi.getMetrics({
+          currency: selectedCurrency,
+          include_usage: includeUsage,
+        }),
         integrationsApi.getAll({ currency: selectedCurrency }),
       ])
 
@@ -131,6 +144,14 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
         console.log('✅ Setting metrics:', data.metrics)
         setMetrics(data.metrics)
         setMrrTrend(data.mrr_trend || [])
+
+        const includeUsageFromApi = parseIncludeUsage(data.filters?.include_usage)
+        if (
+          data.filters?.include_usage !== undefined &&
+          includeUsageFromApi !== includeUsage
+        ) {
+          setIncludeUsage(includeUsageFromApi)
+        }
       } else {
         console.log('❌ Metrics response not successful:', metricsResponse.data)
       }
@@ -222,7 +243,7 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
     } finally {
       setIsLoading(false)
     }
-  }, [selectedCurrency])
+  }, [selectedCurrency, includeUsage])
 
   useEffect(() => {
     loadDashboardData()
@@ -448,6 +469,16 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
                   <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                   Refresh
                 </Button>
+                <div className='flex w-full items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm sm:w-auto'>
+                  <Switch
+                    id='include-usage-switch'
+                    checked={includeUsage}
+                    onCheckedChange={(checked) => setIncludeUsage(Boolean(checked))}
+                  />
+                  <label htmlFor='include-usage-switch' className='text-sm text-gray-600 whitespace-nowrap'>
+                    Include usage-based payouts
+                  </label>
+                </div>
                 <CurrencySelector
                   currentCurrency={selectedCurrency}
                   onCurrencyChange={setSelectedCurrency}

@@ -88,15 +88,38 @@ api.interceptors.response.use(
 
 // Dashboard API
 export const dashboardApi = {
-  getMetrics: (params?: { currency?: string }) =>
-    api.get('/dashboard/metrics', { params }),
+  getMetrics: (params?: { currency?: string; include_usage?: boolean }) => {
+    const queryParams: Record<string, string | number | undefined> = {
+      currency: params?.currency,
+    }
+
+    if (params?.include_usage !== undefined) {
+      queryParams.include_usage = params.include_usage ? 1 : 0
+    }
+
+    return api.get('/dashboard/metrics', { params: queryParams })
+  },
 
   getAnalytics: (params?: {
     start_date?: string
     end_date?: string
     granularity?: string
     currency?: string
-  }) => api.get('/dashboard/analytics', { params }),
+    include_usage?: boolean
+  }) => {
+    const queryParams: Record<string, string | number | undefined> = {
+      start_date: params?.start_date,
+      end_date: params?.end_date,
+      granularity: params?.granularity,
+      currency: params?.currency,
+    }
+
+    if (params?.include_usage !== undefined) {
+      queryParams.include_usage = params.include_usage ? 1 : 0
+    }
+
+    return api.get('/dashboard/analytics', { params: queryParams })
+  },
 
   getMonthlyInvoices: (params: {
     platform: string

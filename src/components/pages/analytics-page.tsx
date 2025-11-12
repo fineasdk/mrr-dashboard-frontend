@@ -36,6 +36,7 @@ import {
 import { formatCurrency } from '../../lib/currency-service'
 import { dashboardApi, integrationsApi } from '../../lib/api'
 import { CurrencySelector } from '../dashboard/currency-selector'
+import { Switch } from '../ui/switch'
 import { Currency } from '../../lib/types'
 
 // Platform configuration
@@ -43,6 +44,14 @@ const platformConfig = {
   economic: { name: 'E-conomic', icon: '🔗', color: '#3B82F6' },
   shopify: { name: 'Shopify', icon: '🛒', color: '#10B981' },
   stripe: { name: 'Stripe', icon: '💳', color: '#8B5CF6' },
+}
+
+const parseIncludeUsage = (value: unknown): boolean => {
+  if (typeof value === 'string') {
+    return ['1', 'true', 'yes', 'on'].includes(value.toLowerCase())
+  }
+
+  return Boolean(value)
 }
 
 interface Integration {
@@ -82,6 +91,7 @@ interface AnalyticsData {
 
 export function AnalyticsPage() {
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>('DKK')
+  const [includeUsage, setIncludeUsage] = useState(false)
   const [integrations, setIntegrations] = useState<Integration[]>([])
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -103,6 +113,7 @@ export function AnalyticsPage() {
         endDate,
         granularity: 'monthly',
         currency: selectedCurrency,
+        includeUsage,
       })
 
       const [analyticsResponse, integrationsResponse] = await Promise.all([
@@ -111,6 +122,7 @@ export function AnalyticsPage() {
           start_date: startDate,
           end_date: endDate,
           currency: selectedCurrency, // CRITICAL: Pass currency to backend
+          include_usage: includeUsage,
         }),
         integrationsApi.getAll({ currency: selectedCurrency }), // CRITICAL: Pass currency to backend
       ])
@@ -215,6 +227,14 @@ export function AnalyticsPage() {
           monthly_growth: monthlyGrowth,
           customer_trend: customerTrend,
         })
+
+        const includeUsageFromApi = parseIncludeUsage(analyticsResponse.data?.filters?.include_usage)
+        if (
+          analyticsResponse.data?.filters?.include_usage !== undefined &&
+          includeUsageFromApi !== includeUsage
+        ) {
+          setIncludeUsage(includeUsageFromApi)
+        }
       } else {
         // No integrations connected - set empty data
         setAnalyticsData({
@@ -247,7 +267,7 @@ export function AnalyticsPage() {
     } finally {
       setLoading(false)
     }
-  }, [selectedCurrency, dateRange])
+  }, [selectedCurrency, dateRange, includeUsage])
 
   useEffect(() => {
     loadAnalyticsData()
@@ -360,6 +380,19 @@ export function AnalyticsPage() {
           </p>
         </div>
         <div className='flex flex-col sm:flex-row items-stretch sm:items-center gap-3'>
+          <div className='flex w-full items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm sm:w-auto'>
+            <Switch
+              id='analytics-include-usage-switch'
+              checked={includeUsage}
+              onCheckedChange={(checked) => setIncludeUsage(Boolean(checked))}
+            />
+            <label
+              htmlFor='analytics-include-usage-switch'
+              className='text-sm text-gray-600 whitespace-nowrap'
+            >
+              Include usage-based payouts
+            </label>
+          </div>
           <CurrencySelector
             currentCurrency={selectedCurrency}
             onCurrencyChange={setSelectedCurrency}
