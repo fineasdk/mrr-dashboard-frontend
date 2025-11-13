@@ -134,28 +134,89 @@ export function AnalyticsPage() {
           responseData.revenue_breakdown?.by_platform ??
           []
 
-        const platformSource = Array.isArray(platformSourceRaw)
-          ? platformSourceRaw
-          : Object.values(platformSourceRaw)
+        const normalizePlatformEntry = (
+          entry: any,
+          index: number,
+          keyFromObject?: string
+        ): Integration => {
+          if (typeof entry === 'number' && keyFromObject) {
+            const slug = keyFromObject.toLowerCase()
+            return {
+              id: -(index + 1),
+              platform: slug,
+              platform_name:
+                slug === 'economic'
+                  ? 'E-conomic'
+                  : slug === 'shopify'
+                  ? 'Shopify'
+                  : slug === 'stripe'
+                  ? 'Stripe'
+                  : keyFromObject,
+              status: 'active',
+              customer_count: 0,
+              revenue: entry,
+              last_sync_at: null,
+            }
+          }
 
-        const integrationData: Integration[] = platformSource.map(
-          (platform: any, index: number) => ({
-            id: platform.id ?? -(index + 1),
-            platform: platform.platform || 'unknown',
-            platform_name:
-              platform.platform === 'economic'
+          if (entry && typeof entry === 'object') {
+            const slug = (entry.platform || keyFromObject || 'unknown').toLowerCase()
+            const displayName =
+              slug === 'economic'
                 ? 'E-conomic'
-                : platform.platform === 'stripe'
-                ? 'Stripe'
-                : platform.platform === 'shopify'
+                : slug === 'shopify'
                 ? 'Shopify'
-                : 'Unknown Platform',
-            status: platform.status ?? 'active',
-            customer_count: platform.customers ?? platform.customer_count ?? 0,
-            revenue: platform.revenue ?? 0,
-            last_sync_at: platform.last_sync_at ?? null,
-          })
-        )
+                : slug === 'stripe'
+                ? 'Stripe'
+                : entry.platform_name || keyFromObject || 'Unknown Platform'
+
+            const revenueValue =
+              typeof entry.revenue === 'number'
+                ? entry.revenue
+                : typeof entry.total === 'number'
+                ? entry.total
+                : typeof entry.value === 'number'
+                ? entry.value
+                : typeof entry.amount === 'number'
+                ? entry.amount
+                : 0
+
+            const customersValue =
+              entry.customers ?? entry.customer_count ?? entry.total_customers ?? 0
+
+            return {
+              id: entry.id ?? -(index + 1),
+              platform: slug,
+              platform_name: displayName,
+              status: entry.status ?? 'active',
+              customer_count: customersValue,
+              revenue: revenueValue,
+              last_sync_at: entry.last_sync_at ?? null,
+            }
+          }
+
+          return {
+            id: -(index + 1),
+            platform: 'unknown',
+            platform_name: keyFromObject || 'Unknown Platform',
+            status: 'active',
+            customer_count: 0,
+            revenue: typeof entry === 'number' ? entry : 0,
+            last_sync_at: null,
+          }
+        }
+
+        let integrationData: Integration[] = []
+
+        if (Array.isArray(platformSourceRaw)) {
+          integrationData = platformSourceRaw.map((entry, idx) =>
+            normalizePlatformEntry(entry, idx)
+          )
+        } else if (platformSourceRaw && typeof platformSourceRaw === 'object') {
+          integrationData = Object.entries(platformSourceRaw).map(
+            ([key, value], idx) => normalizePlatformEntry(value, idx, key)
+          )
+        }
 
         if (integrationData.length) {
           setIntegrations((prev) => (prev.length > 0 ? prev : integrationData))
