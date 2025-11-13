@@ -272,11 +272,21 @@ export function AnalyticsPage() {
 
           if (currentValue > 0) {
             lastNonZeroMRR = currentValue
+          } else if (previousValue === 0) {
+            lastNonZeroMRR = lastNonZeroMRR
+          }
+
+          const isPreBaseline =
+            firstNonZeroMrrIndex >= 0 && index < firstNonZeroMrrIndex
+          const adjustedGrowth = isPreBaseline ? 0 : growth
+
+          if (isPreBaseline) {
+            lastNonZeroMRR = baselineMRR > 0 ? baselineMRR : lastNonZeroMRR
           }
 
           return {
             month: item.date,
-            growth: Math.round(growth * 10) / 10,
+            growth: Math.round(adjustedGrowth * 10) / 10,
           }
         })
 
