@@ -116,31 +116,53 @@ export function AnalyticsPage() {
         includeUsage,
       })
 
-      const [analyticsResponse, integrationsResponse] = await Promise.all([
-        dashboardApi.getAnalytics({
-          granularity: 'monthly',
-          start_date: startDate,
-          end_date: endDate,
-          currency: selectedCurrency, // CRITICAL: Pass currency to backend
-          include_usage: includeUsage,
-        }),
-        integrationsApi.getAll({ currency: selectedCurrency }), // CRITICAL: Pass currency to backend
-      ])
+      const analyticsResponse = await dashboardApi.getAnalytics({
+        granularity: 'monthly',
+        start_date: startDate,
+        end_date: endDate,
+        currency: selectedCurrency, // CRITICAL: Pass currency to backend
+        include_usage: includeUsage,
+      })
 
-      if (integrationsResponse.data.success) {
-        setIntegrations(integrationsResponse.data.data)
-      }
+      const responseData =
+        analyticsResponse.data?.data ?? analyticsResponse.data ?? null
 
       // Use real analytics data from the API
-      if (
-        analyticsResponse.data &&
-        integrationsResponse.data.success &&
-        integrationsResponse.data.data.length > 0
-      ) {
-        const integrationData = integrationsResponse.data.data
+      if (responseData) {
+        const platformSourceRaw =
+          responseData.platform_breakdown ??
+          responseData.revenue_breakdown?.by_platform ??
+          []
+
+        const platformSource = Array.isArray(platformSourceRaw)
+          ? platformSourceRaw
+          : Object.values(platformSourceRaw)
+
+        const integrationData: Integration[] = platformSource.map(
+          (platform: any, index: number) => ({
+            id: platform.id ?? -(index + 1),
+            platform: platform.platform || 'unknown',
+            platform_name:
+              platform.platform === 'economic'
+                ? 'E-conomic'
+                : platform.platform === 'stripe'
+                ? 'Stripe'
+                : platform.platform === 'shopify'
+                ? 'Shopify'
+                : 'Unknown Platform',
+            status: platform.status ?? 'active',
+            customer_count: platform.customers ?? platform.customer_count ?? 0,
+            revenue: platform.revenue ?? 0,
+            last_sync_at: platform.last_sync_at ?? null,
+          })
+        )
+
+        if (integrationData.length) {
+          setIntegrations((prev) => (prev.length > 0 ? prev : integrationData))
+        }
 
         // Map the real analytics API response
-        const analyticsData = analyticsResponse.data
+        const analyticsData = responseData
 
         // Transform MRR trend data
         const mrrTrend =
@@ -156,14 +178,45 @@ export function AnalyticsPage() {
             customers: item.customers || item.total_customers || 0,
           })) || []
 
+        const firstNonZeroMrrIndex = mrrTrend.findIndex(
+          (point: any) => (point.value || 0) > 0
+        )
+        const firstNonZeroCustomerIndex = customerTrend.findIndex(
+          (point: any) => (point.customers || 0) > 0
+        )
+
+        const baselineMRR =
+          firstNonZeroMrrIndex >= 0
+            ? mrrTrend[firstNonZeroMrrIndex]?.value || 0
+            : mrrTrend[0]?.value || 0
+
+        const baselineCustomers =
+          firstNonZeroCustomerIndex >= 0
+            ? customerTrend[firstNonZeroCustomerIndex]?.customers || 0
+            : customerTrend[0]?.customers || 0
+
         // Calculate monthly growth from MRR trend
+        let lastNonZeroMRR = baselineMRR > 0 ? baselineMRR : null
         const monthlyGrowth = mrrTrend.map((item: any, index: number) => {
-          if (index === 0) return { month: item.date, growth: 0 }
-          const prevValue = mrrTrend[index - 1]?.value || 0
           const currentValue = item.value || 0
+          const previousValue =
+            lastNonZeroMRR !== null
+              ? lastNonZeroMRR
+              : mrrTrend[index - 1]?.value || 0
+
           const growth =
-            prevValue > 0 ? ((currentValue - prevValue) / prevValue) * 100 : 0
-          return { month: item.date, growth: Math.round(growth * 10) / 10 }
+            previousValue > 0
+              ? ((currentValue - previousValue) / previousValue) * 100
+              : 0
+
+          if (currentValue > 0) {
+            lastNonZeroMRR = currentValue
+          }
+
+          return {
+            month: item.date,
+            growth: Math.round(growth * 10) / 10,
+          }
         })
 
         // Use the LAST data point from time-period-filtered trend for totals
@@ -178,9 +231,8 @@ export function AnalyticsPage() {
         const totalMRRInSelectedCurrency = lastMRRValue
 
         // For growth calculations: Compare first vs last in the time period
-        const firstMRRValue = mrrTrend.length > 0 ? mrrTrend[0]?.value || 0 : 0
-        const firstCustomerValue =
-          customerTrend.length > 0 ? customerTrend[0]?.customers || 0 : 0
+        const firstMRRValue = baselineMRR
+        const firstCustomerValue = baselineCustomers
 
         console.log('📊 Analytics Data Calculation:', {
           dateRange,
@@ -208,8 +260,7 @@ export function AnalyticsPage() {
           customer_growth:
             firstCustomerValue > 0 && lastCustomerValue > 0
               ? ((lastCustomerValue - firstCustomerValue) /
-                  firstCustomerValue) *
-                100
+                  firstCustomerValue) * 100
               : 0,
           platform_breakdown: integrationData.map(
             (integration: Integration) => ({
@@ -228,13 +279,25 @@ export function AnalyticsPage() {
           customer_trend: customerTrend,
         })
 
-        const includeUsageFromApi = parseIncludeUsage(analyticsResponse.data?.filters?.include_usage)
+        const includeUsageFromApi = parseIncludeUsage(responseData?.filters?.include_usage)
         if (
-          analyticsResponse.data?.filters?.include_usage !== undefined &&
+          responseData?.filters?.include_usage !== undefined &&
           includeUsageFromApi !== includeUsage
         ) {
           setIncludeUsage(includeUsageFromApi)
         }
+
+        // Kick off background fetch for detailed integrations data
+        integrationsApi
+          .getAll({ currency: selectedCurrency })
+          .then((integrationResponse) => {
+            if (integrationResponse.data.success) {
+              setIntegrations(integrationResponse.data.data)
+            }
+          })
+          .catch((err) => {
+            console.warn('Integrations fetch failed (analytics):', err)
+          })
       } else {
         // No integrations connected - set empty data
         setAnalyticsData({

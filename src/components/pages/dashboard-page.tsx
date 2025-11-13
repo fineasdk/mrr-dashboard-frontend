@@ -126,18 +126,13 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
       console.log('🔍 Selected Currency:', selectedCurrency)
       console.log('🔍 Auth Token:', token ? token.substring(0, 20) + '...' : 'No token')
       
-      const [metricsResponse, integrationsResponse] = await Promise.all([
-        dashboardApi.getMetrics({
-          currency: selectedCurrency,
-          include_usage: includeUsage,
-        }),
-        integrationsApi.getAll({ currency: selectedCurrency }),
-      ])
+      const metricsResponse = await dashboardApi.getMetrics({
+        currency: selectedCurrency,
+        include_usage: includeUsage,
+      })
 
       console.log('📊 Metrics response status:', metricsResponse.status)
       console.log('📊 Metrics response data:', metricsResponse.data)
-      console.log('🔗 Integrations response status:', integrationsResponse.status)
-      console.log('🔗 Integrations response data:', integrationsResponse.data)
 
       if (metricsResponse.data.success) {
         const data = metricsResponse.data.data
@@ -158,20 +153,11 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
 
       let mergedIntegrations: Integration[] = []
 
-      if (integrationsResponse.data.success) {
-        console.log('✅ Integrations API data:', integrationsResponse.data.data)
-        mergedIntegrations = integrationsResponse.data.data
-      } else {
-        console.log(
-          '❌ Integrations response not successful:',
-          integrationsResponse.data
-        )
-      }
-
       if (metricsResponse.data.success && metricsResponse.data.data.integration_status) {
         const integrationStatus = Object.values(
           metricsResponse.data.data.integration_status
-        ).map((integration: any) => ({
+        ).map((integration: any, index: number) => ({
+          id: integration.id ?? -(index + 1),
           platform: integration.platform,
           platform_name:
             integration.platform === 'economic'
@@ -179,7 +165,7 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
               : integration.platform === 'stripe'
               ? 'Stripe'
               : 'Shopify',
-          status: integration.status,
+          status: integration.status ?? 'inactive',
           last_sync_at: integration.last_sync ?? null,
           customer_count: integration.customer_count ?? 0,
           revenue: integration.revenue ?? 0,
@@ -191,37 +177,24 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
           currency_breakdown: integration.currency_breakdown,
         }))
 
-        const integrationMap = new Map<string, Integration>()
-
-        mergedIntegrations.forEach((integration) => {
-          integrationMap.set(integration.platform, integration)
-        })
-
-        integrationStatus.forEach((integration: any) => {
-          const existing = integrationMap.get(integration.platform)
-          integrationMap.set(integration.platform, {
-            id: existing?.id ?? Date.now(),
-            platform: integration.platform,
-            platform_name: existing?.platform_name ?? integration.platform_name,
-            status: integration.status ?? existing?.status ?? 'inactive',
-            last_sync_at: existing?.last_sync_at ?? integration.last_sync_at ?? null,
-            customer_count: integration.customer_count ?? existing?.customer_count ?? 0,
-            revenue: integration.revenue ?? existing?.revenue ?? 0,
-            currency: integration.currency ?? existing?.currency,
-            original_currency: integration.original_currency ?? existing?.original_currency,
-            original_revenue: integration.original_revenue ?? existing?.original_revenue,
-            primary_currency: integration.primary_currency ?? existing?.primary_currency,
-            using_fallback: integration.using_fallback ?? existing?.using_fallback,
-            currency_breakdown: integration.currency_breakdown ?? existing?.currency_breakdown,
-          })
-        })
-
-        mergedIntegrations = Array.from(integrationMap.values())
+        mergedIntegrations = integrationStatus
+        setIntegrations(integrationStatus)
       }
 
-      setIntegrations(mergedIntegrations)
+      // Fetch full integration details asynchronously to avoid blocking dashboard render
+      integrationsApi
+        .getAll({ currency: selectedCurrency })
+        .then((integrationResponse) => {
+          if (integrationResponse.data.success) {
+            setIntegrations(integrationResponse.data.data)
+          } else {
+            console.warn('Integrations response not successful:', integrationResponse.data)
+          }
+        })
+        .catch((err) => {
+          console.warn('Integrations fetch failed:', err)
+        })
 
-      // Only show error if no integrations are connected
       if (!mergedIntegrations.length) {
         setError(
           'No integrations connected. Please connect your platforms to start seeing data.'
