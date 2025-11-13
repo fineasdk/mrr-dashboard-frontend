@@ -716,6 +716,12 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
               </div>
 
     
+                  {/* Monthly Revenue Breakdown Table for Bookkeeping */}
+                  {hasIntegrations && (
+                <div className='animate-slide-up delay-400'>
+                  <MonthlyRevenueTable currency={selectedCurrency} />
+                </div>
+              )}
 
               {/* Enhanced Platform Breakdown */}
               {hasIntegrations && (
@@ -803,12 +809,7 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
                 </div>
               )}
 
-              {/* Monthly Revenue Breakdown Table for Bookkeeping */}
-              {hasIntegrations && (
-                <div className='animate-slide-up delay-400'>
-                  <MonthlyRevenueTable currency={selectedCurrency} />
-                </div>
-              )}
+
             </>
           )}
         </div>
