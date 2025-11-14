@@ -454,16 +454,20 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
 
     if (grossMrrValue && grossMrrValue > 0) {
       const delta = grossMrrValue - totalMrrValue
-      metricsList.splice(1, 0, {
-        title: 'Gross Subscription MRR',
-        value: formatCurrency(grossMrrValue, selectedCurrency),
-        change:
-          delta > 0
-            ? `+${formatCurrency(delta, selectedCurrency)} before Shopify fees`
-            : 'Matches net payout MRR',
-        trend: delta > 0 ? 'up' : 'neutral' as const,
-        icon: DollarSign,
-      })
+      const hasMeaningfulDelta = Math.abs(delta) > 0.01
+
+      if (hasMeaningfulDelta) {
+        metricsList.splice(1, 0, {
+          title: 'Gross Subscription MRR',
+          value: formatCurrency(grossMrrValue, selectedCurrency),
+          change:
+            delta > 0
+              ? `+${formatCurrency(delta, selectedCurrency)} before Shopify fees`
+              : `-${formatCurrency(Math.abs(delta), selectedCurrency)} Shopify fees/refunds`,
+          trend: delta > 0 ? 'up' : 'down' as const,
+          icon: DollarSign,
+        })
+      }
     }
 
     return metricsList
