@@ -2,11 +2,12 @@ import axios from 'axios'
 import { config } from './config'
 
 const API_BASE_URL = config.apiUrl
+const API_TIMEOUT = Number(process.env.NEXT_PUBLIC_API_TIMEOUT_MS ?? 60000)
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: false,
-  timeout: 30000, // 30 second timeout
+  timeout: API_TIMEOUT,
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
