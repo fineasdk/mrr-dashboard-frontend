@@ -60,6 +60,11 @@ interface Metrics {
     currency: string
     formatted: string
   }
+  net_subscription_mrr?: {
+    value: number
+    currency: string
+    formatted: string
+  }
   total_customers: {
     value: number
     change: number
@@ -115,6 +120,7 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   })
   const [includeUsage, setIncludeUsage] = useState(false)
+  const [mrrBasis, setMrrBasis] = useState<'net' | 'gross'>('gross')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [metrics, setMetrics] = useState<Metrics | null>(null)
@@ -146,6 +152,7 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
         currency: selectedCurrency,
         include_usage: includeUsage,
         month: selectedMonth && selectedMonth.length === 7 ? selectedMonth : undefined,
+        mrr_basis: mrrBasis,
       })
 
       console.log('📊 Metrics response status:', metricsResponse.status)
@@ -160,6 +167,11 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
         const responseMonth = data.filters?.month as string | undefined
         if (responseMonth && responseMonth.length === 7 && responseMonth !== selectedMonth) {
           setSelectedMonth(responseMonth)
+        }
+
+        const responseBasis = (data.filters?.mrr_basis as 'net' | 'gross' | undefined) ?? mrrBasis
+        if (responseBasis !== mrrBasis) {
+          setMrrBasis(responseBasis)
         }
 
         const includeUsageFromApi = parseIncludeUsage(data.filters?.include_usage)
@@ -310,7 +322,7 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
     } finally {
       setIsLoading(false)
     }
-  }, [selectedCurrency, includeUsage, selectedMonth])
+  }, [selectedCurrency, includeUsage, selectedMonth, mrrBasis])
 
   useEffect(() => {
     loadDashboardData()
@@ -341,6 +353,7 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
     const apiCustomersValue = metrics?.total_customers?.value || 0
     const arrValue = metrics?.arr?.value || 0
     const grossMrrValue = metrics?.gross_subscription_mrr?.value ?? null
+    const netMrrValue = metrics?.net_subscription_mrr?.value ?? null
     
     // Get change percentages and actual changes
     const mrrChangePercentage = metrics?.total_mrr?.change_percentage ?? null
@@ -360,13 +373,24 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
       return sum + (integration.revenue || 0)
     }, 0)
 
+    const integrationGrossValue = integrations.reduce((sum, integration) => {
+      const gross = typeof integration.gross_revenue === 'number'
+        ? integration.gross_revenue
+        : integration.revenue || 0
+      return sum + gross
+    }, 0)
+
     const integrationCustomerCount = integrations.reduce(
       (sum, integration) => sum + (integration.customer_count || 0),
       0
     )
 
     // Use API data when present, otherwise rely on integration aggregation
-    const totalMrrValue = apiMrrValue && apiMrrValue > 0 ? apiMrrValue : integrationMrrValue
+    const totalMrrValue = apiMrrValue && apiMrrValue > 0
+      ? apiMrrValue
+      : mrrBasis === 'gross'
+        ? integrationGrossValue
+        : integrationMrrValue
     const totalCustomersValue =
       apiCustomersValue && apiCustomersValue > 0 ? apiCustomersValue : integrationCustomerCount
 
@@ -452,22 +476,23 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
       },
     ]
 
-    if (grossMrrValue && grossMrrValue > 0) {
-      const delta = grossMrrValue - totalMrrValue
-      const hasMeaningfulDelta = Math.abs(delta) > 0.01
+    if (
+      netMrrValue !== null &&
+      grossMrrValue !== null &&
+      Math.abs(grossMrrValue - netMrrValue) > 0.01
+    ) {
+      const delta = grossMrrValue - netMrrValue
+      const changeLabel = delta >= 0
+        ? `-${formatCurrency(Math.abs(delta), selectedCurrency)} Shopify fees/refunds`
+        : `+${formatCurrency(Math.abs(delta), selectedCurrency)} adjustments`
 
-      if (hasMeaningfulDelta) {
-        metricsList.splice(1, 0, {
-          title: 'Gross Subscription MRR',
-          value: formatCurrency(grossMrrValue, selectedCurrency),
-          change:
-            delta > 0
-              ? `+${formatCurrency(delta, selectedCurrency)} before Shopify fees`
-              : `-${formatCurrency(Math.abs(delta), selectedCurrency)} Shopify fees/refunds`,
-          trend: delta > 0 ? 'up' : 'down' as const,
-          icon: DollarSign,
-        })
-      }
+      metricsList.splice(1, 0, {
+        title: 'Net Subscription MRR',
+        value: formatCurrency(netMrrValue, selectedCurrency),
+        change: changeLabel,
+        trend: (delta >= 0 ? 'down' : 'up') as const,
+        icon: DollarSign,
+      })
     }
 
     return metricsList
