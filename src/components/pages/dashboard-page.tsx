@@ -485,12 +485,13 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
       const changeLabel = delta >= 0
         ? `-${formatCurrency(Math.abs(delta), selectedCurrency)} Shopify fees/refunds`
         : `+${formatCurrency(Math.abs(delta), selectedCurrency)} adjustments`
+      const trend: 'up' | 'down' = delta >= 0 ? 'down' : 'up'
 
       metricsList.splice(1, 0, {
         title: 'Net Subscription MRR',
         value: formatCurrency(netMrrValue, selectedCurrency),
         change: changeLabel,
-        trend: (delta >= 0 ? 'down' : 'up') as const,
+        trend,
         icon: DollarSign,
       })
     }
