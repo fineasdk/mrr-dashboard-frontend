@@ -55,6 +55,11 @@ interface Metrics {
     change_percentage: number
     formatted: string
   }
+  gross_subscription_mrr?: {
+    value: number
+    currency: string
+    formatted: string
+  }
   total_customers: {
     value: number
     change: number
@@ -79,12 +84,19 @@ interface Integration {
   last_sync_at: string | null
   customer_count: number
   revenue: number
+  gross_revenue?: number
   currency?: string
   original_currency?: string
   original_revenue?: number
   primary_currency?: string
   using_fallback?: boolean
   currency_breakdown?: Record<string, {
+    original_total: number
+    converted_total: number
+    exchange_rate: number | null
+    invoice_count?: number
+  }>
+  gross_currency_breakdown?: Record<string, {
     original_total: number
     converted_total: number
     exchange_rate: number | null
@@ -169,12 +181,14 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
           last_sync_at: integration.last_sync ?? null,
           customer_count: integration.customer_count ?? 0,
           revenue: integration.revenue ?? 0,
+          gross_revenue: integration.gross_revenue ?? integration.revenue ?? 0,
           currency: integration.currency,
           original_currency: integration.original_currency,
           original_revenue: integration.original_revenue,
           primary_currency: integration.primary_currency,
           using_fallback: integration.using_fallback,
           currency_breakdown: integration.currency_breakdown,
+          gross_currency_breakdown: integration.gross_currency_breakdown,
         }))
 
         mergedIntegrations = integrationStatus
@@ -246,6 +260,7 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
     const apiMrrValue = metrics?.total_mrr?.value || 0
     const apiCustomersValue = metrics?.total_customers?.value || 0
     const arrValue = metrics?.arr?.value || 0
+    const grossMrrValue = metrics?.gross_subscription_mrr?.value ?? null
     
     // Get change percentages and actual changes
     const mrrChangePercentage = metrics?.total_mrr?.change_percentage ?? null
@@ -316,7 +331,7 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
       return `${percentageText} from last month`
     }
 
-    return [
+    const metricsList = [
       {
         title: 'Total MRR',
         value: formatCurrency(totalMrrValue, selectedCurrency),
@@ -356,6 +371,22 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
         icon: DollarSign,
       },
     ]
+
+    if (grossMrrValue && grossMrrValue > 0) {
+      const delta = grossMrrValue - totalMrrValue
+      metricsList.splice(1, 0, {
+        title: 'Gross Subscription MRR',
+        value: formatCurrency(grossMrrValue, selectedCurrency),
+        change:
+          delta > 0
+            ? `+${formatCurrency(delta, selectedCurrency)} before Shopify fees`
+            : 'Matches net payout MRR',
+        trend: delta > 0 ? 'up' : 'neutral' as const,
+        icon: DollarSign,
+      })
+    }
+
+    return metricsList
   }
 
   const metricsData = getMetricsData()
