@@ -88,9 +88,10 @@ api.interceptors.response.use(
 
 // Dashboard API
 export const dashboardApi = {
-  getMetrics: (params?: { currency?: string; include_usage?: boolean }) => {
+  getMetrics: (params?: { currency?: string; include_usage?: boolean; month?: string }) => {
     const queryParams: Record<string, string | number | undefined> = {
       currency: params?.currency,
+      month: params?.month,
     }
 
     if (params?.include_usage !== undefined) {

@@ -110,6 +110,10 @@ interface DashboardPageProps {
 
 export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps = {}) {
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>('DKK')
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const now = new Date()
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  })
   const [includeUsage, setIncludeUsage] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -141,6 +145,7 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
       const metricsResponse = await dashboardApi.getMetrics({
         currency: selectedCurrency,
         include_usage: includeUsage,
+        month: selectedMonth && selectedMonth.length === 7 ? selectedMonth : undefined,
       })
 
       console.log('📊 Metrics response status:', metricsResponse.status)
@@ -151,6 +156,11 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
         console.log('✅ Setting metrics:', data.metrics)
         setMetrics(data.metrics)
         setMrrTrend(data.mrr_trend || [])
+
+        const responseMonth = data.filters?.month as string | undefined
+        if (responseMonth && responseMonth.length === 7 && responseMonth !== selectedMonth) {
+          setSelectedMonth(responseMonth)
+        }
 
         const includeUsageFromApi = parseIncludeUsage(data.filters?.include_usage)
         if (
@@ -200,7 +210,59 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
         .getAll({ currency: selectedCurrency })
         .then((integrationResponse) => {
           if (integrationResponse.data.success) {
-            setIntegrations(integrationResponse.data.data)
+            const fetched = Array.isArray(integrationResponse.data.data)
+              ? integrationResponse.data.data
+              : []
+
+            if (fetched.length) {
+              const fetchedByPlatform = new Map(
+                fetched.map((entry: any) => [entry.platform ?? entry.platform_name ?? entry.id, entry])
+              )
+
+              const merged = mergedIntegrations.map((integration) => {
+                const fetchedEntry = fetchedByPlatform.get(integration.platform)
+                  ?? fetchedByPlatform.get(integration.platform_name ?? integration.platform)
+
+                if (!fetchedEntry) {
+                  return integration
+                }
+
+                return {
+                  ...integration,
+                  id: fetchedEntry.id ?? integration.id,
+                  status: fetchedEntry.status ?? integration.status,
+                  last_sync_at: fetchedEntry.last_sync_at ?? fetchedEntry.last_sync ?? integration.last_sync_at,
+                  customer_count: fetchedEntry.customer_count ?? integration.customer_count,
+                }
+              })
+
+              const additional = fetched.filter((entry: any) => {
+                const platformKey = entry.platform ?? entry.platform_name ?? entry.id
+                return !merged.some((integration) => integration.platform === platformKey)
+              })
+
+              const normalizedAdditional = additional.map((entry: any): Integration => ({
+                id: entry.id ?? -Date.now(),
+                platform: entry.platform ?? entry.platform_name ?? 'unknown',
+                platform_name: entry.platform_name ?? entry.platform ?? 'Unknown',
+                status: entry.status ?? 'inactive',
+                last_sync_at: entry.last_sync_at ?? entry.last_sync ?? null,
+                customer_count: entry.customer_count ?? 0,
+                revenue: entry.revenue ?? 0,
+                currency: entry.currency,
+                original_currency: entry.original_currency,
+                original_revenue: entry.original_revenue,
+                primary_currency: entry.primary_currency,
+                using_fallback: entry.using_fallback,
+                currency_breakdown: entry.currency_breakdown,
+                gross_currency_breakdown: entry.gross_currency_breakdown,
+                gross_revenue: entry.gross_revenue,
+              }))
+
+              setIntegrations([...merged, ...normalizedAdditional])
+            } else {
+              setIntegrations(mergedIntegrations)
+            }
           } else {
             console.warn('Integrations response not successful:', integrationResponse.data)
           }
@@ -230,7 +292,7 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
     } finally {
       setIsLoading(false)
     }
-  }, [selectedCurrency, includeUsage])
+  }, [selectedCurrency, includeUsage, selectedMonth])
 
   useEffect(() => {
     loadDashboardData()
@@ -473,6 +535,23 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
                   <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                   Refresh
                 </Button>
+                <div className='flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm'>
+                  <label htmlFor='dashboard-month-picker' className='text-sm text-gray-600 whitespace-nowrap'>
+                    Month
+                  </label>
+                  <input
+                    id='dashboard-month-picker'
+                    type='month'
+                    value={selectedMonth}
+                    onChange={(event) => {
+                      const value = event.target.value
+                      if (value && value.length === 7) {
+                        setSelectedMonth(value)
+                      }
+                    }}
+                    className='text-sm rounded-md border border-gray-200 px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500'
+                  />
+                </div>
                 <div className='flex w-full items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm sm:w-auto'>
                   <Switch
                     id='include-usage-switch'
