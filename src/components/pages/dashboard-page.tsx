@@ -229,35 +229,53 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
 
                 return {
                   ...integration,
-                  id: fetchedEntry.id ?? integration.id,
-                  status: fetchedEntry.status ?? integration.status,
-                  last_sync_at: fetchedEntry.last_sync_at ?? fetchedEntry.last_sync ?? integration.last_sync_at,
-                  customer_count: fetchedEntry.customer_count ?? integration.customer_count,
+                  ...(typeof fetchedEntry === 'object' && fetchedEntry !== null ? {
+                    id: (fetchedEntry as { id?: number }).id ?? integration.id,
+                    status: (fetchedEntry as { status?: Integration['status'] }).status ?? integration.status,
+                    last_sync_at: (fetchedEntry as { last_sync_at?: string | null; last_sync?: string | null }).last_sync_at
+                      ?? (fetchedEntry as { last_sync?: string | null }).last_sync
+                      ?? integration.last_sync_at,
+                    customer_count: (fetchedEntry as { customer_count?: number }).customer_count ?? integration.customer_count,
+                  } : {}),
                 }
               })
 
               const additional = fetched.filter((entry: any) => {
-                const platformKey = entry.platform ?? entry.platform_name ?? entry.id
+                const platformKey = entry?.platform ?? entry?.platform_name ?? entry?.id
+                if (!platformKey) {
+                  return false
+                }
+
                 return !merged.some((integration) => integration.platform === platformKey)
               })
 
-              const normalizedAdditional = additional.map((entry: any): Integration => ({
-                id: entry.id ?? -Date.now(),
-                platform: entry.platform ?? entry.platform_name ?? 'unknown',
-                platform_name: entry.platform_name ?? entry.platform ?? 'Unknown',
-                status: entry.status ?? 'inactive',
-                last_sync_at: entry.last_sync_at ?? entry.last_sync ?? null,
-                customer_count: entry.customer_count ?? 0,
-                revenue: entry.revenue ?? 0,
-                currency: entry.currency,
-                original_currency: entry.original_currency,
-                original_revenue: entry.original_revenue,
-                primary_currency: entry.primary_currency,
-                using_fallback: entry.using_fallback,
-                currency_breakdown: entry.currency_breakdown,
-                gross_currency_breakdown: entry.gross_currency_breakdown,
-                gross_revenue: entry.gross_revenue,
-              }))
+              const normalizedAdditional = additional
+                .filter((entry: unknown): entry is Record<string, unknown> => entry !== null && typeof entry === 'object')
+                .map((entry: Record<string, unknown>) => {
+                  const platform = (entry.platform as string | undefined)
+                    ?? (entry.platform_name as string | undefined)
+                    ?? 'unknown'
+
+                  return {
+                    id: typeof entry.id === 'number' ? entry.id : -Date.now(),
+                    platform,
+                    platform_name: (entry.platform_name as string | undefined) ?? platform,
+                    status: (entry.status as Integration['status']) ?? 'inactive',
+                    last_sync_at: (entry.last_sync_at as string | null | undefined)
+                      ?? (entry.last_sync as string | null | undefined)
+                      ?? null,
+                    customer_count: typeof entry.customer_count === 'number' ? entry.customer_count : 0,
+                    revenue: typeof entry.revenue === 'number' ? entry.revenue : 0,
+                    currency: entry.currency as string | undefined,
+                    original_currency: entry.original_currency as string | undefined,
+                    original_revenue: typeof entry.original_revenue === 'number' ? entry.original_revenue : undefined,
+                    primary_currency: entry.primary_currency as string | undefined,
+                    using_fallback: entry.using_fallback as boolean | undefined,
+                    currency_breakdown: entry.currency_breakdown as Integration['currency_breakdown'],
+                    gross_currency_breakdown: entry.gross_currency_breakdown as Integration['gross_currency_breakdown'],
+                    gross_revenue: typeof entry.gross_revenue === 'number' ? entry.gross_revenue : undefined,
+                  } satisfies Integration
+                })
 
               setIntegrations([...merged, ...normalizedAdditional])
             } else {
