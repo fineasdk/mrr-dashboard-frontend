@@ -386,11 +386,14 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
     )
 
     // Use API data when present, otherwise rely on integration aggregation
-    const totalMrrValue = apiMrrValue && apiMrrValue > 0
+    let totalMrrValue = apiMrrValue && apiMrrValue > 0
       ? apiMrrValue
       : mrrBasis === 'gross'
         ? integrationGrossValue
         : integrationMrrValue
+    if (mrrBasis === 'gross' && grossMrrValue && grossMrrValue > 0) {
+      totalMrrValue = grossMrrValue
+    }
     const totalCustomersValue =
       apiCustomersValue && apiCustomersValue > 0 ? apiCustomersValue : integrationCustomerCount
 
