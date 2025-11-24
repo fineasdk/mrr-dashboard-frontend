@@ -92,6 +92,7 @@ interface AnalyticsData {
 export function AnalyticsPage() {
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>('DKK')
   const [includeUsage, setIncludeUsage] = useState(false)
+  const [mrrBasis] = useState<'net' | 'gross'>('gross')
   const [integrations, setIntegrations] = useState<Integration[]>([])
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -114,6 +115,7 @@ export function AnalyticsPage() {
         granularity: 'monthly',
         currency: selectedCurrency,
         includeUsage,
+        mrrBasis,
       })
 
       const analyticsResponse = await dashboardApi.getAnalytics({
@@ -122,6 +124,7 @@ export function AnalyticsPage() {
         end_date: endDate,
         currency: selectedCurrency, // CRITICAL: Pass currency to backend
         include_usage: includeUsage,
+        mrr_basis: mrrBasis,
       })
 
       const responseData =
@@ -401,7 +404,7 @@ export function AnalyticsPage() {
     } finally {
       setLoading(false)
     }
-  }, [selectedCurrency, dateRange, includeUsage])
+  }, [selectedCurrency, dateRange, includeUsage, forceUpdate, mrrBasis])
 
   useEffect(() => {
     loadAnalyticsData()

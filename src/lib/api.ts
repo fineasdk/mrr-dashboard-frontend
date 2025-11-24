@@ -109,12 +109,14 @@ export const dashboardApi = {
     granularity?: string
     currency?: string
     include_usage?: boolean
+    mrr_basis?: 'net' | 'gross'
   }) => {
     const queryParams: Record<string, string | number | undefined> = {
       start_date: params?.start_date,
       end_date: params?.end_date,
       granularity: params?.granularity,
       currency: params?.currency,
+      mrr_basis: params?.mrr_basis,
     }
 
     if (params?.include_usage !== undefined) {
