@@ -128,6 +128,7 @@ interface Integration {
     | 'disconnected'
   customer_count: number
   revenue: number
+  gross_revenue?: number
   last_sync_at: string | null
   currency?: string
   original_currency?: string
@@ -135,6 +136,12 @@ interface Integration {
   primary_currency?: string
   using_fallback?: boolean
   currency_breakdown?: Record<string, {
+    original_total: number
+    converted_total: number
+    exchange_rate: number | null
+    invoice_count?: number
+  }>
+  gross_currency_breakdown?: Record<string, {
     original_total: number
     converted_total: number
     exchange_rate: number | null
@@ -567,7 +574,7 @@ export function IntegrationsPage({ onNavigateToShopify }: IntegrationsPageProps 
                           <span className='text-sm font-medium'>MRR:</span>
                           <span className='text-sm text-gray-600'>
                             {formatCurrency(
-                              existingIntegration.revenue || 0,
+                              existingIntegration.gross_revenue || existingIntegration.revenue || 0,
                               selectedCurrency
                             )}
                           </span>
