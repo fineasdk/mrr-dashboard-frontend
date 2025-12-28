@@ -646,7 +646,7 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
             <Alert className='bg-green-50 border-green-200'>
               <RefreshCw className='h-4 w-4 text-green-600 animate-spin' />
               <AlertDescription className='text-green-800'>
-                <span className='font-medium'>Syncing data...</span> Updating {autoSyncPlatforms.join(', ')} in the background. Dashboard will refresh automatically.
+                <span className='font-medium'>Syncing all platforms...</span> Updating {autoSyncPlatforms.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(', ')} in the background. Dashboard will refresh automatically.
               </AlertDescription>
             </Alert>
           )}
