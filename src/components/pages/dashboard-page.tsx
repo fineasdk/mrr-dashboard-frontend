@@ -129,6 +129,8 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
   const [mrrTrend, setMrrTrend] = useState<
     Array<{ date: string; value: number }>
   >([])
+  const [isAutoSyncing, setIsAutoSyncing] = useState(false)
+  const [autoSyncPlatforms, setAutoSyncPlatforms] = useState<string[]>([])
 
   const loadDashboardData = useCallback(async () => {
     setIsLoading(true)
@@ -181,6 +183,21 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
           includeUsageFromApi !== includeUsage
         ) {
           setIncludeUsage(includeUsageFromApi)
+        }
+
+        // Handle auto-sync status
+        if (data.sync_status?.syncing && data.sync_status?.auto_synced_platforms?.length > 0) {
+          setIsAutoSyncing(true)
+          setAutoSyncPlatforms(data.sync_status.auto_synced_platforms)
+          console.log('🔄 Auto-sync triggered for:', data.sync_status.auto_synced_platforms)
+
+          // Auto-refresh after 30 seconds to pick up synced data
+          setTimeout(() => {
+            setIsAutoSyncing(false)
+            setAutoSyncPlatforms([])
+            // Reload data to get fresh synced data
+            loadDashboardData()
+          }, 30000)
         }
       } else {
         console.log('❌ Metrics response not successful:', metricsResponse.data)
@@ -622,24 +639,36 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
             </div>
           </div>
 
+          {/* Auto-Syncing Banner */}
+          {isAutoSyncing && autoSyncPlatforms.length > 0 && (
+            <Alert className='bg-green-50 border-green-200'>
+              <RefreshCw className='h-4 w-4 text-green-600 animate-spin' />
+              <AlertDescription className='text-green-800'>
+                <span className='font-medium'>Syncing data...</span> Updating {autoSyncPlatforms.join(', ')} in the background. Dashboard will refresh automatically.
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Sync Info Banner */}
-          <Alert className='bg-blue-50 border-blue-200'>
-            <Info className='h-4 w-4 text-blue-600' />
-            <AlertDescription className='text-blue-800 flex items-center justify-between flex-wrap gap-2'>
-              <span>
-                Not seeing the latest data? Sync your integrations to fetch the most recent transactions.
-              </span>
-              <Button
-                variant='outline'
-                size='sm'
-                className='border-blue-300 text-blue-700 hover:bg-blue-100'
-                onClick={() => onNavigateToIntegrations ? onNavigateToIntegrations() : router.push('/integrations')}
-              >
-                <Link2 className='mr-2 h-4 w-4' />
-                Go to Integrations
-              </Button>
-            </AlertDescription>
-          </Alert>
+          {!isAutoSyncing && (
+            <Alert className='bg-blue-50 border-blue-200'>
+              <Info className='h-4 w-4 text-blue-600' />
+              <AlertDescription className='text-blue-800 flex items-center justify-between flex-wrap gap-2'>
+                <span>
+                  Not seeing the latest data? Sync your integrations to fetch the most recent transactions.
+                </span>
+                <Button
+                  variant='outline'
+                  size='sm'
+                  className='border-blue-300 text-blue-700 hover:bg-blue-100'
+                  onClick={() => onNavigateToIntegrations ? onNavigateToIntegrations() : router.push('/integrations')}
+                >
+                  <Link2 className='mr-2 h-4 w-4' />
+                  Go to Integrations
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Enhanced Loading State */}
           {isLoading && (
