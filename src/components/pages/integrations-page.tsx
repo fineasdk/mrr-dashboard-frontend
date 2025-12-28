@@ -161,6 +161,7 @@ export function IntegrationsPage({ onNavigateToShopify }: IntegrationsPageProps 
   const [integrations, setIntegrations] = useState<Integration[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>('DKK')
   const [autoSync, setAutoSync] = useState(true)
   const [syncFrequency, setSyncFrequency] = useState('15')
@@ -336,7 +337,10 @@ export function IntegrationsPage({ onNavigateToShopify }: IntegrationsPageProps 
   }
 
   const handleEconomicOAuthSuccess = () => {
+    setSuccessMessage('E-conomic connected successfully! Syncing data in background...')
     loadIntegrations() // Refresh the integrations list
+    // Clear success message after 10 seconds
+    setTimeout(() => setSuccessMessage(''), 10000)
   }
 
   const handleStripeConnect = async () => {
@@ -352,7 +356,10 @@ export function IntegrationsPage({ onNavigateToShopify }: IntegrationsPageProps 
       if (response.data.success) {
         setIsStripeDialogOpen(false)
         setStripeCredentials({ secret_key: '' })
+        setSuccessMessage('Stripe connected successfully! Syncing data in background... This may take a few minutes.')
         await loadIntegrations()
+        // Clear success message after 10 seconds
+        setTimeout(() => setSuccessMessage(''), 10000)
       } else {
         setError(
           response.data.message ||
@@ -439,6 +446,14 @@ export function IntegrationsPage({ onNavigateToShopify }: IntegrationsPageProps 
         <Alert className='border-red-200 bg-red-50'>
           <AlertCircle className='h-4 w-4 text-red-600' />
           <AlertDescription className='text-red-700'>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Success Alert */}
+      {successMessage && (
+        <Alert className='border-green-200 bg-green-50'>
+          <CheckCircle className='h-4 w-4 text-green-600' />
+          <AlertDescription className='text-green-700'>{successMessage}</AlertDescription>
         </Alert>
       )}
 
