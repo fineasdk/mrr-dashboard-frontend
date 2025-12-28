@@ -60,7 +60,7 @@ const platformColors = {
   'e-conomic': 'bg-blue-100 text-blue-800',
   economic: 'bg-blue-100 text-blue-800',
   shopify: 'bg-green-100 text-green-800',
-  stripe: 'bg-purple-100 text-purple-800',
+  stripe: 'bg-gray-100 text-gray-800',
 }
 
 // Helper function to get display name for platform
@@ -356,37 +356,37 @@ export function CustomersPage() {
   ).sort()
 
   return (
-    <div className='min-h-screen bg-gray-50'>
+    <div className='page-container-mesh'>
       <div className='layout-container section-padding space-y-6 sm:space-y-8'>
-        {/* Enhanced Header */}
-        <div className='animate-fade-in'>
-          <div className='flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 gap-4'>
-            <div className='space-y-2'>
-              <h1 className='text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900'>
-                Customers
-              </h1>
-              <p className='text-gray-600 text-sm sm:text-base lg:text-lg'>
-                Manage your customer base across all platforms
-              </p>
-            </div>
-            <div className='flex flex-col sm:flex-row items-stretch sm:items-center gap-3'>
-              <CurrencySelector
-                currentCurrency={selectedCurrency}
-                onCurrencyChange={setSelectedCurrency}
-              />
-              <Button size='sm' onClick={loadCustomers} className='btn-secondary'>
-                <RefreshCw className='mr-2 h-4 w-4' />
-                Refresh
-              </Button>
-            </div>
+        {/* Header */}
+        <div className='flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0'>
+          <div>
+            <h1 className='text-2xl font-semibold text-gray-900'>Customers</h1>
+            <p className='text-gray-500 text-sm mt-1'>
+              Manage your customer base across all platforms
+            </p>
+          </div>
+          <div className='flex items-center gap-2'>
+            <CurrencySelector
+              currentCurrency={selectedCurrency}
+              onCurrencyChange={setSelectedCurrency}
+            />
+            <Button
+              size='sm'
+              variant='outline'
+              onClick={loadCustomers}
+            >
+              <RefreshCw className='mr-2 h-4 w-4' />
+              Refresh
+            </Button>
           </div>
         </div>
 
       {/* Error Alert */}
       {error && (
-        <Alert className='border-orange-200 bg-orange-50'>
-          <AlertTriangle className='h-4 w-4 text-orange-600' />
-          <AlertDescription className='text-orange-700'>
+        <Alert className='bg-amber-50 border-amber-200'>
+          <AlertTriangle className='h-4 w-4 text-amber-600' />
+          <AlertDescription className='text-amber-700'>
             {error}
           </AlertDescription>
         </Alert>
@@ -394,68 +394,68 @@ export function CustomersPage() {
 
       {/* Integration Status */}
       {integrations.length > 0 && (
-        <Card>
-          <CardHeader className='pb-4'>
-            <CardTitle className='flex items-center space-x-2'>
-              <Link2 className='h-5 w-5' />
-              <span>Connected Data Sources</span>
-              <Badge variant='secondary'>
+        <div className='bg-white rounded-xl border border-gray-200 shadow-sm'>
+          <div className='p-5 border-b border-gray-100'>
+            <div className='flex items-center justify-between'>
+              <div className='flex items-center gap-3'>
+                <div className='p-2 rounded-lg bg-gray-100'>
+                  <Link2 className='w-4 h-4 text-gray-600' />
+                </div>
+                <h3 className='text-base font-semibold text-gray-900'>Connected Data Sources</h3>
+              </div>
+              <span className='bg-green-50 text-green-700 px-2.5 py-1 rounded-md text-xs font-medium'>
                 {connectedPlatforms.length} Active
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
+              </span>
+            </div>
+          </div>
+          <div className='p-5'>
+            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'>
               {integrations.map((integration) => (
                 <div
                   key={integration.id}
-                  className='flex items-center justify-between p-3 rounded-lg border'
+                  className='flex items-center justify-between p-3 rounded-lg border border-gray-100 bg-gray-50/50 hover:bg-gray-50 transition-colors'
                 >
                   <div className='flex items-center space-x-3'>
-                    <span className='text-lg'>
+                    <div className='w-9 h-9 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-lg'>
                       {platformIcons[
                         integration.platform as keyof typeof platformIcons
                       ] || '🔗'}
-                    </span>
+                    </div>
                     <div>
-                      <p className='font-medium text-sm'>
+                      <p className='font-medium text-gray-900 text-sm'>
                         {integration.platform_name ||
                           getPlatformDisplayName(integration.platform)}
                       </p>
-                      <p className='text-xs text-muted-foreground'>
+                      <p className='text-xs text-gray-500'>
                         {integration.customer_count} customers
                       </p>
                     </div>
                   </div>
                   <div className='flex items-center space-x-2'>
-                    <Badge
-                      variant={
+                    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium ${
                         integration.status === 'active'
-                          ? 'default'
-                          : 'secondary'
-                      }
-                      className={`text-xs ${
-                        integration.status === 'active'
-                          ? 'bg-green-100 text-green-800'
+                          ? 'bg-green-50 text-green-700'
                           : integration.status === 'error'
-                          ? 'bg-red-100 text-red-800'
+                          ? 'bg-red-50 text-red-700'
                           : integration.status === 'syncing'
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}
-                    >
-                      {integration.status === 'active'
-                        ? 'Connected'
-                        : integration.status}
-                    </Badge>
+                          ? 'bg-blue-50 text-blue-700'
+                          : 'bg-gray-100 text-gray-600'
+                      }`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${
+                        integration.status === 'active' ? 'bg-green-500' :
+                        integration.status === 'error' ? 'bg-red-500' :
+                        integration.status === 'syncing' ? 'bg-blue-500 animate-pulse' : 'bg-gray-400'
+                      }`} />
+                      {integration.status === 'active' ? 'Connected' : integration.status}
+                    </span>
                     {integration.status === 'active' && (
                       <Button
                         size='sm'
-                        variant='outline'
+                        variant='ghost'
                         onClick={() => handleSyncIntegration(integration.id)}
-                        className='h-6 px-2'
+                        className='h-7 w-7 p-0'
                       >
-                        <RefreshCw className='h-3 w-3' />
+                        <RefreshCw className='h-3.5 w-3.5' />
                       </Button>
                     )}
                   </div>
@@ -463,101 +463,88 @@ export function CustomersPage() {
               ))}
               {integrations.length === 0 && (
                 <div className='col-span-full text-center py-8'>
-                  <Plus className='h-12 w-12 text-gray-400 mx-auto mb-4' />
-                  <p className='text-gray-500'>No integrations connected</p>
-                  <Button variant='outline' size='sm' className='mt-2'>
+                  <div className='w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-3'>
+                    <Plus className='h-6 w-6 text-gray-400' />
+                  </div>
+                  <p className='text-gray-600 font-medium text-sm'>No integrations connected</p>
+                  <Button variant='outline' size='sm' className='mt-3'>
                     <Plus className='mr-2 h-4 w-4' />
                     Connect Platform
                   </Button>
                 </div>
               )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
-        {/* Enhanced Customer Statistics */}
-        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 animate-slide-up'>
-          <div className='card-elevated p-6 animate-scale-in'>
-            <div className='flex items-center justify-between mb-4'>
-              <div className='p-3 rounded-md bg-gray-600 shadow-sm'>
-                <Users2 className='h-6 w-6 text-white' />
+        {/* Customer Statistics */}
+        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'>
+          <div className='bg-white rounded-xl border border-gray-200 p-5 shadow-sm'>
+            <div className='flex items-center gap-3 mb-3'>
+              <div className='p-2 rounded-lg bg-gray-100'>
+                <Users2 className='h-4 w-4 text-gray-600' />
               </div>
+              <span className='text-sm font-medium text-gray-500'>Total Customers</span>
             </div>
-            <div className='space-y-2'>
-              <p className='text-sm font-medium text-slate-600'>Total Customers</p>
-              <p className='text-2xl sm:text-3xl font-bold text-slate-900'>{filteredCustomers.length}</p>
-              <p className='text-xs font-medium text-slate-500'>Across all platforms</p>
-            </div>
+            <p className='text-2xl font-semibold text-gray-900'>{filteredCustomers.length}</p>
+            <p className='text-xs text-gray-500 mt-1'>Across all platforms</p>
           </div>
 
-          <div className='card-elevated p-6 animate-scale-in delay-100'>
-            <div className='flex items-center justify-between mb-4'>
-              <div className='p-3 rounded-md bg-gray-600 shadow-sm'>
-                <div className='h-6 w-6 bg-white rounded-full flex items-center justify-center'>
-                  <div className='h-3 w-3 bg-green-500 rounded-full'></div>
-                </div>
+          <div className='bg-white rounded-xl border border-gray-200 p-5 shadow-sm'>
+            <div className='flex items-center gap-3 mb-3'>
+              <div className='p-2 rounded-lg bg-green-50'>
+                <div className='h-4 w-4 bg-green-500 rounded-full' />
               </div>
+              <span className='text-sm font-medium text-gray-500'>Active</span>
             </div>
-            <div className='space-y-2'>
-              <p className='text-sm font-medium text-slate-600'>Active</p>
-              <p className='text-2xl sm:text-3xl font-bold text-slate-900'>
-                {filteredCustomers.filter((c) => c.status === 'active').length}
-              </p>
-              <p className='text-xs font-medium text-gray-500'>
-                {((filteredCustomers.filter((c) => c.status === 'active').length / Math.max(1, filteredCustomers.length)) * 100).toFixed(1)}% of total
-              </p>
-            </div>
+            <p className='text-2xl font-semibold text-gray-900'>
+              {filteredCustomers.filter((c) => c.status === 'active').length}
+            </p>
+            <p className='text-xs text-gray-500 mt-1'>
+              {((filteredCustomers.filter((c) => c.status === 'active').length / Math.max(1, filteredCustomers.length)) * 100).toFixed(1)}% of total
+            </p>
           </div>
 
-          <div className='card-elevated p-6 animate-scale-in delay-200'>
-            <div className='flex items-center justify-between mb-4'>
-              <div className='p-3 rounded-md bg-gray-600 shadow-sm'>
-                <div className='h-6 w-6 bg-white rounded-full flex items-center justify-center'>
-                  <div className='h-3 w-3 bg-red-500 rounded-full'></div>
-                </div>
+          <div className='bg-white rounded-xl border border-gray-200 p-5 shadow-sm'>
+            <div className='flex items-center gap-3 mb-3'>
+              <div className='p-2 rounded-lg bg-red-50'>
+                <AlertTriangle className='h-4 w-4 text-red-500' />
               </div>
+              <span className='text-sm font-medium text-gray-500'>High Risk</span>
             </div>
-            <div className='space-y-2'>
-              <p className='text-sm font-medium text-slate-600'>High Risk</p>
-              <p className='text-2xl sm:text-3xl font-bold text-slate-900'>
-                {filteredCustomers.filter((c) => c.churnRisk === 'high').length}
-              </p>
-              <p className='text-xs font-medium text-gray-500'>Churn risk customers</p>
-            </div>
+            <p className='text-2xl font-semibold text-gray-900'>
+              {filteredCustomers.filter((c) => c.churnRisk === 'high').length}
+            </p>
+            <p className='text-xs text-gray-500 mt-1'>Churn risk customers</p>
           </div>
 
-          <div className='card-elevated p-6 animate-scale-in delay-300'>
-            <div className='flex items-center justify-between mb-4'>
-              <div className='p-3 rounded-md bg-gray-600 shadow-sm'>
-                <div className='h-6 w-6 bg-white rounded-full flex items-center justify-center'>
-                  <div className='h-3 w-3 bg-gray-500 rounded-full'></div>
-                </div>
+          <div className='bg-white rounded-xl border border-gray-200 p-5 shadow-sm'>
+            <div className='flex items-center gap-3 mb-3'>
+              <div className='p-2 rounded-lg bg-gray-100'>
+                <div className='h-4 w-4 bg-gray-400 rounded-full' />
               </div>
+              <span className='text-sm font-medium text-gray-500'>Excluded</span>
             </div>
-            <div className='space-y-2'>
-              <p className='text-sm font-medium text-slate-600'>Excluded</p>
-              <p className='text-2xl sm:text-3xl font-bold text-slate-900'>
-                {filteredCustomers.filter((c) => c.isExcluded).length}
-              </p>
-              <p className='text-xs font-medium text-slate-500'>From MRR calculations</p>
-            </div>
+            <p className='text-2xl font-semibold text-gray-900'>
+              {filteredCustomers.filter((c) => c.isExcluded).length}
+            </p>
+            <p className='text-xs text-gray-500 mt-1'>From MRR calculations</p>
           </div>
         </div>
 
       {/* Loading State */}
       {loading && (
-        <div className='flex items-center justify-center py-12'>
-          <Loader2 className='h-8 w-8 animate-spin mr-2' />
-          <span>Loading customers...</span>
+        <div className='flex flex-col items-center justify-center py-16'>
+          <div className='w-10 h-10 rounded-full border-2 border-gray-200 border-t-gray-600 animate-spin' />
+          <p className='mt-4 text-sm text-gray-500'>Loading customers...</p>
         </div>
       )}
 
       {/* Filters & Search */}
       {!loading && customers.length > 0 && (
-        <Card>
-          <CardContent className='pt-6'>
-            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'>
+        <div className='bg-white rounded-xl border border-gray-200 shadow-sm p-5'>
+            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3'>
               {/* Search */}
               <div className='relative'>
                 <Search className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400' />
@@ -565,16 +552,16 @@ export function CustomersPage() {
                   placeholder='Search customers...'
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className='pl-10'
+                  className='pl-9'
                 />
               </div>
 
               {/* Status Filter */}
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
+                <SelectTrigger className='rounded-xl border-gray-200'>
                   <SelectValue placeholder='All Statuses' />
                 </SelectTrigger>
-                <SelectContent className='bg-white'>
+                <SelectContent className='bg-white rounded-xl'>
                   <SelectItem value='all'>All Statuses</SelectItem>
                   <SelectItem value='active'>Active</SelectItem>
                   <SelectItem value='paused'>Paused</SelectItem>
@@ -686,30 +673,34 @@ export function CustomersPage() {
                     setPlatformFilter('all')
                     setBillingFrequencyFilter('all')
                   }}
-                  className='h-6 px-2 text-xs'
+                  className='h-6 px-2 text-xs rounded-lg hover:bg-gray-100'
                 >
                   Clear all
                 </Button>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
       )}
 
       {/* Customer Table */}
       {!loading && (
-        <Card>
-          <CardHeader className='pb-4'>
-            <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
-              <CardTitle>
-                Customer List
-                <span className='ml-2 text-sm font-normal text-muted-foreground'>
-                  ({filteredCustomers.length} {filteredCustomers.length === 1 ? 'customer' : 'customers'})
-                </span>
-              </CardTitle>
+        <div className='bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden'>
+          <div className='p-5 border-b border-gray-100'>
+            <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3'>
+              <div className='flex items-center gap-3'>
+                <div className='p-2 rounded-lg bg-gray-100'>
+                  <Users2 className='w-4 h-4 text-gray-600' />
+                </div>
+                <div>
+                  <h3 className='text-base font-semibold text-gray-900'>Customer List</h3>
+                  <p className='text-xs text-gray-500'>
+                    {filteredCustomers.length} {filteredCustomers.length === 1 ? 'customer' : 'customers'}
+                  </p>
+                </div>
+              </div>
               {selectedCustomers.length > 0 && (
-                <div className='flex items-center space-x-2'>
-                  <span className='text-sm text-muted-foreground'>
+                <div className='flex items-center gap-2'>
+                  <span className='text-sm text-gray-500'>
                     {selectedCustomers.length} selected
                   </span>
                   <Button variant='outline' size='sm' onClick={handleBulkEdit}>
@@ -719,8 +710,8 @@ export function CustomersPage() {
                 </div>
               )}
             </div>
-          </CardHeader>
-          <CardContent>
+          </div>
+          <div className='p-0'>
             <div className='overflow-x-auto'>
               <Table>
                 <TableHeader>
@@ -916,8 +907,8 @@ export function CustomersPage() {
                 </div>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {/* Customer Detail Modal */}

@@ -505,19 +505,19 @@ export function AnalyticsPage() {
   )
 
   return (
-    <div className='p-3 sm:p-4 md:p-6 space-y-6 sm:space-y-8 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen'>
-      {/* Responsive Header */}
-      <div className='flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 gap-4'>
+    <div className='page-container-mesh p-4 sm:p-6 md:p-8 space-y-6 sm:space-y-8'>
+      {/* Premium Header */}
+      <div className='flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0 gap-4 animate-fade-in'>
         <div>
-          <h1 className='text-xl sm:text-2xl md:text-3xl font-bold text-foreground'>
+          <h1 className='page-title-gradient text-2xl sm:text-3xl lg:text-4xl'>
             Analytics
           </h1>
-          <p className='text-muted-foreground text-sm sm:text-base'>
+          <p className='text-gray-500 text-sm sm:text-base lg:text-lg mt-2'>
             Deep insights into your revenue performance across all platforms
           </p>
         </div>
-        <div className='flex flex-col sm:flex-row items-stretch sm:items-center gap-3'>
-          <div className='flex w-full items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm sm:w-auto'>
+        <div className='flex flex-wrap items-center gap-3'>
+          <div className='flex items-center gap-2 rounded-xl border border-gray-100 bg-white/80 backdrop-blur-sm px-3 py-2 shadow-sm hover:shadow-md transition-all duration-200'>
             <Switch
               id='analytics-include-usage-switch'
               checked={includeUsage}
@@ -525,9 +525,9 @@ export function AnalyticsPage() {
             />
             <label
               htmlFor='analytics-include-usage-switch'
-              className='text-sm text-gray-600 whitespace-nowrap'
+              className='text-sm text-gray-500 whitespace-nowrap'
             >
-              Include usage-based payouts
+              Include usage
             </label>
           </div>
           <CurrencySelector
@@ -540,13 +540,18 @@ export function AnalyticsPage() {
               console.log('📅 Time period changed to:', e.target.value)
               setDateRange(e.target.value)
             }}
-            className='px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+            className='px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm focus:ring-2 focus:ring-gray-500/20 focus:border-gray-400'
           >
             <option value='last_3_months'>Last 3 Months</option>
             <option value='last_6_months'>Last 6 Months</option>
             <option value='last_12_months'>Last 12 Months</option>
           </select>
-          <Button variant='outline' size='sm' onClick={loadAnalyticsData}>
+          <Button
+            variant='outline'
+            size='sm'
+            onClick={loadAnalyticsData}
+            className='bg-white/80 backdrop-blur-sm border-gray-200 hover:bg-white hover:shadow-md transition-all duration-200 rounded-xl'
+          >
             <RefreshCw className='mr-2 h-4 w-4' />
             Refresh
           </Button>
@@ -555,9 +560,9 @@ export function AnalyticsPage() {
 
       {/* Error Alert */}
       {error && (
-        <Alert className='border-orange-200 bg-orange-50'>
-          <AlertCircle className='h-4 w-4 text-orange-600' />
-          <AlertDescription className='text-orange-700'>
+        <Alert className='bg-amber-50 border-amber-200'>
+          <AlertCircle className='h-4 w-4 text-amber-600' />
+          <AlertDescription className='text-amber-700'>
             {error}
           </AlertDescription>
         </Alert>
@@ -565,9 +570,9 @@ export function AnalyticsPage() {
 
       {/* Loading State */}
       {loading && (
-        <div className='flex items-center justify-center py-12'>
-          <Loader2 className='h-8 w-8 animate-spin mr-2' />
-          <span>Loading analytics...</span>
+        <div className='flex flex-col items-center justify-center py-16'>
+          <div className='w-10 h-10 rounded-full border-2 border-gray-200 border-t-gray-600 animate-spin' />
+          <p className='mt-4 text-sm text-gray-500'>Loading analytics...</p>
         </div>
       )}
 
@@ -623,20 +628,27 @@ export function AnalyticsPage() {
           {/* Analytics Content - Only show if integrations exist */}
           {integrations.length > 0 && (
             <>
-              {/* Integration Overview */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className='flex items-center space-x-2'>
-                    <BarChart3 className='h-5 w-5' />
-                    <span>Platform Performance</span>
-                    <Badge variant='secondary'>
+              {/* Premium Integration Overview */}
+              <div className='bg-white rounded-xl border border-gray-200 shadow-sm'>
+                <div className='p-5 border-b border-gray-100'>
+                  <div className='flex items-center justify-between'>
+                    <div className='flex items-center gap-3'>
+                      <div className='p-2 rounded-lg bg-gray-100'>
+                        <BarChart3 className='w-4 h-4 text-gray-600' />
+                      </div>
+                      <div>
+                        <h3 className='text-base font-semibold text-gray-900'>Platform Performance</h3>
+                        <p className='text-xs text-gray-500'>Overview of your connected platforms</p>
+                      </div>
+                    </div>
+                    <span className='bg-green-50 text-green-700 px-2.5 py-1 rounded-md text-xs font-medium'>
                       {connectedIntegrations.length} Active
-                    </Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
+                    </span>
+                  </div>
+                </div>
+                <div className='p-6'>
                   <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-                    {integrations.map((integration) => {
+                    {integrations.map((integration, index) => {
                       const config = platformConfig[
                         integration.platform as keyof typeof platformConfig
                       ] || {
@@ -648,76 +660,62 @@ export function AnalyticsPage() {
                       return (
                         <div
                           key={integration.id}
-                          className='p-4 rounded-lg border bg-white'
+                          className='p-4 rounded-lg border border-gray-100 bg-gray-50/50 hover:bg-gray-50 transition-colors'
                         >
                           <div className='flex items-center justify-between mb-3'>
-                            <div className='flex items-center space-x-2'>
-                              <span className='text-xl'>{config.icon}</span>
+                            <div className='flex items-center space-x-3'>
+                              <div className='w-10 h-10 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-xl'>
+                                {config.icon}
+                              </div>
                               <div>
-                                <p className='font-medium text-sm'>
-                                  {config.name}
-                                </p>
-                                <Badge
-                                  variant={
-                                    integration.status === 'active'
-                                      ? 'default'
-                                      : 'secondary'
-                                  }
-                                  className={`text-xs ${
-                                    integration.status === 'active'
-                                      ? 'bg-green-100 text-green-800'
-                                      : integration.status === 'error'
-                                      ? 'bg-red-100 text-red-800'
-                                      : integration.status === 'syncing'
-                                      ? 'bg-blue-100 text-blue-800'
-                                      : 'bg-gray-100 text-gray-800'
-                                  }`}
-                                >
-                                  {integration.status === 'active'
-                                    ? 'Connected'
-                                    : integration.status}
-                                </Badge>
+                                <p className='font-bold text-gray-900'>{config.name}</p>
+                                <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${
+                                  integration.status === 'active'
+                                    ? 'bg-green-50 text-green-700'
+                                    : integration.status === 'error'
+                                    ? 'bg-red-50 text-red-700'
+                                    : integration.status === 'syncing'
+                                    ? 'bg-blue-50 text-blue-700'
+                                    : 'bg-gray-100 text-gray-600'
+                                }`}>
+                                  <span className={`w-1.5 h-1.5 rounded-full ${
+                                    integration.status === 'active' ? 'bg-emerald-500' :
+                                    integration.status === 'error' ? 'bg-red-500' :
+                                    integration.status === 'syncing' ? 'bg-blue-500 animate-pulse' : 'bg-gray-400'
+                                  }`} />
+                                  {integration.status === 'active' ? 'Connected' : integration.status}
+                                </div>
                               </div>
                             </div>
                             {integration.status === 'active' && (
                               <Button
                                 size='sm'
                                 variant='outline'
-                                onClick={() =>
-                                  handleSyncIntegration(integration.id)
-                                }
-                                className='h-8 w-8 p-0'
+                                onClick={() => handleSyncIntegration(integration.id)}
+                                className='h-9 w-9 p-0 rounded-xl border-gray-200 hover:bg-gray-50 hover:shadow-sm transition-all'
                               >
-                                <RefreshCw className='h-3 w-3' />
+                                <RefreshCw className='h-4 w-4 text-gray-500' />
                               </Button>
                             )}
                           </div>
-                          <div className='space-y-2'>
+                          <div className='space-y-3'>
                             <div className='flex justify-between items-center'>
-                              <span className='text-sm text-muted-foreground'>
-                                Revenue:
-                              </span>
-                              <span className='font-semibold'>
+                              <span className='text-sm text-gray-500'>Revenue</span>
+                              <span className='font-bold text-gray-900'>
                                 {safeFormatCurrency(integration.revenue || 0)}
                               </span>
                             </div>
                             <div className='flex justify-between items-center'>
-                              <span className='text-sm text-muted-foreground'>
-                                Customers:
-                              </span>
-                              <span className='font-semibold'>
+                              <span className='text-sm text-gray-500'>Customers</span>
+                              <span className='font-bold text-gray-900'>
                                 {integration.customer_count || 0}
                               </span>
                             </div>
                             {integration.last_sync_at && (
-                              <div className='flex justify-between items-center'>
-                                <span className='text-sm text-muted-foreground'>
-                                  Last Sync:
-                                </span>
-                                <span className='text-sm'>
-                                  {new Date(
-                                    integration.last_sync_at
-                                  ).toLocaleDateString()}
+                              <div className='flex justify-between items-center pt-2 border-t border-gray-100'>
+                                <span className='text-xs text-gray-400'>Last Sync</span>
+                                <span className='text-xs text-gray-500'>
+                                  {new Date(integration.last_sync_at).toLocaleDateString()}
                                 </span>
                               </div>
                             )}
@@ -726,8 +724,8 @@ export function AnalyticsPage() {
                       )
                     })}
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
 
               {/* Enhanced Key Metrics */}
               {/* <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 animate-slide-up'>
@@ -826,19 +824,24 @@ export function AnalyticsPage() {
                 </div>
               </div> */}
 
-              {/* Charts Grid */}
+              {/* Premium Charts Grid */}
               <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
                 {/* MRR Growth Trend */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className='flex items-center justify-between'>
-                      <span>MRR Growth Trend</span>
-                      <Badge variant='outline' className='text-xs'>
+                <div className='bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 animate-slide-up' style={{ animationDelay: '200ms' }}>
+                  <div className='p-6 border-b border-gray-50'>
+                    <div className='flex items-center justify-between'>
+                      <div className='flex items-center gap-3'>
+                        <div className='p-2 rounded-lg bg-gray-100'>
+                          <TrendingUp className='w-4 h-4 text-gray-600' />
+                        </div>
+                        <h3 className='text-base font-semibold text-gray-900'>MRR Growth Trend</h3>
+                      </div>
+                      <span className='bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-medium'>
                         {dateRange.replace('last_', '').replace('_', ' ')}
-                      </Badge>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
+                      </span>
+                    </div>
+                  </div>
+                  <div className='p-6'>
                     {analyticsData?.mrr_trend &&
                     analyticsData.mrr_trend.length > 0 ? (
                       <ResponsiveContainer width='100%' height={300}>
@@ -899,25 +902,28 @@ export function AnalyticsPage() {
                         </AreaChart>
                       </ResponsiveContainer>
                     ) : (
-                      <div className='text-center py-12'>
-                        <TrendingUp className='h-12 w-12 text-gray-400 mx-auto mb-4' />
-                        <p className='text-muted-foreground'>
-                          No historical MRR data available
-                        </p>
-                        <p className='text-sm text-muted-foreground mt-1'>
-                          Sync more data or wait for historical tracking
-                        </p>
+                      <div className='text-center py-16'>
+                        <div className='w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4'>
+                          <TrendingUp className='h-8 w-8 text-gray-300' />
+                        </div>
+                        <p className='text-gray-700 font-medium'>No historical MRR data</p>
+                        <p className='text-sm text-gray-500 mt-1'>Sync more data to see trends</p>
                       </div>
                     )}
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
 
                 {/* Platform Revenue Distribution */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Revenue by Platform</CardTitle>
-                  </CardHeader>
-                  <CardContent>
+                <div className='bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 animate-slide-up' style={{ animationDelay: '300ms' }}>
+                  <div className='p-6 border-b border-gray-50'>
+                    <div className='flex items-center gap-3'>
+                      <div className='p-2 rounded-lg bg-gray-100'>
+                        <BarChart3 className='w-4 h-4 text-gray-600' />
+                      </div>
+                      <h3 className='text-base font-semibold text-gray-900'>Revenue by Platform</h3>
+                    </div>
+                  </div>
+                  <div className='p-6'>
                     {platformBreakdownWithPercentages.length > 0 ? (
                       <div className='space-y-4'>
                         <ResponsiveContainer width='100%' height={200}>
@@ -978,29 +984,30 @@ export function AnalyticsPage() {
                         </div>
                       </div>
                     ) : (
-                      <div className='text-center py-8'>
-                        <p className='text-muted-foreground'>
-                          No platform data available
-                        </p>
-                        <p className='text-sm text-muted-foreground mt-1'>
-                          Connect integrations to see revenue breakdown
-                        </p>
+                      <div className='text-center py-12'>
+                        <p className='text-gray-700 font-medium'>No platform data available</p>
+                        <p className='text-sm text-gray-500 mt-1'>Connect integrations to see breakdown</p>
                       </div>
                     )}
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
 
                 {/* Monthly Growth Rate */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className='flex items-center justify-between'>
-                      <span>Monthly Growth Rate</span>
-                      <Badge variant='outline' className='text-xs'>
+                <div className='bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 animate-slide-up' style={{ animationDelay: '400ms' }}>
+                  <div className='p-6 border-b border-gray-50'>
+                    <div className='flex items-center justify-between'>
+                      <div className='flex items-center gap-3'>
+                        <div className='p-2 rounded-lg bg-gray-100'>
+                          <BarChart3 className='w-4 h-4 text-gray-600' />
+                        </div>
+                        <h3 className='text-base font-semibold text-gray-900'>Monthly Growth Rate</h3>
+                      </div>
+                      <span className='bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-medium'>
                         {dateRange.replace('last_', '').replace('_', ' ')}
-                      </Badge>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
+                      </span>
+                    </div>
+                  </div>
+                  <div className='p-6'>
                     {analyticsData?.monthly_growth &&
                     analyticsData.monthly_growth.length > 0 ? (
                       <ResponsiveContainer width='100%' height={300}>
@@ -1052,30 +1059,33 @@ export function AnalyticsPage() {
                         </BarChart>
                       </ResponsiveContainer>
                     ) : (
-                      <div className='text-center py-12'>
-                        <BarChart3 className='h-12 w-12 text-gray-400 mx-auto mb-4' />
-                        <p className='text-muted-foreground'>
-                          No growth data available
-                        </p>
-                        <p className='text-sm text-muted-foreground mt-1'>
-                          Historical data needed to calculate growth rates
-                        </p>
+                      <div className='text-center py-16'>
+                        <div className='w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4'>
+                          <BarChart3 className='h-8 w-8 text-gray-300' />
+                        </div>
+                        <p className='text-gray-700 font-medium'>No growth data available</p>
+                        <p className='text-sm text-gray-500 mt-1'>Historical data needed for growth rates</p>
                       </div>
                     )}
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
 
                 {/* Customer Growth */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className='flex items-center justify-between'>
-                      <span>Customer Growth</span>
-                      <Badge variant='outline' className='text-xs'>
+                <div className='bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 animate-slide-up' style={{ animationDelay: '500ms' }}>
+                  <div className='p-6 border-b border-gray-50'>
+                    <div className='flex items-center justify-between'>
+                      <div className='flex items-center gap-3'>
+                        <div className='p-2 rounded-lg bg-gray-100'>
+                          <Users className='w-4 h-4 text-gray-600' />
+                        </div>
+                        <h3 className='text-base font-semibold text-gray-900'>Customer Growth</h3>
+                      </div>
+                      <span className='bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-medium'>
                         {dateRange.replace('last_', '').replace('_', ' ')}
-                      </Badge>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
+                      </span>
+                    </div>
+                  </div>
+                  <div className='p-6'>
                     {analyticsData?.customer_trend &&
                     analyticsData.customer_trend.length > 0 ? (
                       <ResponsiveContainer width='100%' height={300}>
@@ -1126,38 +1136,39 @@ export function AnalyticsPage() {
                         </LineChart>
                       </ResponsiveContainer>
                     ) : (
-                      <div className='text-center py-12'>
-                        <Users className='h-12 w-12 text-gray-400 mx-auto mb-4' />
-                        <p className='text-muted-foreground'>
-                          No customer trend data available
-                        </p>
-                        <p className='text-sm text-muted-foreground mt-1'>
-                          Need historical customer data to show trends
-                        </p>
+                      <div className='text-center py-16'>
+                        <div className='w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4'>
+                          <Users className='h-8 w-8 text-gray-300' />
+                        </div>
+                        <p className='text-gray-700 font-medium'>No customer trend data</p>
+                        <p className='text-sm text-gray-500 mt-1'>Historical data needed to show trends</p>
                       </div>
                     )}
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               </div>
 
-              {/* Platform Comparison Table */}
+              {/* Premium Platform Comparison Table */}
               {platformBreakdownWithPercentages.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Platform Performance Comparison</CardTitle>
-                  </CardHeader>
-                  <CardContent>
+                <div className='bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 animate-slide-up' style={{ animationDelay: '600ms' }}>
+                  <div className='p-6 border-b border-gray-50'>
+                    <div className='flex items-center gap-3'>
+                      <div className='p-2 rounded-lg bg-gray-100'>
+                        <BarChart3 className='w-4 h-4 text-gray-600' />
+                      </div>
+                      <h3 className='text-base font-semibold text-gray-900'>Platform Performance Comparison</h3>
+                    </div>
+                  </div>
+                  <div className='p-6'>
                     <div className='overflow-x-auto'>
                       <table className='w-full'>
                         <thead>
-                          <tr className='border-b'>
-                            <th className='text-left py-2'>Platform</th>
-                            <th className='text-right py-2'>Revenue</th>
-                            <th className='text-right py-2'>Customers</th>
-                            <th className='text-right py-2'>
-                              Avg per Customer
-                            </th>
-                            <th className='text-right py-2'>Share</th>
+                          <tr className='border-b border-gray-100'>
+                            <th className='text-left py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider'>Platform</th>
+                            <th className='text-right py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider'>Revenue</th>
+                            <th className='text-right py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider'>Customers</th>
+                            <th className='text-right py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider'>Avg per Customer</th>
+                            <th className='text-right py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider'>Share</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1166,41 +1177,41 @@ export function AnalyticsPage() {
                             .map((platform, index) => (
                               <tr
                                 key={index}
-                                className='border-b last:border-b-0'
+                                className='border-b border-gray-50 last:border-b-0 hover:bg-gray-50/50 transition-colors'
                               >
-                                <td className='py-3'>
-                                  <div className='flex items-center space-x-2'>
-                                    <span>{platform.icon}</span>
-                                    <span className='font-medium'>
-                                      {platform.name}
-                                    </span>
+                                <td className='py-4'>
+                                  <div className='flex items-center space-x-3'>
+                                    <div className='w-10 h-10 rounded-xl bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center text-lg'>
+                                      {platform.icon}
+                                    </div>
+                                    <span className='font-semibold text-gray-900'>{platform.name}</span>
                                   </div>
                                 </td>
-                                <td className='text-right py-3 font-semibold'>
+                                <td className='text-right py-4 font-bold text-gray-900'>
                                   {safeFormatCurrency(platform.revenue)}
                                 </td>
-                                <td className='text-right py-3'>
+                                <td className='text-right py-4 font-medium text-gray-700'>
                                   {safeToLocaleString(platform.customers)}
                                 </td>
-                                <td className='text-right py-3'>
+                                <td className='text-right py-4 font-medium text-gray-700'>
                                   {safeFormatCurrency(
                                     platform.customers > 0
                                       ? platform.revenue / platform.customers
                                       : 0
                                   )}
                                 </td>
-                                <td className='text-right py-3'>
-                                  <Badge variant='secondary'>
+                                <td className='text-right py-4'>
+                                  <span className='bg-gray-100 text-gray-700 px-2.5 py-1 rounded-md text-sm font-medium'>
                                     {platform.percentage}%
-                                  </Badge>
+                                  </span>
                                 </td>
                               </tr>
                             ))}
                         </tbody>
                       </table>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               )}
             </>
           )}

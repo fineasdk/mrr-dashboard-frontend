@@ -129,15 +129,13 @@ export function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="page-container-mesh">
         <div className="layout-container section-padding">
-          <div className="flex items-center justify-center py-12 animate-fade-in">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center animate-pulse">
-                <User className="w-8 h-8 text-white" />
-              </div>
-              <p className="mt-4 text-slate-600">Loading your profile...</p>
+          <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
+            <div className="relative">
+              <div className="w-10 h-10 rounded-full border-2 border-gray-200 border-t-gray-600 animate-spin" />
             </div>
+            <p className="mt-6 text-gray-600 font-medium">Loading your profile...</p>
           </div>
         </div>
       </div>
@@ -145,73 +143,69 @@ export function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
-      <div className="layout-container section-padding space-y-6 sm:space-y-8">
-        {/* Enhanced Header */}
-        <div className="animate-fade-in">
-          <div className="space-y-2">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">
-              Profile Settings
-            </h1>
-            <p className="text-gray-600 text-sm sm:text-base lg:text-lg">
-              Manage your account settings and preferences
-            </p>
-          </div>
+    <div className="page-container-mesh">
+      <div className="layout-container section-padding space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Profile Settings</h1>
+          <p className="text-gray-500 text-sm mt-1">
+            Manage your account settings and preferences
+          </p>
         </div>
 
         {/* Alert Messages */}
         {error && (
-          <Alert className="border-red-200 bg-red-50 animate-slide-down">
+          <Alert className="bg-red-50 border-red-200">
             <AlertCircle className="h-4 w-4 text-red-600" />
             <AlertDescription className="text-red-700">{error}</AlertDescription>
           </Alert>
         )}
 
         {success && (
-          <Alert className="border-green-200 bg-green-50 animate-slide-down">
+          <Alert className="bg-green-50 border-green-200">
             <Check className="h-4 w-4 text-green-600" />
             <AlertDescription className="text-green-700">{success}</AlertDescription>
           </Alert>
         )}
 
-        {/* Enhanced Tabs */}
-        <div className="animate-slide-up">
+        {/* Tabs */}
+        <div>
           <Tabs defaultValue="general" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2 bg-white shadow-sm h-auto p-1 rounded-xl">
-              <TabsTrigger value="general" className="flex items-center justify-center space-x-2 py-3 px-4 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-50 data-[state=active]:to-purple-50 data-[state=active]:text-indigo-700">
+            <TabsList className="grid w-full grid-cols-2 bg-gray-100 h-auto p-1 rounded-lg">
+              <TabsTrigger value="general" className="flex items-center justify-center space-x-2 py-2.5 px-4 rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm">
                 <User className="h-4 w-4" />
-                <span>General</span>
+                <span className="font-medium">General</span>
               </TabsTrigger>
-              <TabsTrigger value="security" className="flex items-center justify-center space-x-2 py-3 px-4 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-50 data-[state=active]:to-purple-50 data-[state=active]:text-indigo-700">
+              <TabsTrigger value="security" className="flex items-center justify-center space-x-2 py-2.5 px-4 rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm">
                 <Shield className="h-4 w-4" />
-                <span>Security</span>
+                <span className="font-medium">Security</span>
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="general">
-              <div className="card-elevated animate-scale-in">
-                <div className="p-6 border-b border-slate-100">
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+                <div className="p-5 border-b border-gray-100">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gray-600 rounded-md flex items-center justify-center">
-                      <User className="w-5 h-5 text-white" />
+                    <div className="p-2 rounded-lg bg-gray-100">
+                      <User className="w-4 h-4 text-gray-600" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-slate-900">Profile Information</h3>
-                      <p className="text-sm text-slate-600">Update your personal information and account details</p>
+                      <h3 className="text-base font-semibold text-gray-900">Profile Information</h3>
+                      <p className="text-xs text-gray-500">Update your personal information</p>
                     </div>
                   </div>
                 </div>
-                
-                <div className="p-6 space-y-6">
+
+                <div className="p-5 space-y-5">
                   {/* Profile Avatar Section */}
-                  <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-4 p-4 bg-gray-50 rounded-lg">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-600 rounded-full flex items-center justify-center text-white font-bold text-xl sm:text-2xl shadow-sm">
+                  <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-5 p-5 bg-gray-50 rounded-lg border border-gray-100">
+                    <div className="w-16 h-16 bg-gray-900 rounded-xl flex items-center justify-center text-white font-bold text-xl">
                       {profileData.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="text-center sm:text-left">
-                      <h3 className="font-semibold text-slate-900 text-lg sm:text-xl">{profileData.name}</h3>
-                      <p className="text-slate-600 text-sm sm:text-base break-all sm:break-normal">{profileData.email}</p>
-                      <div className="flex items-center justify-center sm:justify-start mt-2 text-sm text-slate-500">
+                      <h3 className="font-semibold text-gray-900 text-lg">{profileData.name}</h3>
+                      <p className="text-gray-500 text-sm">{profileData.email}</p>
+                      <div className="flex items-center justify-center sm:justify-start mt-2 text-xs text-gray-400">
                         <Calendar className="h-3 w-3 mr-1" />
                         <span>Joined {user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}</span>
                       </div>

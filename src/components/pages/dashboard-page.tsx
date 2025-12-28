@@ -37,7 +37,7 @@ const metricIcons = [TrendingUp, Users, CreditCard, Activity]
 const platformConfig = {
   economic: { name: 'E-conomic', icon: '🔗', color: 'blue' },
   shopify: { name: 'Shopify', icon: '🛒', color: 'green' },
-  stripe: { name: 'Stripe', icon: '💳', color: 'purple' },
+  stripe: { name: 'Stripe', icon: '💳', color: 'gray' },
 }
 
 const parseIncludeUsage = (value: unknown): boolean => {
@@ -581,63 +581,58 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
   console.log('  - error:', error)
 
   return (
-    <div className='min-h-screen bg-gray-50'>
+    <div className='page-container-mesh'>
       <div className='layout-container section-padding'>
         <div className='space-y-6 sm:space-y-8'>
-          {/* Enhanced Responsive Header */}
-          <div className='page-header animate-fade-in'>
-            <div className='flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 gap-4'>
-              <div className='space-y-2'>
-              <h1 className='text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900'>
-                Dashboard
-              </h1>
-                <p className='text-gray-600 text-sm sm:text-base lg:text-lg'>
-                  Monitor your monthly recurring revenue and business metrics
-                </p>
-              </div>
-              <div className='flex items-center gap-3'>
-                <Button 
-                  variant='outline' 
-                  size='sm' 
-                  onClick={handleSyncData}
-                  className='btn-secondary'
-                  disabled={isLoading}
-                >
-                  <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-                  Refresh
-                </Button>
-                <div className='flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm'>
-                  <label htmlFor='dashboard-month-picker' className='text-sm text-gray-600 whitespace-nowrap'>
-                    Month
-                  </label>
-                  <input
-                    id='dashboard-month-picker'
-                    type='month'
-                    value={selectedMonth}
-                    onChange={(event) => {
-                      const value = event.target.value
-                      if (value && value.length === 7) {
-                        setSelectedMonth(value)
-                      }
-                    }}
-                    className='text-sm rounded-md border border-gray-200 px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500'
-                  />
-                </div>
-                <div className='flex w-full items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm sm:w-auto'>
-                  <Switch
-                    id='include-usage-switch'
-                    checked={includeUsage}
-                    onCheckedChange={(checked) => setIncludeUsage(Boolean(checked))}
-                  />
-                  <label htmlFor='include-usage-switch' className='text-sm text-gray-600 whitespace-nowrap'>
-                    Include usage-based payouts
-                  </label>
-                </div>
-                <CurrencySelector
-                  currentCurrency={selectedCurrency}
-                  onCurrencyChange={setSelectedCurrency}
+          {/* Header */}
+          <div className='flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0'>
+            <div>
+              <h1 className='text-2xl font-semibold text-gray-900'>Dashboard</h1>
+              <p className='text-gray-500 text-sm mt-1'>
+                Monitor your monthly recurring revenue and business metrics
+              </p>
+            </div>
+            <div className='flex flex-wrap items-center gap-2'>
+              <Button
+                variant='outline'
+                size='sm'
+                onClick={handleSyncData}
+                disabled={isLoading}
+              >
+                <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+              <div className='flex items-center gap-2 border border-gray-200 bg-white px-3 py-1.5 rounded-lg'>
+                <label htmlFor='dashboard-month-picker' className='text-sm text-gray-500'>
+                  Month
+                </label>
+                <input
+                  id='dashboard-month-picker'
+                  type='month'
+                  value={selectedMonth}
+                  onChange={(event) => {
+                    const value = event.target.value
+                    if (value && value.length === 7) {
+                      setSelectedMonth(value)
+                    }
+                  }}
+                  className='text-sm border-0 px-2 py-0.5 focus:outline-none focus:ring-0'
                 />
               </div>
+              <div className='flex items-center gap-2 border border-gray-200 bg-white px-3 py-1.5 rounded-lg'>
+                <Switch
+                  id='include-usage-switch'
+                  checked={includeUsage}
+                  onCheckedChange={(checked) => setIncludeUsage(Boolean(checked))}
+                />
+                <label htmlFor='include-usage-switch' className='text-sm text-gray-500'>
+                  Include usage
+                </label>
+              </div>
+              <CurrencySelector
+                currentCurrency={selectedCurrency}
+                onCurrencyChange={setSelectedCurrency}
+              />
             </div>
           </div>
 
@@ -645,8 +640,8 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
           {isAutoSyncing && autoSyncPlatforms.length > 0 && (
             <Alert className='bg-green-50 border-green-200'>
               <RefreshCw className='h-4 w-4 text-green-600 animate-spin' />
-              <AlertDescription className='text-green-800'>
-                <span className='font-medium'>Syncing all platforms...</span> Updating {autoSyncPlatforms.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(', ')} in the background. Dashboard will refresh automatically.
+              <AlertDescription className='text-green-700'>
+                <span className='font-medium'>Syncing all platforms...</span> Updating {autoSyncPlatforms.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(', ')} in the background.
               </AlertDescription>
             </Alert>
           )}
@@ -655,14 +650,13 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
           {!isAutoSyncing && (
             <Alert className='bg-blue-50 border-blue-200'>
               <Info className='h-4 w-4 text-blue-600' />
-              <AlertDescription className='text-blue-800 flex items-center justify-between flex-wrap gap-2'>
+              <AlertDescription className='text-blue-700 flex items-center justify-between flex-wrap gap-2'>
                 <span>
                   Not seeing the latest data? Sync your integrations to fetch the most recent transactions.
                 </span>
                 <Button
                   variant='outline'
                   size='sm'
-                  className='border-blue-300 text-blue-700 hover:bg-blue-100'
                   onClick={() => onNavigateToIntegrations ? onNavigateToIntegrations() : router.push('/integrations')}
                 >
                   <Link2 className='mr-2 h-4 w-4' />
@@ -672,17 +666,11 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
             </Alert>
           )}
 
-          {/* Enhanced Loading State */}
+          {/* Loading State */}
           {isLoading && (
-            <div className='flex flex-col items-center justify-center py-16 animate-fade-in'>
-              <div className='relative'>
-                <div className='loading-spinner h-12 w-12 mb-4'></div>
-                <div className='absolute inset-0 loading-spinner h-12 w-12 animate-ping opacity-20'></div>
-              </div>
-              <div className='text-center space-y-2'>
-                <p className='text-lg font-medium text-slate-700'>Loading dashboard data...</p>
-                <p className='text-sm text-slate-500'>Fetching your latest metrics and insights</p>
-              </div>
+            <div className='flex flex-col items-center justify-center py-16'>
+              <div className='w-10 h-10 rounded-full border-2 border-gray-200 border-t-gray-600 animate-spin' />
+              <p className='mt-4 text-sm text-gray-500'>Loading dashboard data...</p>
             </div>
           )}
 
@@ -724,49 +712,23 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
           )}
 
 
-          {/* Enhanced No Integrations State */}
+          {/* No Integrations State */}
           {!hasIntegrations && !isLoading && (
-            <div className='text-center py-20 animate-fade-in'>
-              <div className='max-w-lg mx-auto'>
-                <div className='mb-8'>
-                  <div className='relative mb-6'>
-                    <div className='w-20 h-20 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-bounce-gentle'>
-                      <Link2 className='w-10 h-10 text-indigo-600' />
-                    </div>
-                    <div className='absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-r from-green-400 to-green-500 rounded-full flex items-center justify-center animate-pulse'>
-                      <Plus className='w-3 h-3 text-white' />
-                    </div>
-                  </div>
-                  <h3 className='text-2xl font-bold text-gray-900 mb-3'>
-                    Connect Your Platforms
-                  </h3>
-                  <p className='text-gray-600 text-lg mb-8 leading-relaxed'>
-                    Connect your integrations—Shopify Partners, E-conomic, Stripe, or any future platform we support—to pull live revenue and customer data straight into your dashboard.
-                  </p>
+            <div className='text-center py-16'>
+              <div className='max-w-md mx-auto'>
+                <div className='w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-4'>
+                  <Link2 className='w-7 h-7 text-gray-400' />
                 </div>
-
-                <div className='space-y-4'>
-                  <Button
-                    className='w-full btn-primary py-6 text-base font-semibold'
-                    onClick={() => onNavigateToIntegrations?.()}
-                  >
-                    <Plus className='mr-2 h-5 w-5' />
-                    Connect Your First Integration
-                  </Button>
-
-                  <div className='grid grid-cols-2 gap-4 mt-6'>
-                    <div className='card-elevated p-4 text-center interactive'>
-                      <div className='text-3xl mb-3'>💳</div>
-                      <p className='font-semibold text-gray-900 mb-1'>Stripe</p>
-                      <p className='text-xs text-gray-500'>Payment processing</p>
-                    </div>
-                    <div className='card-elevated p-4 text-center interactive'>
-                      <div className='text-3xl mb-3'>🔗</div>
-                      <p className='font-semibold text-gray-900 mb-1'>E-conomic</p>
-                      <p className='text-xs text-gray-500'>Accounting system</p>
-                    </div>
-                  </div>
-                </div>
+                <h3 className='text-xl font-semibold text-gray-900 mb-2'>
+                  Connect Your Platforms
+                </h3>
+                <p className='text-gray-500 text-sm mb-6'>
+                  Connect Shopify Partners, E-conomic, or Stripe to see your revenue and customer data.
+                </p>
+                <Button onClick={() => onNavigateToIntegrations?.()}>
+                  <Plus className='mr-2 h-4 w-4' />
+                  Connect Integration
+                </Button>
               </div>
             </div>
           )}
@@ -832,69 +794,61 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
 
           {!isLoading && (
             <>
-              {/* Enhanced Key Metrics */}
+              {/* Key Metrics */}
               {hasIntegrations && (
-                <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 animate-slide-up'>
-                  {metricsData.map((metric, index) => {
+                <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'>
+                  {metricsData.map((metric) => {
                     const Icon = metric.icon
                     return (
                       <div
                         key={metric.title}
-                        className="card-elevated p-6"
+                        className='bg-white rounded-xl border border-gray-200 p-5 shadow-sm'
                       >
-                        <div className='flex items-center justify-between mb-4'>
-                          <div className="p-3 rounded-md bg-gray-600 shadow-sm">
-                            <Icon className='w-6 h-6 text-white' />
+                        <div className='flex items-center justify-between mb-3'>
+                          <div className='p-2 rounded-lg bg-gray-100'>
+                            <Icon className='w-4 h-4 text-gray-600' />
                           </div>
                           {metric.trend !== 'neutral' && (
-                            <div className="flex items-center text-sm font-medium text-gray-600">
+                            <div className={`flex items-center text-xs font-medium ${
+                              metric.trend === 'up' ? 'text-green-600' : 'text-red-600'
+                            }`}>
                               {metric.trend === 'up' ? (
-                                <ArrowUpRight className='w-4 h-4' />
+                                <ArrowUpRight className='w-3.5 h-3.5' />
                               ) : (
-                                <ArrowDownRight className='w-4 h-4' />
+                                <ArrowDownRight className='w-3.5 h-3.5' />
                               )}
                             </div>
                           )}
                         </div>
-                        <div className='space-y-2'>
-                          <p className='text-sm font-medium text-gray-600'>
-                            {metric.title}
-                          </p>
-                          <p className='text-2xl sm:text-3xl font-bold text-gray-900'>
-                            {metric.value}
-                          </p>
-                          <p className="text-xs font-medium text-gray-500">
-                            {metric.change}
-                          </p>
-                        </div>
+                        <p className='text-sm text-gray-500 mb-1'>{metric.title}</p>
+                        <p className='text-2xl font-semibold text-gray-900'>{metric.value}</p>
+                        <p className='text-xs text-gray-400 mt-1'>{metric.change}</p>
                       </div>
                     )
                   })}
                 </div>
               )}
 
-              {/* Enhanced MRR Trend Chart */}
-              <div className='card-elevated animate-slide-up delay-200'>
-                <div className='p-6 border-b border-slate-100'>
-                  <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
+              {/* MRR Trend Chart */}
+              <div className='bg-white rounded-xl border border-gray-200 shadow-sm'>
+                <div className='p-5 border-b border-gray-100'>
+                  <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3'>
                     <div className='flex items-center gap-3'>
-                      <div className='w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center'>
-                        <TrendingUp className='w-5 h-5 text-white' />
+                      <div className='p-2 rounded-lg bg-gray-100'>
+                        <TrendingUp className='w-4 h-4 text-gray-600' />
                       </div>
                       <div>
-                        <h3 className='text-lg font-semibold text-slate-900'>MRR Trend</h3>
-                        <p className='text-sm text-slate-500'>Monthly recurring revenue over time</p>
+                        <h3 className='text-base font-semibold text-gray-900'>MRR Trend</h3>
+                        <p className='text-xs text-gray-500'>Monthly recurring revenue over time</p>
                       </div>
                     </div>
-                    <div className='flex items-center space-x-2'>
-                      <Button variant='outline' size='sm' className='btn-secondary'>
-                        <Download className='mr-2 h-4 w-4' />
-                        Export
-                      </Button>
-                    </div>
+                    <Button variant='outline' size='sm'>
+                      <Download className='mr-2 h-4 w-4' />
+                      Export
+                    </Button>
                   </div>
                 </div>
-                <div className='p-6'>
+                <div className='p-5'>
                   {mrrTrend && mrrTrend.length > 0 ? (
                     <MRRChart
                       data={mrrTrend.map((item) => ({
@@ -912,14 +866,12 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
                       currency={selectedCurrency}
                     />
                   ) : (
-                    <div className='text-center py-12 animate-fade-in'>
-                      <div className='w-16 h-16 bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl flex items-center justify-center mx-auto mb-4'>
-                        <TrendingUp className='w-8 h-8 text-slate-400' />
+                    <div className='text-center py-12'>
+                      <div className='w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-4'>
+                        <TrendingUp className='w-6 h-6 text-gray-400' />
                       </div>
-                      <p className='text-slate-600 font-medium mb-2'>
-                        No MRR data available
-                      </p>
-                      <p className='text-sm text-slate-500'>
+                      <p className='text-gray-600 font-medium'>No MRR data available</p>
+                      <p className='text-sm text-gray-500 mt-1'>
                         Connect integrations and sync data to see your MRR trend
                       </p>
                     </div>
@@ -935,69 +887,62 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
                 </div>
               )}
 
-              {/* Enhanced Platform Breakdown */}
+              {/* Platform Breakdown */}
               {hasIntegrations && (
-                <div className='grid grid-cols-1 lg:grid-cols-2 gap-6 animate-slide-up'>
-                  {/* Enhanced Connected Platforms */}
-                  <div className='card-elevated'>
-                    <div className='p-6 border-b border-slate-100'>
+                <div className='grid grid-cols-1 lg:grid-cols-2 gap-4'>
+                  {/* Connected Platforms */}
+                  <div className='bg-white rounded-xl border border-gray-200 shadow-sm'>
+                    <div className='p-5 border-b border-gray-100'>
                       <div className='flex items-center justify-between'>
                         <div className='flex items-center gap-3'>
-                          
+                          <div className='p-2 rounded-lg bg-gray-100'>
+                            <Link2 className='w-4 h-4 text-gray-600' />
+                          </div>
                           <div>
-                            <h3 className='text-lg font-semibold text-slate-900'>
-                              Connected Platforms
-                            </h3>
-                            <p className='text-sm text-slate-500'>Active integrations</p>
+                            <h3 className='text-base font-semibold text-gray-900'>Connected Platforms</h3>
+                            <p className='text-xs text-gray-500'>Your active integrations</p>
                           </div>
                         </div>
-                        <Badge className='status-success'>
+                        <span className='bg-green-50 text-green-700 px-2.5 py-1 rounded-md text-xs font-medium'>
                           {connectedIntegrations.length} Active
-                        </Badge>
+                        </span>
                       </div>
                     </div>
-                    <div className='p-6 space-y-4'>
+                    <div className='p-5 space-y-3'>
                       {platformBreakdown.map((platform, index) => (
                         <div
                           key={index}
-                          className={`flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-gradient-to-r from-white to-slate-50/50 hover:shadow-md transition-all duration-300 animate-slide-up delay-${index * 75}`}
+                          className='flex items-center justify-between p-3 rounded-lg border border-gray-100 bg-gray-50/50 hover:bg-gray-50 transition-colors'
                         >
-                          <div className='flex items-center space-x-4'>
-                            <div className='w-12 h-12 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center text-xl'>
+                          <div className='flex items-center space-x-3'>
+                            <div className='w-10 h-10 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-xl'>
                               {platform.icon}
                             </div>
                             <div>
-                              <p className='font-semibold text-slate-900'>{platform.platform}</p>
-                              <p className='text-sm text-slate-500 flex items-center gap-1'>
-                                <Users className='w-3 h-3' />
+                              <p className='font-medium text-gray-900 text-sm'>{platform.platform}</p>
+                              <p className='text-xs text-gray-500'>
                                 {platform.customers} customers
                               </p>
                             </div>
                           </div>
-                          <div className='text-right space-y-2'>
-                            <p className='font-bold text-lg text-slate-900'>
-                              {formatCurrency(
-                                platform.revenue,
-                                selectedCurrency
-                              )}
+                          <div className='text-right'>
+                            <p className='font-semibold text-gray-900'>
+                              {formatCurrency(platform.revenue, selectedCurrency)}
                             </p>
-                            <div className='flex items-center justify-end'>
-                              <Badge
-                                className={`text-xs font-medium ${
-                                  platform.status === 'connected'
-                                    ? 'status-success'
-                                    : platform.status === 'error'
-                                    ? 'status-error'
-                                    : platform.status === 'syncing'
-                                    ? 'status-info'
-                                    : 'bg-gray-100 text-gray-800'
-                                }`}
-                              >
-                                {platform.status === 'connected'
-                                  ? 'Connected'
-                                  : platform.status}
-                              </Badge>
-                            </div>
+                            <span className={`inline-flex items-center gap-1 text-xs font-medium ${
+                              platform.status === 'connected'
+                                ? 'text-green-600'
+                                : platform.status === 'error'
+                                ? 'text-red-600'
+                                : 'text-blue-600'
+                            }`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${
+                                platform.status === 'connected' ? 'bg-green-500' :
+                                platform.status === 'error' ? 'bg-red-500' :
+                                'bg-blue-500'
+                              }`} />
+                              {platform.status === 'connected' ? 'Connected' : platform.status}
+                            </span>
                           </div>
                         </div>
                       ))}
@@ -1005,13 +950,19 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
                   </div>
 
                   {/* Revenue Distribution */}
-                  <div className='bg-white rounded-lg shadow-sm border'>
-                    <div className='p-4 sm:p-6 border-b'>
-                      <h3 className='text-lg font-semibold'>
-                        Revenue Distribution
-                      </h3>
+                  <div className='bg-white rounded-xl border border-gray-200 shadow-sm'>
+                    <div className='p-5 border-b border-gray-100'>
+                      <div className='flex items-center gap-3'>
+                        <div className='p-2 rounded-lg bg-gray-100'>
+                          <Activity className='w-4 h-4 text-gray-600' />
+                        </div>
+                        <div>
+                          <h3 className='text-base font-semibold text-gray-900'>Revenue Distribution</h3>
+                          <p className='text-xs text-gray-500'>Breakdown by platform</p>
+                        </div>
+                      </div>
                     </div>
-                    <div className='p-4 sm:p-6'>
+                    <div className='p-5'>
                       <PlatformChart
                         data={platformBreakdown}
                         currency={selectedCurrency}

@@ -285,8 +285,8 @@ export function ShopifyIntegrationPage({ onNavigateBack }: ShopifyIntegrationPag
           <div className="card-elevated animate-scale-in delay-100">
             <div className="p-6 border-b border-slate-100">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
-                  <CheckCircle className="w-5 h-5 text-white" />
+                <div className="p-2 rounded-lg bg-gray-100">
+                  <CheckCircle className="w-4 h-4 text-gray-600" />
                 </div>
                 <h3 className="text-lg font-semibold text-slate-900">What you&apos;ll get</h3>
               </div>
@@ -355,8 +355,8 @@ export function ShopifyIntegrationPage({ onNavigateBack }: ShopifyIntegrationPag
         <div className="card-elevated animate-slide-up">
           <div className="p-6 border-b border-slate-100">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-violet-600 rounded-xl flex items-center justify-center">
-                <ShoppingBag className="w-5 h-5 text-white" />
+              <div className="p-2 rounded-lg bg-gray-100">
+                <ShoppingBag className="w-4 h-4 text-gray-600" />
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-slate-900">Partner API Connection</h3>

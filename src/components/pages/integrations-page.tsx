@@ -65,7 +65,7 @@ const availablePlatforms = [
     key: 'stripe',
     description: 'Connect your payment processor',
     icon: '💳',
-    color: 'bg-purple-500',
+    color: 'bg-gray-600',
     available: true,
     comingSoon: false,
     features: ['Payment data', 'Subscription tracking', 'Customer insights'],
@@ -415,35 +415,31 @@ export function IntegrationsPage({ onNavigateToShopify }: IntegrationsPageProps 
   }
 
   return (
-    <div className='min-h-screen bg-gray-50'>
-      <div className='layout-container section-padding space-y-6 sm:space-y-8'>
-        {/* Enhanced Responsive Header */}
-        <div className='animate-fade-in'>
-          <div className='flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 gap-4'>
-            <div className='space-y-2'>
-              <h1 className='text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900'>
-                Platform Integrations
-              </h1>
-              <p className='text-gray-600 text-sm sm:text-base lg:text-lg'>
-                Connect your revenue sources and sync your business data
-              </p>
-            </div>
-            <div className='flex flex-col sm:flex-row items-stretch sm:items-center gap-3'>
-              <CurrencySelector
-                currentCurrency={selectedCurrency}
-                onCurrencyChange={setSelectedCurrency}
-              />
-              <Button variant='outline' size='sm' onClick={loadIntegrations} className='btn-secondary'>
-                <RefreshCw className='mr-2 h-4 w-4' />
-                Refresh
-              </Button>
-            </div>
+    <div className='page-container-mesh'>
+      <div className='layout-container section-padding space-y-6'>
+        {/* Header */}
+        <div className='flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0'>
+          <div>
+            <h1 className='text-2xl font-semibold text-gray-900'>Platform Integrations</h1>
+            <p className='text-gray-500 text-sm mt-1'>
+              Connect your revenue sources and sync your business data
+            </p>
+          </div>
+          <div className='flex items-center gap-2'>
+            <CurrencySelector
+              currentCurrency={selectedCurrency}
+              onCurrencyChange={setSelectedCurrency}
+            />
+            <Button variant='outline' size='sm' onClick={loadIntegrations}>
+              <RefreshCw className='mr-2 h-4 w-4' />
+              Refresh
+            </Button>
           </div>
         </div>
 
       {/* Error Alert */}
       {error && (
-        <Alert className='border-red-200 bg-red-50'>
+        <Alert className='bg-red-50 border-red-200'>
           <AlertCircle className='h-4 w-4 text-red-600' />
           <AlertDescription className='text-red-700'>{error}</AlertDescription>
         </Alert>
@@ -451,69 +447,63 @@ export function IntegrationsPage({ onNavigateToShopify }: IntegrationsPageProps 
 
       {/* Success Alert */}
       {successMessage && (
-        <Alert className='border-green-200 bg-green-50'>
+        <Alert className='bg-green-50 border-green-200'>
           <CheckCircle className='h-4 w-4 text-green-600' />
           <AlertDescription className='text-green-700'>{successMessage}</AlertDescription>
         </Alert>
       )}
 
-        {/* Enhanced Overview Metrics */}
-        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 animate-slide-up'>
-          <div className='card-elevated p-6 animate-scale-in'>
-            <div className='flex items-center justify-between mb-4'>
-              <div className='p-3 rounded-md bg-gray-600 shadow-sm'>
-                <Link2 className='h-6 w-6 text-white' />
+        {/* Overview Metrics */}
+        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
+          <div className='bg-white rounded-xl border border-gray-200 p-5 shadow-sm'>
+            <div className='flex items-center gap-3 mb-3'>
+              <div className='p-2 rounded-lg bg-gray-100'>
+                <Link2 className='h-4 w-4 text-gray-600' />
               </div>
+              <span className='text-sm font-medium text-gray-500'>Connected Platforms</span>
             </div>
-            <div className='space-y-2'>
-              <p className='text-sm font-medium text-slate-600'>Connected Platforms</p>
-              <p className='text-2xl sm:text-3xl font-bold text-slate-900'>
-                {connectedIntegrations.length}
-              </p>
-              <p className='text-xs font-medium text-slate-500'>
-                {integrations.length} total integrations
-              </p>
-            </div>
+            <p className='text-2xl font-semibold text-gray-900'>
+              {connectedIntegrations.length}
+            </p>
+            <p className='text-xs text-gray-500 mt-1'>
+              {integrations.length} total integrations
+            </p>
           </div>
 
-          <div className='card-elevated p-6 animate-scale-in delay-100'>
-            <div className='flex items-center justify-between mb-4'>
-              <div className='p-3 rounded-md bg-gray-600 shadow-sm'>
-                <Users className='h-6 w-6 text-white' />
+          <div className='bg-white rounded-xl border border-gray-200 p-5 shadow-sm'>
+            <div className='flex items-center gap-3 mb-3'>
+              <div className='p-2 rounded-lg bg-gray-100'>
+                <Users className='h-4 w-4 text-gray-600' />
               </div>
+              <span className='text-sm font-medium text-gray-500'>Total Customers</span>
             </div>
-            <div className='space-y-2'>
-              <p className='text-sm font-medium text-slate-600'>Total Customers</p>
-              <p className='text-2xl sm:text-3xl font-bold text-slate-900'>
-                {totalCustomers.toLocaleString()}
-              </p>
-              <p className='text-xs font-medium text-slate-500'>Across all platforms</p>
-            </div>
+            <p className='text-2xl font-semibold text-gray-900'>
+              {totalCustomers.toLocaleString()}
+            </p>
+            <p className='text-xs text-gray-500 mt-1'>Across all platforms</p>
           </div>
 
-          <div className='card-elevated p-6 animate-scale-in delay-200'>
-            <div className='flex items-center justify-between mb-4'>
-              <div className='p-3 rounded-md bg-gray-600 shadow-sm'>
-                <DollarSign className='h-6 w-6 text-white' />
+          <div className='bg-white rounded-xl border border-gray-200 p-5 shadow-sm'>
+            <div className='flex items-center gap-3 mb-3'>
+              <div className='p-2 rounded-lg bg-gray-100'>
+                <DollarSign className='h-4 w-4 text-gray-600' />
               </div>
+              <span className='text-sm font-medium text-gray-500'>Total MRR</span>
             </div>
-            <div className='space-y-2'>
-              <p className='text-sm font-medium text-slate-600'>Total MRR</p>
-              <p className='text-2xl sm:text-3xl font-bold text-slate-900'>
-                {formatCurrency(totalRevenue, selectedCurrency)}
-              </p>
-              <p className='text-xs font-medium text-slate-500'>Monthly recurring revenue</p>
-            </div>
+            <p className='text-2xl font-semibold text-gray-900'>
+              {formatCurrency(totalRevenue, selectedCurrency)}
+            </p>
+            <p className='text-xs text-gray-500 mt-1'>Monthly recurring revenue</p>
           </div>
         </div>
 
-        {/* Enhanced Integrations Grid */}
+        {/* Integrations Grid */}
         <div>
-          <div className='mb-6'>
-            <h2 className='text-xl font-semibold text-slate-900 mb-2'>Available Integrations</h2>
-            <p className='text-slate-600'>Connect your business platforms to sync revenue data automatically</p>
+          <div className='mb-4'>
+            <h2 className='text-lg font-semibold text-gray-900'>Available Integrations</h2>
+            <p className='text-sm text-gray-500 mt-1'>Connect your business platforms to sync revenue data</p>
           </div>
-          <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 animate-slide-up'>
+          <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
             {availablePlatforms.map((platform, index) => {
               const existingIntegration = integrations.find(
                 (i) =>
@@ -533,36 +523,42 @@ export function IntegrationsPage({ onNavigateToShopify }: IntegrationsPageProps 
                 : null
 
               return (
-                <div key={platform.key} className={`card-elevated relative overflow-hidden animate-scale-in delay-${index * 100}`}>
+                <div
+                  key={platform.key}
+                  className='group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden animate-slide-up'
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
                   <div className='p-6 pb-4'>
                   <div className='flex items-center justify-between'>
                     <div className='flex items-center space-x-3'>
-                      <div className={`w-12 h-12 bg-gradient-to-br ${
-                        platform.key === 'economic' ? 'from-blue-500 to-indigo-600' :
-                        platform.key === 'stripe' ? 'from-purple-500 to-violet-600' :
-                        'from-green-500 to-emerald-600'
-                      } rounded-xl flex items-center justify-center text-white text-xl font-bold shadow-lg`}>
+                      <div className='w-10 h-10 bg-gray-100 border border-gray-200 rounded-lg flex items-center justify-center text-xl'>
                         {platform.icon}
                       </div>
                       <div className='min-w-0 flex-1'>
-                        <h3 className='text-lg font-semibold text-slate-900'>
+                        <h3 className='text-base font-semibold text-gray-900'>
                           {platform.name}
                         </h3>
-                        <p className='text-sm text-slate-600 truncate'>
+                        <p className='text-xs text-gray-500'>
                           {platform.description}
                         </p>
                       </div>
                     </div>
                     {existingIntegration && (
-                      <Badge
-                        className={
-                          statusConfig[existingIntegration.status]?.color ||
-                          'bg-gray-100 text-gray-800'
-                        }
+                      <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium ${
+                          existingIntegration.status === 'active' ? 'bg-green-50 text-green-700' :
+                          existingIntegration.status === 'error' ? 'bg-red-50 text-red-700' :
+                          existingIntegration.status === 'syncing' ? 'bg-blue-50 text-blue-700' :
+                          'bg-gray-100 text-gray-600'
+                        }`}
                       >
+                        <span className={`w-1.5 h-1.5 rounded-full ${
+                          existingIntegration.status === 'active' ? 'bg-green-500' :
+                          existingIntegration.status === 'error' ? 'bg-red-500' :
+                          existingIntegration.status === 'syncing' ? 'bg-blue-500 animate-pulse' : 'bg-gray-400'
+                        }`} />
                         {statusConfig[existingIntegration.status]?.label ||
                           existingIntegration.status}
-                      </Badge>
+                      </span>
                     )}
                   </div>
                   </div>

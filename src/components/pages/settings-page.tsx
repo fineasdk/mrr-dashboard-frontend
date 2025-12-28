@@ -23,10 +23,11 @@ export function SettingsPage() {
   const [normalizeAnnualSubscriptions, setNormalizeAnnualSubscriptions] = useState(true)
 
   return (
-    <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6">
-      <div>
-        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">Settings</h1>
-        <p className="text-muted-foreground text-sm sm:text-base mt-2">
+    <div className="page-container-mesh p-4 sm:p-6 md:p-8 space-y-6 sm:space-y-8">
+      {/* Premium Header */}
+      <div className="animate-fade-in">
+        <h1 className="page-title-gradient text-2xl sm:text-3xl lg:text-4xl">Settings</h1>
+        <p className="text-gray-500 text-sm sm:text-base lg:text-lg mt-2">
           Manage your dashboard preferences and import historical data
         </p>
       </div>
