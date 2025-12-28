@@ -523,13 +523,15 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
   const metricsData = getMetricsData()
 
   const resolveIntegrationRevenue = (integration: Integration): number => {
-    if (integration.currency_breakdown) {
-      return Object.values(integration.currency_breakdown).reduce(
+    // Use GROSS revenue (before platform fees) for consistency with dashboard Total MRR
+    if (integration.gross_currency_breakdown) {
+      return Object.values(integration.gross_currency_breakdown).reduce(
         (sum, entry) => sum + (entry?.converted_total ?? 0),
         0
       )
     }
-    return integration.revenue || 0
+    // Fallback to gross_revenue or revenue (backend now returns GROSS as revenue)
+    return integration.gross_revenue || integration.revenue || 0
   }
 
   const totalIntegrationRevenue = integrations.reduce(
