@@ -114,6 +114,7 @@ interface DashboardPageProps {
 }
 
 export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps = {}) {
+  const router = useRouter()
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>('DKK')
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date()
@@ -620,6 +621,25 @@ export function DashboardPage({ onNavigateToIntegrations }: DashboardPageProps =
               </div>
             </div>
           </div>
+
+          {/* Sync Info Banner */}
+          <Alert className='bg-blue-50 border-blue-200'>
+            <Info className='h-4 w-4 text-blue-600' />
+            <AlertDescription className='text-blue-800 flex items-center justify-between flex-wrap gap-2'>
+              <span>
+                Not seeing the latest data? Sync your integrations to fetch the most recent transactions.
+              </span>
+              <Button
+                variant='outline'
+                size='sm'
+                className='border-blue-300 text-blue-700 hover:bg-blue-100'
+                onClick={() => onNavigateToIntegrations ? onNavigateToIntegrations() : router.push('/integrations')}
+              >
+                <Link2 className='mr-2 h-4 w-4' />
+                Go to Integrations
+              </Button>
+            </AlertDescription>
+          </Alert>
 
           {/* Enhanced Loading State */}
           {isLoading && (
